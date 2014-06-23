@@ -1,0 +1,19 @@
+//master_dsa_file.txt
+
+params=
+{
+totaltime = 100;
+};
+
+PU=
+{
+bursttime = 5;
+resttime = 2;
+};
+
+SU=
+{
+bursttime = 1;
+scantime = 2;
+waittime = 0;
+};

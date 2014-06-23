@@ -1,0 +1,50 @@
+//master_network_file.txt
+
+// Parameters
+params = 
+{
+numberOfRadios = 6;
+source = 1;
+};
+radio1 =
+	{
+	ce = "ce1.txt";
+	neighbors = [2, 3];
+	numberOfNeighbors = 2;
+	scenarios = ["AWGN.txt", "AWGN.txt"]
+	};
+radio2 =
+	{
+	ce = "ce1.txt";
+	neighbors = [];
+	numberOfNeighbors = 0;
+	scenarios = []
+	};
+radio3 =
+	{
+	ce = "ce1.txt";
+	neighbors = [4, 5, 6];
+	numberOfNeighbors = 3;
+	scenarios = ["AWGN.txt", "AWGN.txt", "AWGN.txt"]
+	};
+radio4 =
+	{
+	ce = "ce1.txt";
+	neighbors = [];
+	numberOfNeighbors = 0;
+	scenarios = []
+	};
+radio5 =
+	{
+	ce = "ce1.txt";
+	neighbors = [];
+	numberOfNeighbors = 0;
+	scenarios = []
+	};
+radio6 =
+	{
+	ce = "ce1.txt";
+	neighbors = [];
+	numberOfNeighbors = 0;
+	scenarios = []
+	};
