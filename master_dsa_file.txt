@@ -9,6 +9,7 @@ PU=
 {
 bursttime = 5;
 resttime = 2;
+ce = "ce1.txt";
 };
 
 SU=
@@ -16,4 +17,5 @@ SU=
 bursttime = 1;
 scantime = 2;
 waittime = 0;
+ce = "ce1.txt";
 };
