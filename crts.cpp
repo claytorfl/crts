@@ -147,6 +147,7 @@ struct feedbackStruct {
     float           evm;
     float           rssi;
     float           cfo;
+	int				primaryon;
 	int 			block_flag;
 };
 
@@ -1933,6 +1934,93 @@ struct SU{
 };
 
 
+int dsaCallback(unsigned char *  _header,
+               int              _header_valid,
+               unsigned char *  _payload,
+               unsigned int     _payload_len,
+               int              _payload_valid,
+               framesyncstats_s _stats,
+               void *           _userdata)
+{
+    struct rxCBstruct * rxCBS_ptr = (struct rxCBstruct *) _userdata;
+    int verbose = rxCBS_ptr->verbose;
+	msequence rx_ms = *rxCBS_ptr->rx_ms_ptr; 
+	int primary;
+	int ones = 0;
+	int zeroes = 0;
+	for(int i = 0; i<(signed int)_payload_len; ++i){
+		if(_payload[i]==1){
+			ones++;
+		}
+		else{
+			zeroes++;
+		}
+	}
+	if(ones>zeroes){
+		primary = 1;
+	}
+	else{
+		primary = 0;
+	}
+	
+
+    // Variables for checking number of errors 
+    unsigned int payloadByteErrors  =   0;
+    unsigned int payloadBitErrors   =   0;
+    int j,m;
+	unsigned int tx_byte;
+
+    // Calculate byte error rate and bit error rate for payload
+    for (m=0; m<(signed int)_payload_len; m++)
+    {
+		tx_byte = msequence_generate_symbol(rx_ms,8);
+		//printf( "%1i %1i\n", (signed int)_payload[m], tx_byte );
+        if (((int)_payload[m] != tx_byte))
+        {
+            payloadByteErrors++;
+            for (j=0; j<8; j++)
+            {
+				if ((_payload[m]&(1<<j)) != (tx_byte&(1<<j)))
+                   payloadBitErrors++;
+            }      
+        }           
+    }               
+                    
+    // Data that will be sent to server
+    // TODO: Send other useful data through feedback array
+	printf("CALLBACK!!!\n\n");
+    struct feedbackStruct fb = {};
+    fb.header_valid         =   _header_valid;
+    fb.payload_valid        =   _payload_valid;
+    fb.payload_len          =   _payload_len;
+    fb.payloadByteErrors    =   payloadByteErrors;
+    fb.payloadBitErrors     =   payloadBitErrors;
+    fb.evm                  =   _stats.evm;
+    fb.rssi                 =   _stats.rssi;
+    fb.cfo                  =   _stats.cfo;	
+	//fb.ce_num				=	_header[0];
+	//fb.sc_num				=	_header[1];
+	fb.iteration			=	0;
+	fb.block_flag			=	0;
+
+	for(int i=0; i<4; i++)	fb.iteration += _header[i+2]<<(8*(3-i));
+
+    if (verbose)
+    {
+        printf("In rxcallback():\n");
+        printf("Header: %i %i %i %i %i %i %i %i\n", _header[0], _header[1], 
+            _header[2], _header[3], _header[4], _header[5], _header[6], _header[7]);
+        feedbackStruct_print(&fb);
+    }
+
+    // Receiver sends data to server
+    write(rxCBS_ptr->client, (void*)&fb, sizeof(fb));
+
+    return 0;
+
+} // end rxCallback()
+
+
 int main(int argc, char ** argv){
     // Seed the PRNG
     srand(time(NULL));
@@ -1961,10 +2049,12 @@ int main(int argc, char ** argv){
 	int networking = 0;
 	int dsa = 0;
 	int broadcasting = 0;
+	int secondary = 0;
+	int primary = 0;
 
     // Check Program options
     int d;
-    while ((d = getopt(argc,argv,"DBNuhqvdrsp:ca:f:b:G:M:C:T:")) != EOF) {
+    while ((d = getopt(argc,argv,"DBPNuhqvdrsp:ca:f:b:G:M:C:T:")) != EOF) {
         switch (d) {
         case 'u':
         case 'h':   usage();                           return 0;
@@ -1986,6 +2076,8 @@ int main(int argc, char ** argv){
 		case 'N':   networking = 1; break;
 		case 'D':   dsa = 1; break;
 		case 'B':	broadcasting = 1; break;
+		case 'P':	primary = 1; break;
+		case 'S':	secondary = 1; break;
         //case 'p':   serverPort = atol(optarg);            break;
         //case 'f':   frequency = atof(optarg);           break;
         //case 'b':   bandwidth = atof(optarg);           break;
@@ -2556,7 +2648,7 @@ if(usingUSRPs && !isController){
                         printf("Using ofdmtxrx\n");
 						printf("%d %d %d\n", ce.numSubcarriers, ce.CPLen, ce.taperLen);
                     ofdmtxrx txcvr(ce.numSubcarriers, ce.CPLen, ce.taperLen, p, rxCallback, (void*) &rxCBs);
-					printf("dsaf\n");
+					
                     // Start the Scenario simulations from the scenario USRPs
                     //enactUSRPScenario(ce, sc, &uhd_siggen_pid);
 
@@ -2822,7 +2914,7 @@ if(usingUSRPs && !isController){
 	return 0;
 }
 
-if(networking==1){
+if(networking==1 && !usingUSRPs){
 
 	verbose = 1;
     config_t cfg; // Returns all parameters in this structure
@@ -2925,7 +3017,7 @@ if(networking==1){
 return 0;
 }
 
-if(dsa==1){
+if(dsa==1 && !usingUSRPs){
 
 	struct PU pu;
 	struct SU su;
@@ -3067,7 +3159,210 @@ if(dsa==1){
 	return 0;
 }
 
+if(dsa==1 && usingUSRPs){
 
+
+
+	int primarybursttime;
+	int primaryresttime;
+	int secondarybursttime;
+	int secondaryscantime;
+	struct CognitiveEngine puce;
+	struct CognitiveEngine suce;
+	struct Scenario sc = CreateScenario();
+	int totaltime = 100;
+	verbose = 1;
+	config_t cfg; // Returns all parameters in this structure
+	config_setting_t *setting;
+	config_setting_t *iterator;
+	const char * str; // Stores the value of the String Parameters in Config file
+	int tmpI; // Stores the value of Integer Parameters from Config file
+	double tmpD;
+	char * str2;
+
+	if (verbose)
+		printf("Reading %s\n", "master_dsa_file.txt");
+
+	//Initialization
+	config_init(&cfg);
+
+	// Read the file. If there is an error, report it and exit.
+	if (!config_read_file(&cfg,"master_dsa_file.txt"))
+	{
+		fprintf(stderr, "\n%s:%d - %s", config_error_file(&cfg), config_error_line(&cfg), config_error_text(&cfg));
+		config_destroy(&cfg);
+		exit(EX_NOINPUT);
+	}
+	// Read the parameter group
+	setting = config_lookup(&cfg, "params");
+	if (setting != NULL)
+	{
+		// Read the strings
+		if (config_setting_lookup_int(setting, "totaltime", &tmpI))
+		{
+		totaltime = tmpI;
+		}
+	}
+	setting = config_lookup(&cfg, "PU");
+	if (setting != NULL)
+	{
+		// Read the strings
+		if (config_setting_lookup_int(setting, "bursttime", &tmpI))
+		{
+		primarybursttime = tmpI;
+		}
+		if (config_setting_lookup_int(setting, "resttime", &tmpI))
+		{
+		primaryresttime = tmpI;
+		}
+		if (config_setting_lookup_string(setting, "ce", &str))
+		{
+		str2 = (char *)str;
+		puce = CreateCognitiveEngine();
+		readCEConfigFile(&puce, str2, verbose);
+		}
+	}
+	setting = config_lookup(&cfg, "SU");
+	if (setting != NULL)
+	{
+		// Read the strings
+		if (config_setting_lookup_int(setting, "bursttime", &tmpI))
+		{
+		secondarybursttime = tmpI;
+		}
+		if (config_setting_lookup_int(setting, "scantime", &tmpI))
+		{
+		secondaryscantime = tmpI;
+		}
+
+		if (config_setting_lookup_string(setting, "ce", &str))
+		{
+		str2 = (char *)str;
+		suce = CreateCognitiveEngine();
+		readCEConfigFile(&suce, str2, verbose);
+		}
+	}
+	
+
+	if(primary == 1){
+		int h;
+		for(h = 0; h<8; h++){
+			header[h] = 1;
+		};
+		for(h = 0; h<puce.payloadLen; h++){
+			payload[h] = 1;
+		};
+		std::clock_t start;
+		std::clock_t current;
+		unsigned char * p = NULL;   // default subcarrier allocation
+		if (verbose) 
+		printf("Using ofdmtxrx\n");
+		printf("%d %d %d\n", puce.numSubcarriers, puce.CPLen, puce.taperLen);
+		ofdmtxrx txcvr(puce.numSubcarriers, puce.CPLen, puce.taperLen, p, rxCallback, (void*) &rxCBs);
+		txcvr.set_tx_freq(puce.frequency);
+		txcvr.set_tx_rate(puce.bandwidth);
+		txcvr.set_tx_gain_soft(puce.txgain_dB);
+		txcvr.set_tx_gain_uhd(puce.uhd_txgain_dB);
+	
+		int on = 1;
+		std::clock_t time = 0;
+		start = std::clock();
+		while(true){
+			int on = 1;
+			time = 0;
+			start = std::clock();
+			while(primarybursttime > (int)time){
+                if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
+                modulation_scheme ms = convertModScheme(ce.modScheme, &ce.bitsPerSym);
+
+                // Set Cyclic Redundency Check Scheme
+                //crc_scheme check = convertCRCScheme(ce.crcScheme);
+
+                // Set inner forward error correction scheme
+                if (verbose) printf("Inner FEC: ");
+                fec_scheme fec0 = convertFECScheme(ce.innerFEC, verbose);
+
+                // Set outer forward error correction scheme
+                if (verbose) printf("Outer FEC: ");
+                fec_scheme fec1 = convertFECScheme(ce.outerFEC, verbose);
+				txcvr.assemble_frame(header, payload, puce.payloadLen, ms, fec0, fec1);
+				int isLastSymbol = 0;
+				while(!isLastSymbol)
+					{
+					isLastSymbol = txcvr.write_symbol();
+					//enactScenarioBaseband(txcvr.fgbuffer, ce, sc);
+					txcvr.transmit_symbol();
+					}
+		   		txcvr.end_transmit_frame();
+				current = std::clock();
+				time = (start-current)/CLOCKS_PER_SEC;
+			}
+			on = 0;
+			time = 0;
+			start = std::clock();
+			while(primaryresttime>(int)time){
+				current = std::clock();
+				time = (start-current)/CLOCKS_PER_SEC;
+			}
+		}
+	}
+
+	if(secondary == 1){
+		for(int h = 0; h<8; h++){
+			header[h] = 0;
+		};
+		for(int h = 0; h<suce.payloadLen; h++){
+			payload[h] = 0;
+		};
+		std::clock_t start;
+		std::clock_t current;
+		unsigned char * p = NULL;   // default subcarrier allocation
+		if (verbose) 
+		printf("Using ofdmtxrx\n");
+		printf("%d %d %d\n", suce.numSubcarriers, suce.CPLen, suce.taperLen);
+		ofdmtxrx txcvr(suce.numSubcarriers, suce.CPLen, suce.taperLen, p, dsaCallback, (void*) &rxCBs);
+		txcvr.set_tx_freq(suce.frequency);
+		txcvr.set_tx_rate(suce.bandwidth);
+		txcvr.set_tx_gain_soft(suce.txgain_dB);
+		txcvr.set_tx_gain_uhd(suce.uhd_txgain_dB);
+	
+		int on = 1;
+		std::clock_t time = 0;	
+		int cantransmit = 0;
+		start = std::clock();
+		while(true){
+			int on = 1;
+			time = 0;
+			start = std::clock();
+			while(cantransmit==1){
+                if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
+                modulation_scheme ms = convertModScheme(ce.modScheme, &ce.bitsPerSym);
+
+                // Set Cyclic Redundency Check Scheme
+                //crc_scheme check = convertCRCScheme(ce.crcScheme);
+
+                // Set inner forward error correction scheme
+                if (verbose) printf("Inner FEC: ");
+                fec_scheme fec0 = convertFECScheme(ce.innerFEC, verbose);
+
+                // Set outer forward error correction scheme
+                if (verbose) printf("Outer FEC: ");
+                fec_scheme fec1 = convertFECScheme(ce.outerFEC, verbose);
+				txcvr.assemble_frame(header, payload, suce.payloadLen, ms, fec0, fec1);
+				int isLastSymbol = 0;
+				while(!isLastSymbol)
+					{
+					isLastSymbol = txcvr.write_symbol();
+					//enactScenarioBaseband(txcvr.fgbuffer, ce, sc);
+					txcvr.transmit_symbol();
+					}
+		   		txcvr.end_transmit_frame();
+			}
+			while(cantransmit==0){
+				usleep(secondaryscantime * 1000);				
+			}
+		}
+	};
 }
-
+}
 
