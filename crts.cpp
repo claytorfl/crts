@@ -133,6 +133,7 @@ struct rxCBstruct {
     int sc_num;
     int frameNum;
 	int client;
+	int primaryon;
 };
 
 struct feedbackStruct {
@@ -1254,10 +1255,33 @@ int rxCallback(unsigned char *  _header,
 
 } // end rxCallback()
 
+
+int testCallback(unsigned char *  _header,
+               int              _header_valid,
+               unsigned char *  _payload,
+               unsigned int     _payload_len,
+               int              _payload_valid,
+               framesyncstats_s _stats,
+               void *           _userdata)
+{
+    struct rxCBstruct * rxCBS_ptr = (struct rxCBstruct *) _userdata;
+    int verbose = rxCBS_ptr->verbose;
+	
+	printf("CALLBACK!!!\n\n");
+    struct feedbackStruct fb = {};
+    rxCBS_ptr->primaryon++;
+
+    // Receiver sends data to server
+    write(rxCBS_ptr->client, (void*)&fb, sizeof(fb));
+
+    return 0;
+
+}
+
 ofdmflexframesync CreateFS(struct CognitiveEngine ce, struct Scenario sc, struct rxCBstruct* rxCBs_ptr)
 {
      ofdmflexframesync fs =
-             ofdmflexframesync_create(ce.numSubcarriers, ce.CPLen, ce.taperLen, NULL, rxCallback, (void *) rxCBs_ptr);
+             ofdmflexframesync_create(ce.numSubcarriers, ce.CPLen, ce.taperLen, NULL, testCallback, (void *) rxCBs_ptr);
 
      return fs;
 } // End CreateFS();
@@ -1958,9 +1982,11 @@ int dsaCallback(unsigned char *  _header,
 	}
 	if(ones>zeroes){
 		primary = 1;
+		rxCBS_ptr->primaryon = 1;
 	}
 	else{
 		primary = 0;
+		rxCBS_ptr->primaryon = 1;
 	}
 	
 
@@ -2021,6 +2047,8 @@ int dsaCallback(unsigned char *  _header,
 } // end rxCallback()
 
 
+
+
 int main(int argc, char ** argv){
     // Seed the PRNG
     srand(time(NULL));
@@ -2054,7 +2082,7 @@ int main(int argc, char ** argv){
 
     // Check Program options
     int d;
-    while ((d = getopt(argc,argv,"DBPNuhqvdrsp:ca:f:b:G:M:C:T:")) != EOF) {
+    while ((d = getopt(argc,argv,"DSBPNuhqvdrsp:ca:f:b:G:M:C:T:")) != EOF) {
         switch (d) {
         case 'u':
         case 'h':   usage();                           return 0;
@@ -2097,6 +2125,7 @@ int main(int argc, char ** argv){
     // Array that will be accessible to both Server and CE.
     // Server uses it to pass data to CE.
     struct feedbackStruct fb = {};
+	fb.primaryon = 0;
 
     // For creating appropriate symbol length from 
     // number of subcarriers and CP Length
@@ -2179,6 +2208,7 @@ int main(int argc, char ** argv){
     rxCBs.serverAddr = serverAddr;
     rxCBs.verbose = verbose;
 	rxCBs.rx_ms_ptr = &rx_ms;
+	rxCBs.primaryon = 1;
 
     // Allow server time to finish initialization
     usleep(0.1e6);
@@ -2221,7 +2251,7 @@ int main(int argc, char ** argv){
 	}
 
     // Get current date and time
-printf("debug\n");
+
     char dataFilename[50];
     time_t now = time(NULL);
     struct tm *t  = localtime(&now);
@@ -2244,7 +2274,7 @@ printf("debug\n");
     // For each Cognitive Engine
 
 	if(dsa==0 && broadcasting==0 && networking == 0){
-	printf("debug2\n");
+
     for (i_CE=0; i_CE<NumCE; i_CE++)
     {
 
@@ -2472,6 +2502,7 @@ printf("debug\n");
                             // Rx Receives packet
                             symbolLen = ce.numSubcarriers + ce.CPLen;
 							ofdmflexframesync_execute(fs, frameSamples, symbolLen);
+							printf("%d\n", rxCBs.primaryon);
                         } // End Transmition For loop
 			
                         DoneTransmitting = postTxTasks(&ce, &fb, verbose);
@@ -2682,7 +2713,7 @@ if(usingUSRPs && !isController){
                             while(continue_running)
                             {
 								// Wait until server closes or there is an error, then exit
-								printf("debug\n");
+								
 								rflag = recv(socket_to_server, &readbuffer, sizeof(readbuffer), 0);
 								printf("Rx flag: %i\n", rflag);
 								if(rflag == 0 || rflag == -1){
@@ -2739,10 +2770,10 @@ if(usingUSRPs && !isController){
                         int isLastSymbol = 0;
                         while(!isLastSymbol)
                         {
-							printf("debug\n");
-                            //isLastSymbol = txcvr.write_symbol();
+							
+                            isLastSymbol = txcvr.write_symbol();
                             //enactScenarioBaseband(txcvr.fgbuffer, ce, sc);
-                            //txcvr.transmit_symbol();
+                            txcvr.transmit_symbol();
                         }
                         txcvr.end_transmit_frame();
 
@@ -3245,6 +3276,7 @@ if(dsa==1 && usingUSRPs){
 	
 
 	if(primary == 1){
+		printf("primary\n");
 		int h;
 		for(h = 0; h<8; h++){
 			header[h] = 1;
@@ -3263,7 +3295,7 @@ if(dsa==1 && usingUSRPs){
 		txcvr.set_tx_rate(puce.bandwidth);
 		txcvr.set_tx_gain_soft(puce.txgain_dB);
 		txcvr.set_tx_gain_uhd(puce.uhd_txgain_dB);
-	
+		
 		int on = 1;
 		std::clock_t time = 0;
 		start = std::clock();
@@ -3271,7 +3303,7 @@ if(dsa==1 && usingUSRPs){
 			int on = 1;
 			time = 0;
 			start = std::clock();
-			while(primarybursttime > (int)time){
+			while(primarybursttime > (float)time){
                 if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
                 modulation_scheme ms = convertModScheme(ce.modScheme, &ce.bitsPerSym);
 
@@ -3295,12 +3327,12 @@ if(dsa==1 && usingUSRPs){
 					}
 		   		txcvr.end_transmit_frame();
 				current = std::clock();
-				time = (start-current)/CLOCKS_PER_SEC;
+				time = (current-start)/CLOCKS_PER_SEC;
 			}
 			on = 0;
 			time = 0;
 			start = std::clock();
-			while(primaryresttime>(int)time){
+			while(primaryresttime>(float)time){
 				current = std::clock();
 				time = (start-current)/CLOCKS_PER_SEC;
 			}
@@ -3308,6 +3340,7 @@ if(dsa==1 && usingUSRPs){
 	}
 
 	if(secondary == 1){
+		printf("secondary\n");
 		for(int h = 0; h<8; h++){
 			header[h] = 0;
 		};
@@ -3334,21 +3367,21 @@ if(dsa==1 && usingUSRPs){
 			int on = 1;
 			time = 0;
 			start = std::clock();
-			while(cantransmit==1){
-                if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
-                modulation_scheme ms = convertModScheme(ce.modScheme, &ce.bitsPerSym);
+			while(rxCBs.primaryon==0){
+				if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
+				modulation_scheme ms = convertModScheme(ce.modScheme, &ce.bitsPerSym);
 
-                // Set Cyclic Redundency Check Scheme
-                //crc_scheme check = convertCRCScheme(ce.crcScheme);
+				// Set Cyclic Redundency Check Scheme
+				//crc_scheme check = convertCRCScheme(ce.crcScheme);
 
-                // Set inner forward error correction scheme
-                if (verbose) printf("Inner FEC: ");
-                fec_scheme fec0 = convertFECScheme(ce.innerFEC, verbose);
+				// Set inner forward error correction scheme
+				if (verbose) printf("Inner FEC: ");
+				fec_scheme fec0 = convertFECScheme(ce.innerFEC, verbose);
 
-                // Set outer forward error correction scheme
-                if (verbose) printf("Outer FEC: ");
-                fec_scheme fec1 = convertFECScheme(ce.outerFEC, verbose);
-				txcvr.assemble_frame(header, payload, suce.payloadLen, ms, fec0, fec1);
+				// Set outer forward error correction scheme
+				if (verbose) printf("Outer FEC: ");
+				fec_scheme fec1 = convertFECScheme(ce.outerFEC, verbose);
+						txcvr.assemble_frame(header, payload, suce.payloadLen, ms, fec0, fec1);
 				int isLastSymbol = 0;
 				while(!isLastSymbol)
 					{
@@ -3357,12 +3390,12 @@ if(dsa==1 && usingUSRPs){
 					txcvr.transmit_symbol();
 					}
 		   		txcvr.end_transmit_frame();
+				}
+			while(rxCBs.primaryon==1){
+					usleep(secondaryscantime * 1000);				
+				}
 			}
-			while(cantransmit==0){
-				usleep(secondaryscantime * 1000);				
-			}
-		}
-	};
-}
+		};
+	return 0;}
 }
 
