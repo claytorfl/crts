@@ -3375,17 +3375,24 @@ if(dsa==1 && usingUSRPs){
 		txcvr.set_tx_rate(suce.bandwidth);
 		txcvr.set_tx_gain_soft(suce.txgain_dB);
 		txcvr.set_tx_gain_uhd(suce.uhd_txgain_dB);
+    	txcvr.set_rx_freq(frequency);
+   		txcvr.set_rx_rate(bandwidth);
+    	txcvr.set_rx_gain_uhd(uhd_rxgain);
+		txcvr.start_rx();
 	
 		int on = 1;
 		std::clock_t time = 0;	
 		int cantransmit = 0;
 		start = std::clock();
-		while(true){
+		while(true)
+			{
 			int on = 1;
 			time = 0;
 			start = std::clock();
 			printf("transmitting\n");
-			while(rxCBs.primaryon==0){
+			while(rxCBs.primaryon==0)
+				{
+				printf("%d\n", rxCBs.primaryon);
 				if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
 				modulation_scheme ms = convertModScheme(ce.modScheme, &ce.bitsPerSym);
 
@@ -3413,18 +3420,18 @@ if(dsa==1 && usingUSRPs){
 			start = std::clock();
 			std::clock_t current;
 			printf("scanning\n");
-			while(rxCBs.primaryon==1){
+			while(rxCBs.primaryon==1)
+				{
+				printf("%d\n", rxCBs.primaryon);
 				time = 0;
 				rxCBs.primaryon = 0;
 				start = std::clock();
 				std::clock_t current;
-				while(secondaryscantime > (int)time){
+				while(secondaryscantime > (int)time)
+					{
 					current = std::clock();
 					time = (current-start)/CLOCKS_PER_SEC;
-					}
-
-
-					//usleep(secondaryscantime * 1000);				
+					}			
 				}
 			}
 		};
