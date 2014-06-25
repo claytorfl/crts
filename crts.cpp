@@ -3420,7 +3420,7 @@ if(dsa==1 && usingUSRPs){
 				std::clock_t current;
 				while(secondaryscantime > (int)time){
 					current = std::clock();
-					time = (start-current)/CLOCKS_PER_SEC;
+					time = (current-start)/CLOCKS_PER_SEC;
 					}
 
 
