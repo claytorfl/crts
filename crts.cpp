@@ -1972,8 +1972,8 @@ int dsaCallback(unsigned char *  _header,
 	int primary;
 	int ones = 0;
 	int zeroes = 0;
-	for(int i = 0; i<(signed int)_payload_len; ++i){
-		if(_payload[i]==1){
+	for(int i = 0; i<8; ++i){
+		if(_header[i]==1){
 			ones++;
 		}
 		else{
@@ -3315,6 +3315,8 @@ if(dsa==1 && usingUSRPs){
 		int on = 1;
 		std::clock_t time = 0;
 		start = std::clock();
+		primarybursttime = 5;
+		primaryresttime = 2;
 		while(true){
 			int on = 1;
 			time = 0;
@@ -3341,7 +3343,7 @@ if(dsa==1 && usingUSRPs){
 			while(primaryresttime>(float)time){
 				
 				current = std::clock();
-				time = (start-current)/CLOCKS_PER_SEC;
+				time = (current-start)/CLOCKS_PER_SEC;
 			}
 		}
 	}
