@@ -1983,10 +1983,12 @@ int dsaCallback(unsigned char *  _header,
 	if(ones>zeroes){
 		primary = 1;
 		rxCBS_ptr->primaryon = 1;
+		printf("Primary transmission");
 	}
 	else{
 		primary = 0;
-		rxCBS_ptr->primaryon = 1;
+		rxCBS_ptr->primaryon = 0;
+		printf("Secondary transmission");
 	}
 	
 
@@ -2079,10 +2081,11 @@ int main(int argc, char ** argv){
 	int broadcasting = 0;
 	int secondary = 0;
 	int primary = 0;
+	int receiver = 0;
 
     // Check Program options
     int d;
-    while ((d = getopt(argc,argv,"DSBPNuhqvdrsp:ca:f:b:G:M:C:T:")) != EOF) {
+    while ((d = getopt(argc,argv,"DStBPNuhqvdrsp:ca:f:b:G:M:C:T:")) != EOF) {
         switch (d) {
         case 'u':
         case 'h':   usage();                           return 0;
@@ -2106,6 +2109,7 @@ int main(int argc, char ** argv){
 		case 'B':	broadcasting = 1; break;
 		case 'P':	primary = 1; break;
 		case 'S':	secondary = 1; break;
+		case 'R':	receiver = 1; break;
         //case 'p':   serverPort = atol(optarg);            break;
         //case 'f':   frequency = atof(optarg);           break;
         //case 'b':   bandwidth = atof(optarg);           break;
@@ -2273,7 +2277,7 @@ int main(int argc, char ** argv){
 
     // For each Cognitive Engine
 
-	if(dsa==0 && broadcasting==0 && networking == 0){
+	if(dsa==0 && broadcasting==0 && networking == 0 && receiver == 0){
 
     for (i_CE=0; i_CE<NumCE; i_CE++)
     {
@@ -3381,7 +3385,7 @@ if(dsa==1 && usingUSRPs){
 				// Set outer forward error correction scheme
 				if (verbose) printf("Outer FEC: ");
 				fec_scheme fec1 = convertFECScheme(ce.outerFEC, verbose);
-						txcvr.assemble_frame(header, payload, suce.payloadLen, ms, fec0, fec1);
+				txcvr.assemble_frame(header, payload, suce.payloadLen, ms, fec0, fec1);
 				int isLastSymbol = 0;
 				while(!isLastSymbol)
 					{
@@ -3391,11 +3395,44 @@ if(dsa==1 && usingUSRPs){
 					}
 		   		txcvr.end_transmit_frame();
 				}
+			time = 0;
+			start = std::clock();
+			std::clock_t current;
 			while(rxCBs.primaryon==1){
-					usleep(secondaryscantime * 1000);				
+				time = 0;
+				start = std::clock();
+				std::clock_t current;
+				while(secondaryscantime > (int)time){
+					current = std::clock();
+					time = (start-current)/CLOCKS_PER_SEC;
+					}
+
+
+					//usleep(secondaryscantime * 1000);				
 				}
 			}
 		};
 	return 0;}
+if(receiver == 1){
+	ce = CreateCognitiveEngine();
+	readCEConfigFile(&ce, "ce1.txt", verbose);
+	printf("secondary\n");
+
+	unsigned char * p = NULL;   // default subcarrier allocation
+	if (verbose) 
+	printf("Using ofdmtxrx\n");
+	printf("%d %d %d\n", ce.numSubcarriers, ce.CPLen, ce.taperLen);
+	ofdmtxrx txcvr(ce.numSubcarriers, ce.CPLen, ce.taperLen, p, dsaCallback, (void*) &rxCBs);
+	txcvr.set_tx_freq(ce.frequency);
+	txcvr.set_tx_rate(ce.bandwidth);
+	txcvr.set_tx_gain_soft(ce.txgain_dB);
+	txcvr.set_tx_gain_uhd(ce.uhd_txgain_dB);
+	while(true){}
+	return 0;
+
+}
+
+
+
 }
 
