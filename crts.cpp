@@ -3280,6 +3280,7 @@ if(dsa==1 && usingUSRPs){
 	
 
 	if(primary == 1){
+		verbose = 0;
 		printf("primary\n");
 		int h;
 		for(h = 0; h<8; h++){
@@ -3357,6 +3358,7 @@ if(dsa==1 && usingUSRPs){
 	}
 
 	if(secondary == 1){
+		verbose = 0;
 		printf("secondary\n");
 		for(int h = 0; h<8; h++){
 			header[h] = 0;
