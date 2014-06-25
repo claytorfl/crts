@@ -2033,7 +2033,7 @@ int dsaCallback(unsigned char *  _header,
 
 	for(int i=0; i<4; i++)	fb.iteration += _header[i+2]<<(8*(3-i));
 
-    if (verbose)
+    if (false)
     {
         printf("In rxcallback():\n");
         printf("Header: %i %i %i %i %i %i %i %i\n", _header[0], _header[1], 
@@ -3394,7 +3394,7 @@ if(dsa==1 && usingUSRPs){
 			printf("transmitting\n");
 			while(rxCBs.primaryon==0)
 				{
-				printf("%d\n", rxCBs.primaryon);
+				//printf("%d\n", rxCBs.primaryon);
 				if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
 				modulation_scheme ms = convertModScheme(ce.modScheme, &ce.bitsPerSym);
 
@@ -3408,10 +3408,12 @@ if(dsa==1 && usingUSRPs){
 				// Set outer forward error correction scheme
 				if (verbose) printf("Outer FEC: ");
 				fec_scheme fec1 = convertFECScheme(ce.outerFEC, verbose);
+				usleep(1);
 				txcvr.assemble_frame(header, payload, suce.payloadLen, ms, fec0, fec1);
 				int isLastSymbol = 0;
 				while(!isLastSymbol && rxCBs.primaryon==0)
 					{
+					usleep(1);
 					isLastSymbol = txcvr.write_symbol();
 					//enactScenarioBaseband(txcvr.fgbuffer, ce, sc);
 					txcvr.transmit_symbol();
@@ -3424,13 +3426,15 @@ if(dsa==1 && usingUSRPs){
 			printf("scanning\n");
 			while(rxCBs.primaryon==1)
 				{
-				printf("%d\n", rxCBs.primaryon);
+				//printf("%d\n", rxCBs.primaryon);
 				time = 0;
 				rxCBs.primaryon = 0;
 				start = std::clock();
 				std::clock_t current;
 				while(secondaryscantime > (int)time)
 					{
+					printf("%f\n", (float)time);
+					printf("%d\n", rxCBs.primaryon);
 					current = std::clock();
 					time = (current-start)/CLOCKS_PER_SEC;
 					}			
