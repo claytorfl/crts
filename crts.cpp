@@ -3319,8 +3319,9 @@ if(dsa==1 && usingUSRPs){
 			int on = 1;
 			time = 0;
 			start = std::clock();
+			printf("transmitting\n");
 			while(primarybursttime > (float)time){
-				printf("transmitting\n");
+				
 				txcvr.assemble_frame(header, payload, puce.payloadLen, ms, fec0, fec1);
 				int isLastSymbol = 0;
 				while(!isLastSymbol)
@@ -3336,8 +3337,9 @@ if(dsa==1 && usingUSRPs){
 			on = 0;
 			time = 0;
 			start = std::clock();
+			printf("resting\n");
 			while(primaryresttime>(float)time){
-				printf("resting\n");
+				
 				current = std::clock();
 				time = (start-current)/CLOCKS_PER_SEC;
 			}
