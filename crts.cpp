@@ -1976,19 +1976,19 @@ int dsaCallback(unsigned char *  _header,
 		if(_header[i]==1){
 			ones++;
 		}
-		else{
+		if(_header[i]==0){
 			zeroes++;
 		}
 	}
 	if(ones>zeroes){
 		primary = 1;
 		rxCBS_ptr->primaryon = 1;
-		printf("Primary transmission");
+		printf("\n\nPrimary transmission\n\n");
 	}
 	else{
 		primary = 0;
 		rxCBS_ptr->primaryon = 0;
-		printf("Secondary transmission");
+		printf("\n\nSecondary transmission\n\n");
 	}
 	
 
@@ -3326,9 +3326,11 @@ if(dsa==1 && usingUSRPs){
 				
 				txcvr.assemble_frame(header, payload, puce.payloadLen, ms, fec0, fec1);
 				int isLastSymbol = 0;
-				while(!isLastSymbol)
+				while(!isLastSymbol && primarybursttime > (float)time)
 					{
 					isLastSymbol = txcvr.write_symbol();
+					current = std::clock();
+					time = (current-start)/CLOCKS_PER_SEC;
 					//enactScenarioBaseband(txcvr.fgbuffer, ce, sc);
 					txcvr.transmit_symbol();
 					}
@@ -3392,7 +3394,7 @@ if(dsa==1 && usingUSRPs){
 				fec_scheme fec1 = convertFECScheme(ce.outerFEC, verbose);
 				txcvr.assemble_frame(header, payload, suce.payloadLen, ms, fec0, fec1);
 				int isLastSymbol = 0;
-				while(!isLastSymbol)
+				while(!isLastSymbol && rxCBs.primaryon==0)
 					{
 					isLastSymbol = txcvr.write_symbol();
 					//enactScenarioBaseband(txcvr.fgbuffer, ce, sc);
@@ -3405,6 +3407,7 @@ if(dsa==1 && usingUSRPs){
 			std::clock_t current;
 			while(rxCBs.primaryon==1){
 				time = 0;
+				rxCBs.primaryon = 0;
 				start = std::clock();
 				std::clock_t current;
 				while(secondaryscantime > (int)time){
