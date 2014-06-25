@@ -3336,7 +3336,7 @@ if(dsa==1 && usingUSRPs){
 					isLastSymbol = txcvr.write_symbol();
 					current = std::clock();
 					time = (current-start)/CLOCKS_PER_SEC;
-					printf("%f\n", (float)time);
+					//printf("%f\n", (float)time);
 					//enactScenarioBaseband(txcvr.fgbuffer, ce, sc);
 					txcvr.transmit_symbol();
 					}
