@@ -3315,8 +3315,8 @@ if(dsa==1 && usingUSRPs){
 		int on = 1;
 		std::clock_t time = 0;
 		start = std::clock();
-		primarybursttime = 5;
-		primaryresttime = 2;
+		//primarybursttime = 5;
+		//primaryresttime = 2;
 		while(true){
 			int on = 1;
 			time = 0;
@@ -3325,12 +3325,18 @@ if(dsa==1 && usingUSRPs){
 			while(primarybursttime > (float)time){
 				
 				txcvr.assemble_frame(header, payload, puce.payloadLen, ms, fec0, fec1);
+				current = std::clock();
+				time = (current-start)/CLOCKS_PER_SEC;
+				if(primarybursttime > (float)time){
+					break;
+				}
 				int isLastSymbol = 0;
 				while(!isLastSymbol && primarybursttime > (float)time)
 					{
 					isLastSymbol = txcvr.write_symbol();
 					current = std::clock();
 					time = (current-start)/CLOCKS_PER_SEC;
+					printf("%f\n", (float)time);
 					//enactScenarioBaseband(txcvr.fgbuffer, ce, sc);
 					txcvr.transmit_symbol();
 					}
@@ -3424,7 +3430,7 @@ if(dsa==1 && usingUSRPs){
 if(receiver == 1){
 	ce = CreateCognitiveEngine();
 	readCEConfigFile(&ce, "ce1.txt", verbose);
-	printf("secondary\n");
+	printf("receiver\n");
 	int u;
 	unsigned char * p = NULL;   // default subcarrier allocation
 	if (verbose) 
