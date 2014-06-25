@@ -3327,7 +3327,7 @@ if(dsa==1 && usingUSRPs){
 				txcvr.assemble_frame(header, payload, puce.payloadLen, ms, fec0, fec1);
 				current = std::clock();
 				time = (current-start)/CLOCKS_PER_SEC;
-				if(primarybursttime > (float)time){
+				if(primarybursttime < (float)time){
 					break;
 				}
 				int isLastSymbol = 0;
@@ -3384,6 +3384,7 @@ if(dsa==1 && usingUSRPs){
 			int on = 1;
 			time = 0;
 			start = std::clock();
+			printf("transmitting\n");
 			while(rxCBs.primaryon==0){
 				if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
 				modulation_scheme ms = convertModScheme(ce.modScheme, &ce.bitsPerSym);
@@ -3411,6 +3412,7 @@ if(dsa==1 && usingUSRPs){
 			time = 0;
 			start = std::clock();
 			std::clock_t current;
+			printf("scanning\n");
 			while(rxCBs.primaryon==1){
 				time = 0;
 				rxCBs.primaryon = 0;
