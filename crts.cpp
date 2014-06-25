@@ -3428,6 +3428,10 @@ if(receiver == 1){
 	txcvr.set_tx_rate(ce.bandwidth);
 	txcvr.set_tx_gain_soft(ce.txgain_dB);
 	txcvr.set_tx_gain_uhd(ce.uhd_txgain_dB);
+    txcvr.set_rx_freq(frequency);
+    txcvr.set_rx_rate(bandwidth);
+    txcvr.set_rx_gain_uhd(uhd_rxgain);
+	txcvr.start_rx();
 	while(true){
 		u=1;
 	}
