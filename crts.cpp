@@ -2085,7 +2085,7 @@ int main(int argc, char ** argv){
 
     // Check Program options
     int d;
-    while ((d = getopt(argc,argv,"DStBPNuhqvdrsp:ca:f:b:G:M:C:T:")) != EOF) {
+    while ((d = getopt(argc,argv,"RDStBPNuhqvdrsp:ca:f:b:G:M:C:T:")) != EOF) {
         switch (d) {
         case 'u':
         case 'h':   usage();                           return 0;
@@ -2506,7 +2506,7 @@ int main(int argc, char ** argv){
                             // Rx Receives packet
                             symbolLen = ce.numSubcarriers + ce.CPLen;
 							ofdmflexframesync_execute(fs, frameSamples, symbolLen);
-							printf("%d\n", rxCBs.primaryon);
+							
                         } // End Transmition For loop
 			
                         DoneTransmitting = postTxTasks(&ce, &fb, verbose);
@@ -3299,7 +3299,19 @@ if(dsa==1 && usingUSRPs){
 		txcvr.set_tx_rate(puce.bandwidth);
 		txcvr.set_tx_gain_soft(puce.txgain_dB);
 		txcvr.set_tx_gain_uhd(puce.uhd_txgain_dB);
-		
+        if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
+        modulation_scheme ms = convertModScheme(ce.modScheme, &ce.bitsPerSym);
+
+        // Set Cyclic Redundency Check Scheme
+        //crc_scheme check = convertCRCScheme(ce.crcScheme);
+
+        // Set inner forward error correction scheme
+        if (verbose) printf("Inner FEC: ");
+        fec_scheme fec0 = convertFECScheme(ce.innerFEC, verbose);
+
+        // Set outer forward error correction scheme
+        if (verbose) printf("Outer FEC: ");
+        fec_scheme fec1 = convertFECScheme(ce.outerFEC, verbose);
 		int on = 1;
 		std::clock_t time = 0;
 		start = std::clock();
@@ -3308,19 +3320,7 @@ if(dsa==1 && usingUSRPs){
 			time = 0;
 			start = std::clock();
 			while(primarybursttime > (float)time){
-                if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
-                modulation_scheme ms = convertModScheme(ce.modScheme, &ce.bitsPerSym);
-
-                // Set Cyclic Redundency Check Scheme
-                //crc_scheme check = convertCRCScheme(ce.crcScheme);
-
-                // Set inner forward error correction scheme
-                if (verbose) printf("Inner FEC: ");
-                fec_scheme fec0 = convertFECScheme(ce.innerFEC, verbose);
-
-                // Set outer forward error correction scheme
-                if (verbose) printf("Outer FEC: ");
-                fec_scheme fec1 = convertFECScheme(ce.outerFEC, verbose);
+				printf("transmitting\n");
 				txcvr.assemble_frame(header, payload, puce.payloadLen, ms, fec0, fec1);
 				int isLastSymbol = 0;
 				while(!isLastSymbol)
@@ -3337,6 +3337,7 @@ if(dsa==1 && usingUSRPs){
 			time = 0;
 			start = std::clock();
 			while(primaryresttime>(float)time){
+				printf("resting\n");
 				current = std::clock();
 				time = (start-current)/CLOCKS_PER_SEC;
 			}
@@ -3417,7 +3418,7 @@ if(receiver == 1){
 	ce = CreateCognitiveEngine();
 	readCEConfigFile(&ce, "ce1.txt", verbose);
 	printf("secondary\n");
-
+	int u;
 	unsigned char * p = NULL;   // default subcarrier allocation
 	if (verbose) 
 	printf("Using ofdmtxrx\n");
@@ -3427,7 +3428,9 @@ if(receiver == 1){
 	txcvr.set_tx_rate(ce.bandwidth);
 	txcvr.set_tx_gain_soft(ce.txgain_dB);
 	txcvr.set_tx_gain_uhd(ce.uhd_txgain_dB);
-	while(true){}
+	while(true){
+		u=1;
+	}
 	return 0;
 
 }
