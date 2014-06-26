@@ -3461,7 +3461,7 @@ if(dsa==1 && usingUSRPs && !receiver){
 	return 0;
 	
 }
-if(receiver == 1){
+if(receiver == 1 && dsa != 1){
 	ce = CreateCognitiveEngine();
 	readCEConfigFile(&ce, "ce1.txt", verbose);
 	printf("receiver\n");
