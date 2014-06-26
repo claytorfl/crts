@@ -134,6 +134,7 @@ struct rxCBstruct {
     int frameNum;
 	int client;
 	int primaryon;
+	int secondarysending;
 };
 
 struct feedbackStruct {
@@ -1972,6 +1973,7 @@ int dsaCallback(unsigned char *  _header,
 	int primary;
 	int ones = 0;
 	int zeroes = 0;
+	int twos = 0;
 	for(int i = 0; i<8; ++i){
 		if(_header[i]==1){
 			ones++;
@@ -1979,18 +1981,21 @@ int dsaCallback(unsigned char *  _header,
 		if(_header[i]==0){
 			zeroes++;
 		}
+		if(_header[i]==2){
+			twos++;
+		}
 	}
-	if(ones>zeroes){
+	if(ones>zeroes || twos>zeroes){
 		primary = 1;
 		rxCBS_ptr->primaryon = 1;
 		printf("\n\nPrimary transmission\n\n");
 	}
-	else{
+	if(zeroes>ones && zeroes>twos){
 		primary = 0;
 		rxCBS_ptr->primaryon = 0;
+		rxCBS_ptr->secondarysending = 1;
 		printf("\n\nSecondary transmission\n\n");
 	}
-	
 
     // Variables for checking number of errors 
     unsigned int payloadByteErrors  =   0;
@@ -2213,6 +2218,7 @@ int main(int argc, char ** argv){
     rxCBs.verbose = verbose;
 	rxCBs.rx_ms_ptr = &rx_ms;
 	rxCBs.primaryon = 1;
+	rxCBs.secondarysending = 0;
 
     // Allow server time to finish initialization
     usleep(0.1e6);
@@ -3452,7 +3458,9 @@ if(dsa==1 && usingUSRPs){
 				}
 			}
 		};
-	return 0;}
+	return 0;
+	
+}
 if(receiver == 1){
 	ce = CreateCognitiveEngine();
 	readCEConfigFile(&ce, "ce1.txt", verbose);
@@ -3477,8 +3485,80 @@ if(receiver == 1){
 	return 0;
 
 }
+if(dsa== 1 && receiver == 1){
+	printf("DSA receiver\n");
+	for(int h = 0; h<8; h++){
+		header[h] = 2;
+	};
+	for(int h = 0; h<ce.payloadLen; h++){
+		payload[h] = 2;
+	};
+	ce = CreateCognitiveEngine();
+	readCEConfigFile(&ce, "ce1.txt", verbose);
+	int u;
+	unsigned char * p = NULL;   // default subcarrier allocation
+	if (verbose) 
+	printf("Using ofdmtxrx\n");
+	printf("%d %d %d\n", ce.numSubcarriers, ce.CPLen, ce.taperLen);
+	ofdmtxrx txcvr(ce.numSubcarriers, ce.CPLen, ce.taperLen, p, dsaCallback, (void*) &rxCBs);
+	txcvr.set_tx_freq(ce.frequency);
+	txcvr.set_tx_rate(ce.bandwidth);
+	txcvr.set_tx_gain_soft(ce.txgain_dB);
+	txcvr.set_tx_gain_uhd(ce.uhd_txgain_dB);
+    txcvr.set_rx_freq(frequency);
+    txcvr.set_rx_rate(bandwidth);
+    txcvr.set_rx_gain_uhd(uhd_rxgain);
+	txcvr.start_rx();
+	rxCBs.secondarysending = 0;
+	while(true){
+		printf("Receiving from secondary user\n");
+		while(rxCBs.primaryon == 0);{
+			u=1;
+			}
+		printf("Sending warning to secondary user");
+		if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
+		modulation_scheme ms = convertModScheme(ce.modScheme, &ce.bitsPerSym);
 
+		// Set Cyclic Redundency Check Scheme
+		//crc_scheme check = convertCRCScheme(ce.crcScheme);
 
+		// Set inner forward error correction scheme
+		if (verbose) printf("Inner FEC: ");
+		fec_scheme fec0 = convertFECScheme(ce.innerFEC, verbose);
 
+		// Set outer forward error correction scheme
+		if (verbose) printf("Outer FEC: ");
+		fec_scheme fec1 = convertFECScheme(ce.outerFEC, verbose);
+		txcvr.assemble_frame(header, payload, ce.payloadLen, ms, fec0, fec1);
+		int isLastSymbol = 0;
+		while(!isLastSymbol){
+			isLastSymbol = txcvr.write_symbol();
+			//enactScenarioBaseband(txcvr.fgbuffer, ce, sc);
+			txcvr.transmit_symbol();
+			}
+   		txcvr.end_transmit_frame();
+		rxCBs.secondarysending = 0;
+		txcvr.start_rx();
+		std::clock_t time = 0;
+		std::clock_t start;
+		std::clock_t current;
+		printf("Scanning for Primary User\n");
+		while(rxCBs.primaryon == 1 && rxCBs.secondarysending ==0){
+			rxCBs.primaryon == 0;
+			start = std::clock();
+			while(1>(float)time){
+				//printf("%f\n", (float)time);
+				current = std::clock();
+				time = (current-start)/CLOCKS_PER_SEC;
+			}
+		}
+			
+
+	}
+	return 0;
+
+}
+
+return 0;
 }
 
