@@ -3200,7 +3200,7 @@ if(dsa==1 && !usingUSRPs){
 	return 0;
 }
 
-if(dsa==1 && usingUSRPs){
+if(dsa==1 && usingUSRPs && !receiver){
 
 
 
@@ -3555,7 +3555,7 @@ if(dsa== 1 && receiver == 1){
 			
 
 	}
-	return 0;
+	//return 0;
 
 }
 
