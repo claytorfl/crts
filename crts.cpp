@@ -3198,10 +3198,10 @@ if(dsa==1 && usingUSRPs){
 
 
 
-	int primarybursttime;
-	int primaryresttime;
-	int secondarybursttime;
-	int secondaryscantime;
+	double primarybursttime;
+	double primaryresttime;
+	double secondarybursttime;
+	double secondaryscantime;
 	struct CognitiveEngine puce;
 	struct CognitiveEngine suce;
 	struct Scenario sc = CreateScenario();
@@ -3213,6 +3213,7 @@ if(dsa==1 && usingUSRPs){
 	const char * str; // Stores the value of the String Parameters in Config file
 	int tmpI; // Stores the value of Integer Parameters from Config file
 	double tmpD;
+	double tmpd;
 	char * str2;
 
 	if (verbose)
@@ -3242,13 +3243,14 @@ if(dsa==1 && usingUSRPs){
 	if (setting != NULL)
 	{
 		// Read the strings
-		if (config_setting_lookup_int(setting, "bursttime", &tmpI))
+		if (config_setting_lookup_float(setting, "bursttime", &tmpD))
 		{
-		primarybursttime = tmpI;
+		primarybursttime = tmpD;
+		printf("%d\n", primarybursttime);
 		}
-		if (config_setting_lookup_int(setting, "resttime", &tmpI))
+		if (config_setting_lookup_float(setting, "resttime", &tmpD))
 		{
-		primaryresttime = tmpI;
+		primaryresttime = tmpD;
 		}
 		if (config_setting_lookup_string(setting, "ce", &str))
 		{
@@ -3261,13 +3263,13 @@ if(dsa==1 && usingUSRPs){
 	if (setting != NULL)
 	{
 		// Read the strings
-		if (config_setting_lookup_int(setting, "bursttime", &tmpI))
+		if (config_setting_lookup_float(setting, "bursttime", &tmpD))
 		{
-		secondarybursttime = tmpI;
+		secondarybursttime = tmpD;
 		}
-		if (config_setting_lookup_int(setting, "scantime", &tmpI))
+		if (config_setting_lookup_float(setting, "scantime", &tmpD))
 		{
-		secondaryscantime = tmpI;
+		secondaryscantime = tmpD;
 		}
 
 		if (config_setting_lookup_string(setting, "ce", &str))
@@ -3324,13 +3326,10 @@ if(dsa==1 && usingUSRPs){
 			start = std::clock();
 			printf("transmitting\n");
 			while(primarybursttime > (float)time){
-				
+				//printf("%f\n", (float)time);
 				txcvr.assemble_frame(header, payload, puce.payloadLen, ms, fec0, fec1);
 				current = std::clock();
 				time = (current-start)/CLOCKS_PER_SEC;
-				if(primarybursttime < (float)time){
-					break;
-				}
 				int isLastSymbol = 0;
 				while(!isLastSymbol && primarybursttime > (float)time)
 					{
@@ -3350,7 +3349,7 @@ if(dsa==1 && usingUSRPs){
 			start = std::clock();
 			printf("resting\n");
 			while(primaryresttime>(float)time){
-				
+				//printf("%f\n", (float)time);
 				current = std::clock();
 				time = (current-start)/CLOCKS_PER_SEC;
 			}
@@ -3414,11 +3413,22 @@ if(dsa==1 && usingUSRPs){
 				while(!isLastSymbol && rxCBs.primaryon==0)
 					{
 					usleep(1);
+					printf("%d\n", rxCBs.primaryon);
 					isLastSymbol = txcvr.write_symbol();
 					//enactScenarioBaseband(txcvr.fgbuffer, ce, sc);
 					txcvr.transmit_symbol();
 					}
 		   		txcvr.end_transmit_frame();
+				time = 0;
+				txcvr.start_rx();
+				while(1 > (float)time)
+					{
+					printf("transmitting\n");
+					printf("%f\n", (float)time);
+					printf("%d\n", rxCBs.primaryon);
+					current = std::clock();
+					time = (current-start)/CLOCKS_PER_SEC;
+					}
 				}
 			time = 0;
 			start = std::clock();
@@ -3431,8 +3441,9 @@ if(dsa==1 && usingUSRPs){
 				rxCBs.primaryon = 0;
 				start = std::clock();
 				std::clock_t current;
-				while(secondaryscantime > (int)time)
+				while(secondaryscantime > (float)time)
 					{
+					printf("scanning\n");
 					printf("%f\n", (float)time);
 					printf("%d\n", rxCBs.primaryon);
 					current = std::clock();
