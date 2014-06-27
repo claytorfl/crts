@@ -3515,7 +3515,7 @@ if(dsa== 1 && receiver == 1){
 		while(rxCBs.primaryon == 0);{
 			u=1;
 			}
-		printf("Sending warning to secondary user");
+		printf("Sending warning to secondary user\n");
 		if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
 		modulation_scheme ms = convertModScheme(ce.modScheme, &ce.bitsPerSym);
 
@@ -3547,7 +3547,7 @@ if(dsa== 1 && receiver == 1){
 			rxCBs.primaryon == 0;
 			start = std::clock();
 			while(1>(float)time){
-				//printf("%f\n", (float)time);
+				printf("%f\n", (float)time);
 				current = std::clock();
 				time = (current-start)/CLOCKS_PER_SEC;
 			}
