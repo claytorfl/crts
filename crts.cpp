@@ -1907,6 +1907,10 @@ void terminate(int sig){
 	exit(1);
 }
 
+
+//Struct that contains the variables for a node in an ad hoc broadcasting network
+//The node has a cognitive engine, a list of the neighbor nodes it broadcasts to, and a
+//list of the channel conditions for each of its neighbor nodes
 struct Node{
 	struct CognitiveEngine ce;
 	int numberOfNeighbors;
@@ -1918,6 +1922,9 @@ struct Node{
 	int number;
 };
 
+//Struct that contains variables for a ad hoc broadcasting network of nodes
+//Every node is contained in the nodeList and the transmitterList contains the nodes
+//that are currently transmitting
 struct Network{
 	struct Node nodeList[50];
 	struct Node * transmitterList[50];
@@ -1930,6 +1937,7 @@ struct Network{
 	int nextnumber;
 };
 
+//Struct that contains the variables for the primary user
 struct PU{
 	int bursttime;
 	int burstingtime;
@@ -1943,6 +1951,7 @@ struct PU{
 	int time;
 };
 
+//Struct that contains the variables for the secondary user
 struct SU{
 	int bursttime;
 	int burstingtime;
@@ -1974,6 +1983,9 @@ int dsaCallback(unsigned char *  _header,
 	int ones = 0;
 	int zeroes = 0;
 	int twos = 0;
+
+	//The different kinds of transmissions are determined by the content of the header
+	//and its number of 0's, 1's, and 2's
 	for(int i = 0; i<8; ++i){
 		if(_header[i]==1){
 			ones++;
@@ -1985,14 +1997,19 @@ int dsaCallback(unsigned char *  _header,
 			twos++;
 		}
 	}
+
+	//If the message has all 1's or all 2's then a primary transmission was received
+	//and the rxCBs struct changes its variables to show this information
 	if(ones>zeroes || twos>zeroes){
-		primary = 1;
+		//primary = 1;
 		rxCBS_ptr->primaryon = 1;
 		printf("\n\nPrimary transmission\n\n");
 	}
+
+	//If the message has all zeroes then it is a secondary transmission
 	if(zeroes>ones && zeroes>twos){
-		primary = 0;
-		rxCBS_ptr->primaryon = 0;
+		//primary = 0;
+		//rxCBS_ptr->primaryon = 0;
 		rxCBS_ptr->secondarysending = 1;
 		printf("\n\nSecondary transmission\n\n");
 	}
@@ -2112,8 +2129,13 @@ int main(int argc, char ** argv){
 		case 'N':   networking = 1; break;
 		case 'D':   dsa = 1; break;
 		case 'B':	broadcasting = 1; break;
+		//Designate the node as a primary user
 		case 'P':	primary = 1; break;
+
+		//Designate the node as a secondary user
 		case 'S':	secondary = 1; break;
+
+		//Designate the node as a receiver
 		case 'R':	receiver = 1; break;
         //case 'p':   serverPort = atol(optarg);            break;
         //case 'f':   frequency = atof(optarg);           break;
@@ -2217,7 +2239,11 @@ int main(int argc, char ** argv){
     rxCBs.serverAddr = serverAddr;
     rxCBs.verbose = verbose;
 	rxCBs.rx_ms_ptr = &rx_ms;
+
+	//Becomes a one if a primary transmission has been detected
 	rxCBs.primaryon = 1;
+
+	//Becomes a one if a secondary transmission has been received
 	rxCBs.secondarysending = 0;
 
     // Allow server time to finish initialization
@@ -2591,7 +2617,7 @@ int main(int argc, char ** argv){
 }
 
 //Simple Broadcasting
-
+//Simulate broadcasting with one transmitting radio
 if(broadcasting == 1){
 
 printf("broadcasting\n");
@@ -2604,7 +2630,7 @@ if(usingUSRPs && !isController){
 	printf("Hi\n");
 
 }
-
+//mainfb collects feedback from each receiver being broadcasted to and averages them together
 	struct feedbackStruct mainfb;
 	int fbnum = 0;
 
@@ -2619,7 +2645,7 @@ if(usingUSRPs && !isController){
     mainfb.cfo = 0;
 
 
-
+	//configuration variables set up to read broadcast file to form broadcast structure
 	config_t cfg; // Returns all parameters in this structure
     config_setting_t *setting;
 	config_setting_t *iterator;
@@ -2675,11 +2701,8 @@ if(usingUSRPs && !isController){
     config_destroy(&cfg);
 
 	int i;
-
-//return 0;
-	//std::clock_t begin = std::clock();
-	//std::clock_t now;
-
+				//If USRPs are used one transceiver is initialized to transmit while all
+				//othesr just receive and give feedback
                 if (usingUSRPs) 
                 {
                     //usrp = initializeUSRPs();    
@@ -2876,6 +2899,7 @@ if(usingUSRPs && !isController){
 		        // Rx Receives packet
 		        symbolLen = ce.numSubcarriers + ce.CPLen;
 				ofdmflexframesync_execute(fs, frameSamples, symbolLen);
+			//mainfb collects feedback data before averaging it
 			mainfb.header_valid += fb.header_valid;
 			mainfb.payload_valid += fb.payload_valid;
 			mainfb.payload_len += fb.payload_len;
@@ -2886,7 +2910,7 @@ if(usingUSRPs && !isController){
 			mainfb.rssi += fb.rssi;
 			mainfb.cfo += fb.cfo;
 			
-			//feedbackStruct_print(&mainfb);
+			//Accumulator to divide some feedback values by to average them
 			++fbnum;
 
 
@@ -2954,7 +2978,8 @@ if(usingUSRPs && !isController){
 
 	return 0;
 }
-
+//If networking and not using USRPs the master network file is read to make an ad hoc
+//network for simulation
 if(networking==1 && !usingUSRPs){
 
 	verbose = 1;
@@ -2991,6 +3016,8 @@ if(networking==1 && !usingUSRPs){
         {
 		numberOfRadios = tmpI;
         }
+
+		//The radio doing the initial transmitting
         if (config_setting_lookup_int(setting, "source", &tmpI))
         {
 		network.source = tmpI;
@@ -2998,6 +3025,8 @@ if(networking==1 && !usingUSRPs){
     }
 	
 	network.transmitnumber = 1;
+	//For each radio it reads its entry in the master file and makes a node struct with
+	//the proper ce and neighbors to transmit to
     for(int i=0; i<numberOfRadios;++i){
 		sprintf(radioname, "radio%d", i+1);
         printf("%s\n\n", radioname);
@@ -3027,18 +3056,29 @@ if(networking==1 && !usingUSRPs){
 				
 		};
 	};
+
+	//The transmitter list contains all nodes that will transmit next. At first it will only
+	//contain the source node. Then it will contain all nodes that received the source's
+	//broadcast that will be transmitting to other nodes, etc
 	network.transmitterList[0] = &network.nodeList[network.source-1];
     config_destroy(&cfg);
+
+	//Pointer to the currently transmitting node
 	struct Node * nodePtr;
     while(network.transmitnumber>0){
+		//The number of nodes that will be transmitting in the next round
 		network.nextnumber = 0;
 		for (int m=0; m<network.transmitnumber; m++){
 
 		nodePtr = network.transmitterList[m];
+		//Each transmitting node broadcasts to each of its neighbors
+		//If the receiving node has neighbors it is added to the next list to show that it
+		//will transmit in the next round
 		for(int j=0; j<nodePtr->numberOfNeighbors; ++j){
 	    	nodePtr->ce.frameNumber = 1;
 
 			printf("\nNode %d broadcasting to Node %d\n\n", nodePtr->number + 1, nodePtr->neighborList[j]->number + 1);
+			//If the receiving node has neighbors it is put in the next list
 			if(nodePtr->neighborList[j]->numberOfNeighbors>0){
 				network.nextList[network.nextnumber] = nodePtr->neighborList[j];
 				network.nextnumber++;
@@ -3046,6 +3086,7 @@ if(networking==1 && !usingUSRPs){
 		    }
 			
 	    }
+		//All nodes in the next list are moved to the transmit list before the loop restarts
 		for(int g=0; g<network.nextnumber; ++g){
 			network.transmitterList[g] = &network.nodeList[network.nextList[g]->number];
 
@@ -3058,8 +3099,10 @@ if(networking==1 && !usingUSRPs){
 return 0;
 }
 
+//If DSA is used but USRPs are not used then a simple DSA simulation is done
 if(dsa==1 && !usingUSRPs){
 
+	//Initialize variables for DSA and configuratin file reading
 	struct PU pu;
 	struct SU su;
 	int wasted = 0;
@@ -3067,6 +3110,9 @@ if(dsa==1 && !usingUSRPs){
 	su.transmitted = 0;
 	pu.corrupted = 0;
 	su.corrupted = 0;
+
+	//Initially the primary user is on and transmitting while the secondary user is off
+	//and scanning
 	pu.on = 1;
 	su.on = 0;
 	pu.state = 't';
@@ -3142,8 +3188,12 @@ if(dsa==1 && !usingUSRPs){
 	su.scanningtime = su.scantime;
 	su.time = su.scantime;
 	su.state = 's';
+	//For loop iterates for the number of time units determined by the master dsa file
 	for(int i = 0; i<totaltime; ++i){
 
+		//If pu.time==0 then it is time for it to change its state
+		//If it is on then it will turn off for its rest time
+		//If it is off then it will transmit a burst for burst time
 		if(pu.time == 0){
 			if(pu.on == 1){
 				pu.on = 0;
@@ -3154,6 +3204,10 @@ if(dsa==1 && !usingUSRPs){
 				pu.time = pu.bursttime;
 			}
 		}
+		//If the secondary user's time is at 0 then it must change its state
+		//If it is scanning then it will start waiting
+		//If it is done waiting then it will transmit
+		//If it is done transmitting then it will scan
 		while(su.time <= 0){
 			if(su.state == 's' && su.time <= 0){
 				su.state = 'w';
@@ -3171,6 +3225,7 @@ if(dsa==1 && !usingUSRPs){
 			}
 		}
 
+		//Prints out a message based on who is transmitting
 		if(su.on==1 && pu.on==1){
 			printf("Collison!!!\n");
 			++pu.corrupted;
@@ -3183,6 +3238,9 @@ if(dsa==1 && !usingUSRPs){
 		if(su.on==0 && pu.on==1){
 			printf("The primary user transmitted\n");
 			++pu.transmitted;
+
+			//If the primary user transmits while the secondary user scans then the 
+			//secondary user's scan time will reset
 			if(su.state == 's'){
 				su.time = su.scantime;
 			}
@@ -3191,15 +3249,22 @@ if(dsa==1 && !usingUSRPs){
 			printf("No one transmitted\n");
 			++wasted;
 		}
+
+		//Decrement the time before the loop reiterates
 		--pu.time;
 		--su.time;
 	}
+
+	//After the loop has finished the number of successful and corrupted transmissions
+	//are displayed
 	printf("The primary user sent %d transmissions successfully\n", pu.transmitted);
 	printf("The secondary user sent %d transmissions successfully\n", su.transmitted);
 	printf("%d transmissions were corrupted\n", pu.corrupted);
 	return 0;
 }
 
+//If DSA is used with USRPs and not a receiver either a primary transmitter is made or a
+//secondary transmitter with sensing capabilities
 if(dsa==1 && usingUSRPs && !receiver){
 
 
@@ -3286,11 +3351,14 @@ if(dsa==1 && usingUSRPs && !receiver){
 		}
 	}
 	
-
+	//If it is a primary transmitter then the USRP ofdmtxrx object tranmists for its burst
+	//time then rrest for its rest time
 	if(primary == 1){
 		verbose = 0;
 		printf("primary\n");
 		int h;
+
+		//The primary user transmits a frame of all 1's for easy identification
 		for(h = 0; h<8; h++){
 			header[h] = 1;
 		};
@@ -3362,9 +3430,13 @@ if(dsa==1 && usingUSRPs && !receiver){
 		}
 	}
 
+	//If it is a secondary user then the node acts as a secondary transmitter
+	//Either sensing for the primary user or transmitting with small pauses for sening
 	if(secondary == 1){
 		verbose = 0;
 		printf("secondary\n");
+
+		//The secondary user has a payload of all zeroes
 		for(int h = 0; h<8; h++){
 			header[h] = 0;
 		};
@@ -3377,6 +3449,8 @@ if(dsa==1 && usingUSRPs && !receiver){
 		if (verbose) 
 		printf("Using ofdmtxrx\n");
 		printf("%d %d %d\n", suce.numSubcarriers, suce.CPLen, suce.taperLen);
+
+		//Sets up transceiver object
 		ofdmtxrx txcvr(suce.numSubcarriers, suce.CPLen, suce.taperLen, p, dsaCallback, (void*) &rxCBs);
 		txcvr.set_tx_freq(suce.frequency);
 		txcvr.set_tx_rate(suce.bandwidth);
@@ -3397,6 +3471,8 @@ if(dsa==1 && usingUSRPs && !receiver){
 			time = 0;
 			start = std::clock();
 			printf("transmitting\n");
+
+			//If it does not sense the primary user then the secondary user will transmit
 			while(rxCBs.primaryon==0)
 				{
 				//printf("%d\n", rxCBs.primaryon);
@@ -3427,6 +3503,9 @@ if(dsa==1 && usingUSRPs && !receiver){
 		   		txcvr.end_transmit_frame();
 				time = 0;
 				txcvr.start_rx();
+
+				//The secondary user will wait in this while loop and wait and see if any
+				//primary users appear
 				while(1 > time)
 					{
 					printf("transmitting\n");
@@ -3440,6 +3519,9 @@ if(dsa==1 && usingUSRPs && !receiver){
 			start = std::clock();
 			std::clock_t current;
 			printf("scanning\n");
+
+			//Once the primary user is detected the secondary user stops transmitting
+			//and switches to sensing in a new while loop
 			while(rxCBs.primaryon==1)
 				{
 				//printf("%d\n", rxCBs.primaryon);
@@ -3447,6 +3529,11 @@ if(dsa==1 && usingUSRPs && !receiver){
 				rxCBs.primaryon = 0;
 				start = std::clock();
 				std::clock_t current;
+
+				//The while loop sets primaryon to 0 in the beginning. If the loop
+				//finishes without a new primary transmission switching it to 1 then
+				//the secondary user will assume it has stopped and resume transmitting
+				//This while loop below will run for secondaryscantime seconds
 				while(secondaryscantime > time)
 					{
 					printf("scanning\n");
@@ -3461,6 +3548,9 @@ if(dsa==1 && usingUSRPs && !receiver){
 	return 0;
 	
 }
+
+//If a receiver is being used but not DSA then a basic receiver is made. It does nothing
+//but wait to receive transmissions and execute the dsaCallback function
 if(receiver == 1 && dsa != 1){
 	ce = CreateCognitiveEngine();
 	readCEConfigFile(&ce, "ce1.txt", verbose);
@@ -3469,6 +3559,8 @@ if(receiver == 1 && dsa != 1){
 	unsigned char * p = NULL;   // default subcarrier allocation
 	if (verbose) 
 	printf("Using ofdmtxrx\n");
+
+	//Basic transceiver setup
 	printf("%d %d %d\n", ce.numSubcarriers, ce.CPLen, ce.taperLen);
 	ofdmtxrx txcvr(ce.numSubcarriers, ce.CPLen, ce.taperLen, p, dsaCallback, (void*) &rxCBs);
 	txcvr.set_tx_freq(ce.frequency);
@@ -3479,14 +3571,25 @@ if(receiver == 1 && dsa != 1){
     txcvr.set_rx_rate(bandwidth);
     txcvr.set_rx_gain_uhd(uhd_rxgain);
 	txcvr.start_rx();
+
+	//The receiver sits in this infinite while loop and does nothing but wait to receive
+	//liquid frames that it will interpret with dsaCallback
 	while(true){
 		u=1;
 	}
 	return 0;
 
 }
+
+//If DSA is used and a receiver is used then a DSA receiver is made
+//This is a receiver that the secondary transmitter will broadcast to
+//Typically this DSA receiver will only sit and receive, unless it senses the
+//primary user. Then it will send a warning message to the secondary transmitter to tell
+//it to switch to scanning mode
 if(dsa== 1 && receiver == 1){
 	printf("DSA receiver\n");
+
+	//The DSA receiver has a header and payload of all 2's for easy identification
 	for(int h = 0; h<8; h++){
 		header[h] = 2;
 	};
@@ -3509,12 +3612,22 @@ if(dsa== 1 && receiver == 1){
     txcvr.set_rx_rate(bandwidth);
     txcvr.set_rx_gain_uhd(uhd_rxgain);
 	txcvr.start_rx();
+
+	//variable that determines whether it has received a secondary transmission or not
 	rxCBs.secondarysending = 0;
 	while(true){
+
+		//First the receiver will be in a while loop where it does nothing but waits to
+		//receive secondary transmissions
+		//It will leave the while loop if it sense the primary user
 		printf("Receiving from secondary user\n");
 		while(rxCBs.primaryon == 0);{
 			u=1;
 			}
+		//Once it senses the primary user the DSA receiver will transmit a warning message
+		//to the secondary transmitter. The warning message contains all 2's
+		//Once the secondary transmitter receives the message it will know the primary
+		//user is transmitting and it will switch to sensing mode
 		printf("Sending warning to secondary user\n");
 		if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
 		modulation_scheme ms = convertModScheme(ce.modScheme, &ce.bitsPerSym);
@@ -3542,12 +3655,21 @@ if(dsa== 1 && receiver == 1){
 		std::clock_t time = 0;
 		std::clock_t start;
 		std::clock_t current;
+
+		//After transmitting the warning message the DSA receiver enters a while loop
+		//where it waits to receive a message from the primary user
+		//If no message is received in a set amount of time it exits this while loop and
+		//enters the first one where it waits to receive secondary transmissions
+		//If it receives another secondary transmission rxCBs.secondarysending will be
+		//1 and it will exit the while loop, skip the first while loop, and send
+		//another warning messsage
 		printf("Scanning for Primary User\n");
 		while(rxCBs.primaryon == 1 && rxCBs.secondarysending ==0){
+			time = 0;
 			rxCBs.primaryon == 0;
 			start = std::clock();
 			while(1>time){
-				printf("%ju\n", (uintmax_t)time);
+				//printf("%ju\n", (uintmax_t)time);
 				current = std::clock();
 				time = (current-start)/CLOCKS_PER_SEC;
 			}
