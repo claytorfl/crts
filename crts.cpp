@@ -3331,13 +3331,13 @@ if(dsa==1 && usingUSRPs && !receiver){
 			time = 0;
 			start = std::clock();
 			printf("transmitting\n");
-			while(primarybursttime > (float)time){
+			while(primarybursttime > time){
 				//printf("%f\n", (float)time);
 				txcvr.assemble_frame(header, payload, puce.payloadLen, ms, fec0, fec1);
 				current = std::clock();
 				time = (current-start)/CLOCKS_PER_SEC;
 				int isLastSymbol = 0;
-				while(!isLastSymbol && primarybursttime > (float)time)
+				while(!isLastSymbol && primarybursttime > time)
 					{
 					isLastSymbol = txcvr.write_symbol();
 					current = std::clock();
@@ -3354,7 +3354,7 @@ if(dsa==1 && usingUSRPs && !receiver){
 			time = 0;
 			start = std::clock();
 			printf("resting\n");
-			while(primaryresttime>(float)time){
+			while(primaryresttime>time){
 				//printf("%f\n", (float)time);
 				current = std::clock();
 				time = (current-start)/CLOCKS_PER_SEC;
@@ -3427,10 +3427,10 @@ if(dsa==1 && usingUSRPs && !receiver){
 		   		txcvr.end_transmit_frame();
 				time = 0;
 				txcvr.start_rx();
-				while(1 > (float)time)
+				while(1 > time)
 					{
 					printf("transmitting\n");
-					printf("%f\n", (float)time);
+					printf("%ju\n", (uintmax_t)time);
 					printf("%d\n", rxCBs.primaryon);
 					current = std::clock();
 					time = (current-start)/CLOCKS_PER_SEC;
@@ -3447,10 +3447,10 @@ if(dsa==1 && usingUSRPs && !receiver){
 				rxCBs.primaryon = 0;
 				start = std::clock();
 				std::clock_t current;
-				while(secondaryscantime > (float)time)
+				while(secondaryscantime > time)
 					{
 					printf("scanning\n");
-					printf("%f\n", (float)time);
+					printf("%ju\n", (uintmax_t)time);
 					printf("%d\n", rxCBs.primaryon);
 					current = std::clock();
 					time = (current-start)/CLOCKS_PER_SEC;
@@ -3546,8 +3546,8 @@ if(dsa== 1 && receiver == 1){
 		while(rxCBs.primaryon == 1 && rxCBs.secondarysending ==0){
 			rxCBs.primaryon == 0;
 			start = std::clock();
-			while(1>(float)time){
-				printf("%f\n", (float)time);
+			while(1>time){
+				printf("%ju\n", (uintmax_t)time);
 				current = std::clock();
 				time = (current-start)/CLOCKS_PER_SEC;
 			}
