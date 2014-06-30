@@ -58,6 +58,11 @@ void usage() {
     //printf("  z     :   number of subcarriers to notch in the center band, default: 0\n");
 }
 
+
+
+
+
+
 struct CognitiveEngine {
     char modScheme[30];
     char crcScheme[30];
@@ -155,17 +160,32 @@ struct feedbackStruct {
 	int 			block_flag;
 };
 
+
+
+//Structure for using TCP to pass both feedback structs and info on when primaries and secondaries
+//turn on and off
+struct message{
+	std::clock_t timestamp;
+	char type;
+	struct feedbackStruct feed;
+};
+
+
+
+
 struct serverThreadStruct {
     unsigned int serverPort;
     struct feedbackStruct * fb_ptr;
 	char type;
 	float * floatnumber;
+	struct message * m_ptr;
 };
 
 struct serveClientStruct {
 	int client;
 	struct feedbackStruct * fb_ptr;
 	float *floatnumber;
+	struct message * m_ptr;
 };
 
 struct scenarioSummaryInfo{
@@ -189,6 +209,8 @@ struct cognitiveEngineSummaryInfo{
 	float RSSI[60];
 	float PER[60];
 };
+
+
 
 // Default parameters for a Cognitive Engine
 struct CognitiveEngine CreateCognitiveEngine() {
@@ -1308,13 +1330,13 @@ void * serveTCPclient(void * _sc_ptr){
 
 void * serveTCPDSAclient(void * _sc_ptr){
 	struct serveClientStruct * sc_ptr = (struct serveClientStruct*) _sc_ptr;
-	float read_buffer;
-	struct feedbackStruct *fb_ptr = sc_ptr->fb_ptr;
+	struct message read_buffer;
+	struct message *m_ptr = sc_ptr->m_ptr;
 	while(1){
         bzero(&read_buffer, sizeof(read_buffer));
         read(sc_ptr->client, &read_buffer, sizeof(read_buffer));
-		if(read_buffer){
-		sc_ptr->floatnumber = &read_buffer;}
+		if(true){
+		*m_ptr = read_buffer;}
 		//if (read_buffer && !fb_ptr->block_flag) {*fb_ptr->evm = read_buffer; fb_ptr->block_flag = 1;}
     }
     return NULL;
@@ -1396,8 +1418,13 @@ void * startTCPServer(void * _ss_ptr)
 			sc.client = socket_to_client;
 			sc.fb_ptr = ss_ptr->fb_ptr;
 			sc.floatnumber = ss_ptr->floatnumber;
-			
+			sc.m_ptr = ss_ptr->m_ptr;
+			if(ss_ptr->type == 'd'){
+			pthread_create( &TCPServeClientThread[client], NULL, serveTCPDSAclient, (void*) &sc);
+			}
+			else{
 			pthread_create( &TCPServeClientThread[client], NULL, serveTCPclient, (void*) &sc);
+			}
 
 		}
         //printf("Server has accepted connection from client\n");
@@ -2185,6 +2212,9 @@ int main(int argc, char ** argv){
     // Scenario struct used in each test
     struct Scenario sc = CreateScenario();
 
+	//Message struct to pass info with TCP
+	struct message msg;
+
     //printf("structs declared\n");
     // framegenerator object used in each test
     ofdmflexframegen fg;
@@ -2236,7 +2266,9 @@ int main(int argc, char ** argv){
     ss.serverPort = serverPort;
     ss.fb_ptr = &fb;
 	ss.floatnumber = &floatnumber;
+	ss.m_ptr = &msg;
 	if(dsa==1){
+		printf("dsa\n");
 		ss.type = 'd';
 	}
 	else{
@@ -3702,8 +3734,7 @@ if(dsa== 1 && receiver == 1){
 
 if(dsa && isController){
 	while(1){
-		printf("%f\n", fb.evm);
-		fb.block_flag = 0;
+		printf("%c\n", msg.type);
 	};
 
 
@@ -3712,28 +3743,22 @@ if(dsa && isController){
 if(tester==1){
 	printf("%d\n", rxCBs.client);
 	while(true){
-		struct feedbackStruct fbo = {};
-		fbo.block_flag = 0;
-		fbo.evm = 3.0;
-		float b;
+		struct message mess = {};
+		mess.type = 'p';		
 		float time = 0;
 		std::clock_t current;
 		std::clock_t start = std::clock();
-		b=1.0;
 		printf("transmitting\n");
-		write(rxCBs.client, (const void*)&fbo, sizeof(fbo));
+		write(rxCBs.client, (const void*)&mess, sizeof(mess));
 		while(5 > (float)time){
 			current = std::clock();
 			time = (current-start)/CLOCKS_PER_SEC;
 		}
-		
 		time = 0;
 		start = std::clock();
 		printf("resting\n");
-		b=2.0;
-		fbo.block_flag = 0;
-		fbo.evm = 4.0;
-		write(rxCBs.client, (const void*)&fbo, sizeof(fbo));
+		mess.type = 'd';
+		write(rxCBs.client, (const void*)&mess, sizeof(mess));
 		while(5>(float)time){
 			current = std::clock();
 			time = (current-start)/CLOCKS_PER_SEC;
