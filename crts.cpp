@@ -1314,7 +1314,7 @@ void * serveTCPDSAclient(void * _sc_ptr){
         bzero(&read_buffer, sizeof(read_buffer));
         read(sc_ptr->client, &read_buffer, sizeof(read_buffer));
 		if(read_buffer){
-		fb_ptr->evm = read_buffer;}
+		sc_ptr->floatnumber = &read_buffer;}
 		//if (read_buffer && !fb_ptr->block_flag) {*fb_ptr->evm = read_buffer; fb_ptr->block_flag = 1;}
     }
     return NULL;
@@ -2083,6 +2083,7 @@ int main(int argc, char ** argv){
 
     // TEMPORARY VARIABLE
     int usingUSRPs = 0;
+	int tester = 0;
 
     int verbose = 1;
     int verbose_explicit = 0;
@@ -2111,7 +2112,7 @@ int main(int argc, char ** argv){
 
     // Check Program options
     int d;
-    while ((d = getopt(argc,argv,"RDStBPNuhqvdrsp:ca:f:b:G:M:C:T:")) != EOF) {
+    while ((d = getopt(argc,argv,"QRDStBPNuhqvdrsp:ca:f:b:G:M:C:T:")) != EOF) {
         switch (d) {
         case 'u':
         case 'h':   usage();                           return 0;
@@ -2133,6 +2134,7 @@ int main(int argc, char ** argv){
 		case 'N':   networking = 1; break;
 		case 'D':   dsa = 1; break;
 		case 'B':	broadcasting = 1; break;
+		case 'Q':   tester = 1; break;
 		//Designate the node as a primary user
 		case 'P':	primary = 1; break;
 
@@ -3706,6 +3708,33 @@ if(dsa && isController){
 	};
 
 
+}
+
+if(tester){
+	printf("%d\n", rxCBs.client);
+	while(true){
+		float b;
+		float time = 0;
+		std::clock_t current;
+		std::clock_t start = std::clock();
+		b=1.0;
+		printf("transmitting\n");
+		write(rxCBs.client, (const void*)&b, sizeof(float));
+		while(5 > (float)time){
+			current = std::clock();
+			time = (current-start)/CLOCKS_PER_SEC;
+		}
+		
+		time = 0;
+		start = std::clock();
+		printf("resting\n");
+		b=2.0;
+		write(rxCBs.client, (const void*)&b, sizeof(float));
+		while(5>(float)time){
+			current = std::clock();
+			time = (current-start)/CLOCKS_PER_SEC;
+		}
+	}
 }
 
 return 0;
