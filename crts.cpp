@@ -159,6 +159,7 @@ struct serverThreadStruct {
     unsigned int serverPort;
     struct feedbackStruct * fb_ptr;
 	char type;
+	float * floatnumber;
 };
 
 struct serveClientStruct {
@@ -2172,7 +2173,7 @@ int main(int argc, char ** argv){
     char cogengine_list [30][60];
     
     //printf("variables declared.\n");
-
+	float floatnumber = 0.0;
     int NumCE=readCEMasterFile(cogengine_list, verbose);  
     int NumSc=readScMasterFile(scenario_list, verbose);  
     //printf ("\nCalled readScMasterFile function\n");
@@ -3365,7 +3366,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 	//time then rrest for its rest time
 	if(primary == 1){
 		verbose = 0;
-		int a;
+		float a;
 		printf("primary\n");
 		int h;
 
@@ -3409,9 +3410,9 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			int on = 1;
 			time = 0;
 			start = std::clock();
-			a=1;
+			a=1.0;
 			printf("transmitting\n");
-			write(rxCBs.client, (const void*)a, sizeof(int));
+			write(rxCBs.client, (const void*)&a, sizeof(float));
 			while(primarybursttime > time){
 				//printf("%f\n", (float)time);
 				txcvr.assemble_frame(header, payload, puce.payloadLen, ms, fec0, fec1);
@@ -3435,8 +3436,8 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			time = 0;
 			start = std::clock();
 			printf("resting\n");
-			a=2;
-			write(rxCBs.client, (const void*)a, sizeof(int));
+			a=2.0;
+			write(rxCBs.client, (const void*)&a, sizeof(float));
 			while(primaryresttime>time){
 				//printf("%f\n", (float)time);
 				current = std::clock();
@@ -3697,7 +3698,7 @@ if(dsa== 1 && receiver == 1){
 
 if(dsa && isController){
 	while(1){
-		printf("%f\n", fb.evm);
+		printf("%f\n", floatnumber);
 	};
 
 
