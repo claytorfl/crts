@@ -169,6 +169,7 @@ struct message{
 	char type;
 	struct feedbackStruct feed;
 	int number;
+	int msgreceived;
 };
 
 
@@ -1328,16 +1329,24 @@ void * serveTCPclient(void * _sc_ptr){
 }
 
 
-
+//Reads the messages from a TCP link to a DSA congnitive radio
 void * serveTCPDSAclient(void * _sc_ptr){
+	int latestprimary = 0;
+	int latestsecondary = 0;
 	struct serveClientStruct * sc_ptr = (struct serveClientStruct*) _sc_ptr;
 	struct message read_buffer;
 	struct message *m_ptr = sc_ptr->m_ptr;
 	while(1){
         bzero(&read_buffer, sizeof(read_buffer));
         read(sc_ptr->client, &read_buffer, sizeof(read_buffer));
-		if(true){
-		*m_ptr = read_buffer;}
+			if(m_ptr->msgreceived = 0){
+			if(read_buffer.type == 'p'){
+				if(read_buffer.number > latestprimary){
+					*m_ptr = read_buffer;
+					m_ptr->msgreceived = 1;
+				}
+			}
+		}
 		//if (read_buffer && !fb_ptr->block_flag) {*fb_ptr->evm = read_buffer; fb_ptr->block_flag = 1;}
     }
     return NULL;
@@ -2215,6 +2224,7 @@ int main(int argc, char ** argv){
 
 	//Message struct to pass info with TCP
 	struct message msg;
+	msg.msgreceived = 0;
 
     //printf("structs declared\n");
     // framegenerator object used in each test
@@ -3745,17 +3755,17 @@ if(dsa && isController){
 	int latestsecondary = 0;
 	std::clock_t time = std::clock();
 	while(1){
-		if(msg.type == 'p'){
-			if(msg.number > latestprimary){
-				latestprimary = msg.number;
-				time = std::clock();
-				printf("Primary message received at time %ju", (uintmax_t)time);
+		if(msg.msgreceived = 1){
+			if(msg.type == 'p'){
+				if(msg.number > latestprimary){
+					latestprimary = msg.number;
+					time = std::clock();
+					printf("Primary message received at time %ju\n", (uintmax_t)time);
+				}
 			}
+		msg.msgreceived = 0;
 		}
-
 	};
-
-
 }
 
 if(tester==1){
