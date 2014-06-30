@@ -3703,6 +3703,7 @@ if(dsa== 1 && receiver == 1){
 if(dsa && isController){
 	while(1){
 		printf("%f\n", fb.evm);
+		fb.block_flag = 0;
 	};
 
 
