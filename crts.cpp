@@ -165,6 +165,7 @@ struct serverThreadStruct {
 struct serveClientStruct {
 	int client;
 	struct feedbackStruct * fb_ptr;
+	float *floatnumber;
 };
 
 struct scenarioSummaryInfo{
@@ -1394,6 +1395,7 @@ void * startTCPServer(void * _ss_ptr)
 			struct serveClientStruct sc = CreateServeClientStruct();
 			sc.client = socket_to_client;
 			sc.fb_ptr = ss_ptr->fb_ptr;
+			sc.floatnumber = ss_ptr->floatnumber;
 			if(ss_ptr->type == 'n'){
 			pthread_create( &TCPServeClientThread[client], NULL, serveTCPclient, (void*) &sc);}
 			else{
@@ -2229,9 +2231,11 @@ int main(int argc, char ** argv){
 
     // Begin TCP Server Thread
     //serverThreadReturn = pthread_create( &TCPServerThread, NULL, startTCPServer, (void*) feedback);
+	floatnumber = 0.0;
     struct serverThreadStruct ss = CreateServerStruct();
     ss.serverPort = serverPort;
     ss.fb_ptr = &fb;
+	ss.floatnumber = &floatnumber;
 	if(dsa==1){
 		ss.type = 'd';
 	}
