@@ -168,6 +168,7 @@ struct message{
 	std::clock_t timestamp;
 	char type;
 	struct feedbackStruct feed;
+	int number;
 };
 
 
@@ -3312,7 +3313,9 @@ if(dsa==1 && !usingUSRPs){
 if(dsa==1 && usingUSRPs && !receiver && !isController){
 
 
-
+	struct message mess;
+	int primarymsgnumber = 1;
+	int secondarymsgnumber = 1;
 	double primarybursttime;
 	double primaryresttime;
 	double secondarybursttime;
@@ -3401,6 +3404,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 	//If it is a primary transmitter then the USRP ofdmtxrx object tranmists for its burst
 	//time then rrest for its rest time
 	if(primary == 1){
+		mess.type = 'p';
 		verbose = 0;
 		float a;
 		printf("primary\n");
@@ -3448,7 +3452,9 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			start = std::clock();
 			a=1.0;
 			printf("transmitting\n");
-			write(rxCBs.client, (const void*)&a, sizeof(float));
+			mess.number = primarymsgnumber;
+			write(rxCBs.client, (const void*)&mess, sizeof(mess));
+			primarymsgnumber++;
 			while(primarybursttime > time){
 				//printf("%f\n", (float)time);
 				txcvr.assemble_frame(header, payload, puce.payloadLen, ms, fec0, fec1);
@@ -3473,7 +3479,9 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			start = std::clock();
 			printf("resting\n");
 			a=2.0;
-			write(rxCBs.client, (const void*)&a, sizeof(float));
+			mess.number = primarymsgnumber;
+			write(rxCBs.client, (const void*)&mess, sizeof(mess));
+			primarymsgnumber++;
 			while(primaryresttime>time){
 				//printf("%f\n", (float)time);
 				current = std::clock();
@@ -3733,8 +3741,18 @@ if(dsa== 1 && receiver == 1){
 }
 
 if(dsa && isController){
+	int latestprimary = 0;
+	int latestsecondary = 0;
+	std::clock_t time = std::clock();
 	while(1){
-		printf("%c\n", msg.type);
+		if(msg.type == 'p'){
+			if(msg.number > latestprimary){
+				latestprimary = msg.number;
+				time = std::clock();
+				printf("Primary message received at time %ju", (uintmax_t)time);
+			}
+		}
+
 	};
 
 
