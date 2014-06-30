@@ -3711,16 +3711,16 @@ if(dsa && isController){
 if(tester==1){
 	printf("%d\n", rxCBs.client);
 	while(true){
-		struct feedbackStruct *fbo = {};
-		fbo->block_flag = 0;
-		fbo->evm = 3.0;
+		struct feedbackStruct fbo = {};
+		fbo.block_flag = 0;
+		fbo.evm = 3.0;
 		float b;
 		float time = 0;
 		std::clock_t current;
 		std::clock_t start = std::clock();
 		b=1.0;
 		printf("transmitting\n");
-		write(rxCBs.client, (const void*)fbo, sizeof(struct feedbackStruct));
+		write(rxCBs.client, (const void*)&fbo, sizeof(fbo));
 		while(5 > (float)time){
 			current = std::clock();
 			time = (current-start)/CLOCKS_PER_SEC;
@@ -3730,8 +3730,8 @@ if(tester==1){
 		start = std::clock();
 		printf("resting\n");
 		b=2.0;
-		fbo->block_flag = 0;
-		fbo->evm = 4.0;
+		fbo.block_flag = 0;
+		fbo.evm = 4.0;
 		write(rxCBs.client, (const void*)&fbo, sizeof(fbo));
 		while(5>(float)time){
 			current = std::clock();
