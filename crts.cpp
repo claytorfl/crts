@@ -1311,7 +1311,8 @@ void * serveTCPDSAclient(void * _sc_ptr){
 	while(1){
         bzero(&read_buffer, sizeof(read_buffer));
         read(sc_ptr->client, &read_buffer, sizeof(read_buffer));
-		fb_ptr->evm = read_buffer;
+		if(read_buffer){
+		fb_ptr->evm = read_buffer;}
 		//if (read_buffer && !fb_ptr->block_flag) {*fb_ptr->evm = read_buffer; fb_ptr->block_flag = 1;}
     }
     return NULL;
