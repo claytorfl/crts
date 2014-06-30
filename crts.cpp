@@ -1337,13 +1337,14 @@ void * serveTCPDSAclient(void * _sc_ptr){
 	struct message read_buffer;
 	struct message *m_ptr = sc_ptr->m_ptr;
 	while(1){
-        bzero(&read_buffer, sizeof(read_buffer));
-        read(sc_ptr->client, &read_buffer, sizeof(read_buffer));
-			if(m_ptr->msgreceived = 0){
+		if(m_ptr->msgreceived == 0){
+		    bzero(&read_buffer, sizeof(read_buffer));
+		    read(sc_ptr->client, &read_buffer, sizeof(read_buffer));
 			if(read_buffer.type == 'p'){
 				if(read_buffer.number > latestprimary){
 					*m_ptr = read_buffer;
 					m_ptr->msgreceived = 1;
+					latestprimary = read_buffer.number;
 				}
 			}
 		}
@@ -3757,11 +3758,11 @@ if(dsa && isController){
 	while(1){
 		if(msg.msgreceived = 1){
 			if(msg.type == 'p'){
-				if(msg.number > latestprimary){
-					latestprimary = msg.number;
-					time = std::clock();
-					printf("Primary message received at time %ju\n", (uintmax_t)time);
-				}
+				
+				latestprimary = msg.number;
+				time = std::clock();
+				printf("Primary message received at time %d\n", (int)time);
+				
 			}
 		msg.msgreceived = 0;
 		}
