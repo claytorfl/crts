@@ -2321,7 +2321,7 @@ int main(int argc, char ** argv){
 
     // For each Cognitive Engine
 
-	if(dsa==0 && broadcasting==0 && networking == 0 && receiver == 0){
+	if(dsa==0 && broadcasting==0 && networking == 0 && receiver == 0 && tester == 0){
 
     for (i_CE=0; i_CE<NumCE; i_CE++)
     {
