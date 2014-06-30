@@ -3720,7 +3720,7 @@ if(tester==1){
 		std::clock_t start = std::clock();
 		b=1.0;
 		printf("transmitting\n");
-		write(rxCBs.client, (const void*)fbo, sizeof(fbo));
+		write(rxCBs.client, (const void*)fbo, sizeof(struct feedbackStruct));
 		while(5 > (float)time){
 			current = std::clock();
 			time = (current-start)/CLOCKS_PER_SEC;
