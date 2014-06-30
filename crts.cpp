@@ -1396,11 +1396,9 @@ void * startTCPServer(void * _ss_ptr)
 			sc.client = socket_to_client;
 			sc.fb_ptr = ss_ptr->fb_ptr;
 			sc.floatnumber = ss_ptr->floatnumber;
-			if(ss_ptr->type == 'n'){
-			pthread_create( &TCPServeClientThread[client], NULL, serveTCPclient, (void*) &sc);}
-			else{
-			pthread_create(&TCPServeClientThread[client], NULL, serveTCPDSAclient, (void*) &sc);}
-			client++;
+			
+			pthread_create( &TCPServeClientThread[client], NULL, serveTCPclient, (void*) &sc);
+
 		}
         //printf("Server has accepted connection from client\n");
 	}// End While loop
@@ -3704,22 +3702,25 @@ if(dsa== 1 && receiver == 1){
 
 if(dsa && isController){
 	while(1){
-		printf("%f\n", floatnumber);
+		printf("%f\n", fb.evm);
 	};
 
 
 }
 
-if(tester){
+if(tester==1){
 	printf("%d\n", rxCBs.client);
 	while(true){
+		struct feedbackStruct *fbo = {};
+		fbo->block_flag = 0;
+		fbo->evm = 3.0;
 		float b;
 		float time = 0;
 		std::clock_t current;
 		std::clock_t start = std::clock();
 		b=1.0;
 		printf("transmitting\n");
-		write(rxCBs.client, (const void*)&b, sizeof(float));
+		write(rxCBs.client, (const void*)fbo, sizeof(fbo));
 		while(5 > (float)time){
 			current = std::clock();
 			time = (current-start)/CLOCKS_PER_SEC;
@@ -3729,7 +3730,9 @@ if(tester){
 		start = std::clock();
 		printf("resting\n");
 		b=2.0;
-		write(rxCBs.client, (const void*)&b, sizeof(float));
+		fbo->block_flag = 0;
+		fbo->evm = 4.0;
+		write(rxCBs.client, (const void*)&fbo, sizeof(fbo));
 		while(5>(float)time){
 			current = std::clock();
 			time = (current-start)/CLOCKS_PER_SEC;
