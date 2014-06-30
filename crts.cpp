@@ -150,12 +150,15 @@ struct feedbackStruct {
     float           rssi;
     float           cfo;
 	int				primaryon;
+	int				primary;
+	int				secondary;
 	int 			block_flag;
 };
 
 struct serverThreadStruct {
     unsigned int serverPort;
     struct feedbackStruct * fb_ptr;
+	char type;
 };
 
 struct serveClientStruct {
@@ -1256,33 +1259,10 @@ int rxCallback(unsigned char *  _header,
 
 } // end rxCallback()
 
-
-int testCallback(unsigned char *  _header,
-               int              _header_valid,
-               unsigned char *  _payload,
-               unsigned int     _payload_len,
-               int              _payload_valid,
-               framesyncstats_s _stats,
-               void *           _userdata)
-{
-    struct rxCBstruct * rxCBS_ptr = (struct rxCBstruct *) _userdata;
-    int verbose = rxCBS_ptr->verbose;
-	
-	printf("CALLBACK!!!\n\n");
-    struct feedbackStruct fb = {};
-    rxCBS_ptr->primaryon++;
-
-    // Receiver sends data to server
-    write(rxCBS_ptr->client, (void*)&fb, sizeof(fb));
-
-    return 0;
-
-}
-
 ofdmflexframesync CreateFS(struct CognitiveEngine ce, struct Scenario sc, struct rxCBstruct* rxCBs_ptr)
 {
      ofdmflexframesync fs =
-             ofdmflexframesync_create(ce.numSubcarriers, ce.CPLen, ce.taperLen, NULL, testCallback, (void *) rxCBs_ptr);
+             ofdmflexframesync_create(ce.numSubcarriers, ce.CPLen, ce.taperLen, NULL, rxCallback, (void *) rxCBs_ptr);
 
      return fs;
 } // End CreateFS();
@@ -1321,6 +1301,23 @@ void * serveTCPclient(void * _sc_ptr){
     }
     return NULL;
 }
+
+
+
+void * serveTCPDSAclient(void * _sc_ptr){
+	struct serveClientStruct * sc_ptr = (struct serveClientStruct*) _sc_ptr;
+	float read_buffer;
+	struct feedbackStruct *fb_ptr = sc_ptr->fb_ptr;
+	while(1){
+        bzero(&read_buffer, sizeof(read_buffer));
+        read(sc_ptr->client, &read_buffer, sizeof(read_buffer));
+		fb_ptr->evm = read_buffer;
+		//if (read_buffer && !fb_ptr->block_flag) {*fb_ptr->evm = read_buffer; fb_ptr->block_flag = 1;}
+    }
+    return NULL;
+}
+
+
 
 // Create a TCP socket for the server and bind it to a port
 // Then sit and listen/accept all connections and write the data
@@ -1395,7 +1392,10 @@ void * startTCPServer(void * _ss_ptr)
 			struct serveClientStruct sc = CreateServeClientStruct();
 			sc.client = socket_to_client;
 			sc.fb_ptr = ss_ptr->fb_ptr;
-			pthread_create( &TCPServeClientThread[client], NULL, serveTCPclient, (void*) &sc);
+			if(ss_ptr->type == 'n'){
+			pthread_create( &TCPServeClientThread[client], NULL, serveTCPclient, (void*) &sc);}
+			else{
+			pthread_create(&TCPServeClientThread[client], NULL, serveTCPDSAclient, (void*) &sc);}
 			client++;
 		}
         //printf("Server has accepted connection from client\n");
@@ -2230,6 +2230,12 @@ int main(int argc, char ** argv){
     struct serverThreadStruct ss = CreateServerStruct();
     ss.serverPort = serverPort;
     ss.fb_ptr = &fb;
+	if(dsa==1){
+		ss.type = 'd';
+	}
+	else{
+		ss.type = 'n';
+	}
     if (isController) 
         pthread_create( &TCPServerThread, NULL, startTCPServer, (void*) &ss);
 
@@ -3265,7 +3271,7 @@ if(dsa==1 && !usingUSRPs){
 
 //If DSA is used with USRPs and not a receiver either a primary transmitter is made or a
 //secondary transmitter with sensing capabilities
-if(dsa==1 && usingUSRPs && !receiver){
+if(dsa==1 && usingUSRPs && !receiver && !isController){
 
 
 
@@ -3286,6 +3292,9 @@ if(dsa==1 && usingUSRPs && !receiver){
 	double tmpD;
 	double tmpd;
 	char * str2;
+	//struct serveClientStruct * sc_ptr = (struct serveClientStruct*) _sc_ptr;
+	int cl = rxCBs.client;
+
 
 	if (verbose)
 		printf("Reading %s\n", "master_dsa_file.txt");
@@ -3355,6 +3364,7 @@ if(dsa==1 && usingUSRPs && !receiver){
 	//time then rrest for its rest time
 	if(primary == 1){
 		verbose = 0;
+		int a;
 		printf("primary\n");
 		int h;
 
@@ -3398,7 +3408,9 @@ if(dsa==1 && usingUSRPs && !receiver){
 			int on = 1;
 			time = 0;
 			start = std::clock();
+			a=1;
 			printf("transmitting\n");
+			write(rxCBs.client, (const void*)a, sizeof(int));
 			while(primarybursttime > time){
 				//printf("%f\n", (float)time);
 				txcvr.assemble_frame(header, payload, puce.payloadLen, ms, fec0, fec1);
@@ -3422,6 +3434,8 @@ if(dsa==1 && usingUSRPs && !receiver){
 			time = 0;
 			start = std::clock();
 			printf("resting\n");
+			a=2;
+			write(rxCBs.client, (const void*)a, sizeof(int));
 			while(primaryresttime>time){
 				//printf("%f\n", (float)time);
 				current = std::clock();
@@ -3624,47 +3638,46 @@ if(dsa== 1 && receiver == 1){
 		while(rxCBs.primaryon == 0);{
 			u=1;
 			}
-		//Once it senses the primary user the DSA receiver will transmit a warning message
-		//to the secondary transmitter. The warning message contains all 2's
-		//Once the secondary transmitter receives the message it will know the primary
-		//user is transmitting and it will switch to sensing mode
-		printf("Sending warning to secondary user\n");
-		if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
-		modulation_scheme ms = convertModScheme(ce.modScheme, &ce.bitsPerSym);
 
-		// Set Cyclic Redundency Check Scheme
-		//crc_scheme check = convertCRCScheme(ce.crcScheme);
 
-		// Set inner forward error correction scheme
-		if (verbose) printf("Inner FEC: ");
-		fec_scheme fec0 = convertFECScheme(ce.innerFEC, verbose);
-
-		// Set outer forward error correction scheme
-		if (verbose) printf("Outer FEC: ");
-		fec_scheme fec1 = convertFECScheme(ce.outerFEC, verbose);
-		txcvr.assemble_frame(header, payload, ce.payloadLen, ms, fec0, fec1);
-		int isLastSymbol = 0;
-		while(!isLastSymbol){
-			isLastSymbol = txcvr.write_symbol();
-			//enactScenarioBaseband(txcvr.fgbuffer, ce, sc);
-			txcvr.transmit_symbol();
-			}
-   		txcvr.end_transmit_frame();
-		rxCBs.secondarysending = 0;
 		txcvr.start_rx();
 		std::clock_t time = 0;
 		std::clock_t start;
 		std::clock_t current;
 
-		//After transmitting the warning message the DSA receiver enters a while loop
-		//where it waits to receive a message from the primary user
-		//If no message is received in a set amount of time it exits this while loop and
-		//enters the first one where it waits to receive secondary transmissions
-		//If it receives another secondary transmission rxCBs.secondarysending will be
-		//1 and it will exit the while loop, skip the first while loop, and send
-		//another warning messsage
+		//After the primary user has been detected the receiver enters  new while loop where
+		//it transmits a warning message to the secondary transmitter, then waits to see if
+		//it receives any more primary transmissions. If it receives any more in its wait
+		//time interval then it will send another warning message and continue sensing
+		//If it receives no other primary transmissions it will exit the while loop and
+		//wait to receive secondary transmissions
 		printf("Scanning for Primary User\n");
-		while(rxCBs.primaryon == 1 && rxCBs.secondarysending ==0){
+		while(rxCBs.primaryon == 1){ //&& rxCBs.secondarysending ==0){
+
+			printf("Sending warning to secondary user\n");
+			if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
+			modulation_scheme ms = convertModScheme(ce.modScheme, &ce.bitsPerSym);
+
+			// Set Cyclic Redundency Check Scheme
+			//crc_scheme check = convertCRCScheme(ce.crcScheme);
+
+			// Set inner forward error correction scheme
+			if (verbose) printf("Inner FEC: ");
+			fec_scheme fec0 = convertFECScheme(ce.innerFEC, verbose);
+
+			// Set outer forward error correction scheme
+			if (verbose) printf("Outer FEC: ");
+			fec_scheme fec1 = convertFECScheme(ce.outerFEC, verbose);
+			txcvr.assemble_frame(header, payload, ce.payloadLen, ms, fec0, fec1);
+			int isLastSymbol = 0;
+			while(!isLastSymbol){
+				isLastSymbol = txcvr.write_symbol();
+				//enactScenarioBaseband(txcvr.fgbuffer, ce, sc);
+				txcvr.transmit_symbol();
+				}
+	   		txcvr.end_transmit_frame();
+			rxCBs.secondarysending = 0;
+
 			time = 0;
 			rxCBs.primaryon == 0;
 			start = std::clock();
@@ -3678,6 +3691,14 @@ if(dsa== 1 && receiver == 1){
 
 	}
 	//return 0;
+
+}
+
+if(dsa && isController){
+	while(1){
+		printf("%f\n", fb.evm);
+	};
+
 
 }
 
