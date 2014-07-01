@@ -167,6 +167,7 @@ struct feedbackStruct {
 struct message{
 	std::clock_t timestamp;
 	char type;
+	char purpose;
 	struct feedbackStruct feed;
 	int number;
 	int msgreceived;
@@ -3464,6 +3465,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			a=1.0;
 			printf("PU transmitting\n");
 			mess.number = primarymsgnumber;
+			mess.purpose = 't';
 			write(rxCBs.client, (const void*)&mess, sizeof(mess));
 			primarymsgnumber++;
 			printf("%d\n", mess.number);
@@ -3492,6 +3494,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			printf("PU resting\n");
 			a=2.0;
 			mess.number = primarymsgnumber;
+			mess.purpose = 'r';
 			write(rxCBs.client, (const void*)&mess, sizeof(mess));
 			primarymsgnumber++;
 			printf("%d\n", mess.number);
@@ -3761,9 +3764,16 @@ if(dsa && isController){
 		if(msg.msgreceived == 1){
 			if(msg.type == 'p'){
 				if(latestprimary<msg.number){
-					latestprimary = msg.number;
-					time = std::clock();
-					printf("Primary message received at time %d\n", (int)time);
+					if(msg.purpose == 't'){
+						latestprimary = msg.number;
+						time = std::clock();
+						printf("Primary user started transmitting at time %d\n", (int)(time/CLOCKS_PER_SEC));
+					}
+					if(msg.purpose == 'r'){
+						latestprimary = msg.number;
+						time = std::clock();
+						printf("Primary user stopped transmitting at time %d\n", (int)(time/CLOCKS_PER_SEC));
+					}
 				}
 			}
 		msg.msgreceived = 0;
