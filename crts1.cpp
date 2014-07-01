@@ -3509,7 +3509,6 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 	//If it is a secondary user then the node acts as a secondary transmitter
 	//Either sensing for the primary user or transmitting with small pauses for sening
 	if(secondary == 1){
-		mess.type = 's';
 		verbose = 0;
 		printf("secondary\n");
 
@@ -3548,10 +3547,6 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			time = 0;
 			start = std::clock();
 			printf("transmitting\n");
-			mess.number = secondarymsgnumber;
-			mess.purpose = 't';
-			write(rxCBs.client, (const void*)&mess, sizeof(mess));
-			secondarymsgnumber++;
 
 			//If it does not sense the primary user then the secondary user will transmit
 			while(rxCBs.primaryon==0)
@@ -3603,11 +3598,6 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 
 			//Once the primary user is detected the secondary user stops transmitting
 			//and switches to sensing in a new while loop
-			mess.number = secondarymsgnumber;
-			mess.purpose = 'r';
-			write(rxCBs.client, (const void*)&mess, sizeof(mess));
-			secondarymsgnumber++;
-			printf("%d\n", mess.number);
 			while(rxCBs.primaryon==1)
 				{
 				//printf("%d\n", rxCBs.primaryon);
@@ -3783,20 +3773,6 @@ if(dsa && isController){
 						latestprimary = msg.number;
 						time = std::clock();
 						printf("Primary user stopped transmitting at time %d\n", (int)(time/CLOCKS_PER_SEC));
-					}
-				}
-			}
-			if(msg.type == 's'){
-				if(latestsecondary<msg.number){
-					if(msg.purpose == 't'){
-						latestprimary = msg.number;
-						time = std::clock();
-						printf("Secondary user started transmitting at time %d\n", (int)(time/CLOCKS_PER_SEC));
-					}
-					if(msg.purpose == 'r'){
-						latestsecondary = msg.number;
-						time = std::clock();
-						printf("Secondary user stopped transmitting at time %d\n", (int)(time/CLOCKS_PER_SEC));
 					}
 				}
 			}
