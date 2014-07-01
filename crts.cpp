@@ -1344,7 +1344,7 @@ void * serveTCPDSAclient(void * _sc_ptr){
 				if(read_buffer.number > latestprimary){
 					*m_ptr = read_buffer;
 					m_ptr->msgreceived = 1;
-					latestprimary = read_buffer.number;
+					latestprimary = m_ptr->number;
 				}
 			}
 		}
@@ -3462,10 +3462,11 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			time = 0;
 			start = std::clock();
 			a=1.0;
-			printf("transmitting\n");
+			printf("PU transmitting\n");
 			mess.number = primarymsgnumber;
 			write(rxCBs.client, (const void*)&mess, sizeof(mess));
 			primarymsgnumber++;
+			printf("%d\n", mess.number);
 			while(primarybursttime > time){
 				//printf("%f\n", (float)time);
 				txcvr.assemble_frame(header, payload, puce.payloadLen, ms, fec0, fec1);
@@ -3488,11 +3489,12 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			on = 0;
 			time = 0;
 			start = std::clock();
-			printf("resting\n");
+			printf("PU resting\n");
 			a=2.0;
 			mess.number = primarymsgnumber;
 			write(rxCBs.client, (const void*)&mess, sizeof(mess));
 			primarymsgnumber++;
+			printf("%d\n", mess.number);
 			while(primaryresttime>time){
 				//printf("%f\n", (float)time);
 				current = std::clock();
@@ -3579,7 +3581,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				//primary users appear
 				while(1 > time)
 					{
-					printf("transmitting\n");
+					printf("SU transmitting\n");
 					printf("%ju\n", (uintmax_t)time);
 					printf("%d\n", rxCBs.primaryon);
 					current = std::clock();
@@ -3589,7 +3591,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			time = 0;
 			start = std::clock();
 			std::clock_t current;
-			printf("scanning\n");
+			printf("SU sensing\n");
 
 			//Once the primary user is detected the secondary user stops transmitting
 			//and switches to sensing in a new while loop
@@ -3756,13 +3758,13 @@ if(dsa && isController){
 	int latestsecondary = 0;
 	std::clock_t time = std::clock();
 	while(1){
-		if(msg.msgreceived = 1){
+		if(msg.msgreceived == 1){
 			if(msg.type == 'p'){
-				
-				latestprimary = msg.number;
-				time = std::clock();
-				printf("Primary message received at time %d\n", (int)time);
-				
+				if(latestprimary<msg.number){
+					latestprimary = msg.number;
+					time = std::clock();
+					printf("Primary message received at time %d\n", (int)time);
+				}
 			}
 		msg.msgreceived = 0;
 		}
