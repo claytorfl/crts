@@ -3469,7 +3469,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			mess.purpose = 't';
 			write(rxCBs.client, (const void*)&mess, sizeof(mess));
 			primarymsgnumber++;
-			printf("%d\n", mess.number);
+			//printf("%d\n", mess.number);
 			while(primarybursttime > time){
 				//printf("%f\n", (float)time);
 				txcvr.assemble_frame(header, payload, puce.payloadLen, ms, fec0, fec1);
@@ -3498,7 +3498,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			mess.purpose = 'r';
 			write(rxCBs.client, (const void*)&mess, sizeof(mess));
 			primarymsgnumber++;
-			printf("%d\n", mess.number);
+			//printf("%d\n", mess.number);
 			while(primaryresttime>time){
 				//printf("%f\n", (float)time);
 				current = std::clock();
@@ -3553,25 +3553,25 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			mess.number = secondarymsgnumber;
 			mess.purpose = 't';
 			write(rxCBs.client, (const void*)&mess, sizeof(mess));
-			printf("%d\n", mess.number);
+			//printf("%d\n", mess.number);
 			secondarymsgnumber++;
 
 			//If it does not sense the primary user then the secondary user will transmit
 			while(rxCBs.primaryon==0)
 				{
 				//printf("%d\n", rxCBs.primaryon);
-				if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
+				//if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
 				modulation_scheme ms = convertModScheme(ce.modScheme, &ce.bitsPerSym);
 
 				// Set Cyclic Redundency Check Scheme
 				//crc_scheme check = convertCRCScheme(ce.crcScheme);
 
 				// Set inner forward error correction scheme
-				if (verbose) printf("Inner FEC: ");
+				//if (verbose) printf("Inner FEC: ");
 				fec_scheme fec0 = convertFECScheme(ce.innerFEC, verbose);
 
 				// Set outer forward error correction scheme
-				if (verbose) printf("Outer FEC: ");
+				//if (verbose) printf("Outer FEC: ");
 				fec_scheme fec1 = convertFECScheme(ce.outerFEC, verbose);
 				usleep(1);
 				txcvr.assemble_frame(header, payload, suce.payloadLen, ms, fec0, fec1);
@@ -3610,7 +3610,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			mess.purpose = 'r';
 			write(rxCBs.client, (const void*)&mess, sizeof(mess));
 			secondarymsgnumber++;
-			printf("%d\n", mess.number);
+			//printf("%d\n", mess.number);
 			while(rxCBs.primaryon==1)
 				{
 				//printf("%d\n", rxCBs.primaryon);
