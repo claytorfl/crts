@@ -3796,7 +3796,7 @@ if(dsa && isController){
 			if(msg.type == 's'){
 				if(latestsecondary<msg.number){
 					if(msg.purpose == 't'){
-						latestprimary = msg.number;
+						latestsecondary = msg.number;
 						time = std::clock();
 						printf("Secondary user started transmitting at time %d\n", (int)(time/CLOCKS_PER_SEC));
 					}
