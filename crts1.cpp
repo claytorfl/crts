@@ -1254,7 +1254,7 @@ int rxCallback(unsigned char *  _header,
                     
     // Data that will be sent to server
     // TODO: Send other useful data through feedback array
-	printf("CALLBACK!!!\n\n");
+	//printf("CALLBACK!!!\n\n");
     struct feedbackStruct fb = {};
     fb.header_valid         =   _header_valid;
     fb.payload_valid        =   _payload_valid;
@@ -1332,21 +1332,22 @@ void * serveTCPclient(void * _sc_ptr){
 
 //Reads the messages from a TCP link to a DSA congnitive radio
 void * serveTCPDSAclient(void * _sc_ptr){
-	int latestprimary = 0;
-	int latestsecondary = 0;
+	//int latestprimary = 0;
+	//int latestsecondary = 0;
+	int number = 0;
+	int primarytest = 0;
 	struct serveClientStruct * sc_ptr = (struct serveClientStruct*) _sc_ptr;
+	int client = sc_ptr->client;
 	struct message read_buffer;
 	struct message *m_ptr = sc_ptr->m_ptr;
 	while(1){
 		if(m_ptr->msgreceived == 0){
 		    bzero(&read_buffer, sizeof(read_buffer));
-		    read(sc_ptr->client, &read_buffer, sizeof(read_buffer));
-			if(read_buffer.type == 'p'){
-				if(read_buffer.number > latestprimary){
-					*m_ptr = read_buffer;
-					m_ptr->msgreceived = 1;
-					latestprimary = m_ptr->number;
-				}
+		    read(client, &read_buffer, sizeof(read_buffer));
+			if(read_buffer.number > number and (read_buffer.type == 'p' or read_buffer.type == 's')){
+				*m_ptr = read_buffer;
+				m_ptr->msgreceived = 1;
+				number = read_buffer.number;
 			}
 		}
 		//if (read_buffer && !fb_ptr->block_flag) {*fb_ptr->evm = read_buffer; fb_ptr->block_flag = 1;}
@@ -2044,7 +2045,7 @@ int dsaCallback(unsigned char *  _header,
 	if(ones>zeroes || twos>zeroes){
 		//primary = 1;
 		rxCBS_ptr->primaryon = 1;
-		printf("\n\nPrimary transmission\n\n");
+		//printf("\n\nPrimary transmission\n\n");
 	}
 
 	//If the message has all zeroes then it is a secondary transmission
@@ -2052,7 +2053,7 @@ int dsaCallback(unsigned char *  _header,
 		//primary = 0;
 		//rxCBS_ptr->primaryon = 0;
 		rxCBS_ptr->secondarysending = 1;
-		printf("\n\nSecondary transmission\n\n");
+		//printf("\n\nSecondary transmission\n\n");
 	}
 
     // Variables for checking number of errors 
@@ -2079,7 +2080,7 @@ int dsaCallback(unsigned char *  _header,
                     
     // Data that will be sent to server
     // TODO: Send other useful data through feedback array
-	printf("CALLBACK!!!\n\n");
+	//printf("CALLBACK!!!\n\n");
     struct feedbackStruct fb = {};
     fb.header_valid         =   _header_valid;
     fb.payload_valid        =   _payload_valid;
@@ -3509,6 +3510,8 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 	//If it is a secondary user then the node acts as a secondary transmitter
 	//Either sensing for the primary user or transmitting with small pauses for sening
 	if(secondary == 1){
+		mess.type = 's';
+		mess.msgreceived = 1;
 		verbose = 0;
 		printf("secondary\n");
 
@@ -3546,7 +3549,12 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			int on = 1;
 			time = 0;
 			start = std::clock();
-			printf("transmitting\n");
+			printf("SU transmitting\n");
+			mess.number = secondarymsgnumber;
+			mess.purpose = 't';
+			write(rxCBs.client, (const void*)&mess, sizeof(mess));
+			printf("%d\n", mess.number);
+			secondarymsgnumber++;
 
 			//If it does not sense the primary user then the secondary user will transmit
 			while(rxCBs.primaryon==0)
@@ -3571,7 +3579,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				while(!isLastSymbol && rxCBs.primaryon==0)
 					{
 					usleep(1);
-					printf("%d\n", rxCBs.primaryon);
+					//printf("%d\n", rxCBs.primaryon);
 					isLastSymbol = txcvr.write_symbol();
 					//enactScenarioBaseband(txcvr.fgbuffer, ce, sc);
 					txcvr.transmit_symbol();
@@ -3584,9 +3592,9 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				//primary users appear
 				while(1 > time)
 					{
-					printf("SU transmitting\n");
-					printf("%ju\n", (uintmax_t)time);
-					printf("%d\n", rxCBs.primaryon);
+					//printf("SU transmitting\n");
+					//printf("%ju\n", (uintmax_t)time);
+					//printf("%d\n", rxCBs.primaryon);
 					current = std::clock();
 					time = (current-start)/CLOCKS_PER_SEC;
 					}
@@ -3598,6 +3606,11 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 
 			//Once the primary user is detected the secondary user stops transmitting
 			//and switches to sensing in a new while loop
+			mess.number = secondarymsgnumber;
+			mess.purpose = 'r';
+			write(rxCBs.client, (const void*)&mess, sizeof(mess));
+			secondarymsgnumber++;
+			printf("%d\n", mess.number);
 			while(rxCBs.primaryon==1)
 				{
 				//printf("%d\n", rxCBs.primaryon);
@@ -3612,9 +3625,9 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				//This while loop below will run for secondaryscantime seconds
 				while(secondaryscantime > time)
 					{
-					printf("scanning\n");
-					printf("%ju\n", (uintmax_t)time);
-					printf("%d\n", rxCBs.primaryon);
+					//printf("scanning\n");
+					//printf("%ju\n", (uintmax_t)time);
+					//printf("%d\n", rxCBs.primaryon);
 					current = std::clock();
 					time = (current-start)/CLOCKS_PER_SEC;
 					}			
@@ -3759,20 +3772,69 @@ if(dsa== 1 && receiver == 1){
 if(dsa && isController){
 	int latestprimary = 0;
 	int latestsecondary = 0;
+	std::clock_t primaryofftime = 0;
+	std::clock_t primaryontime = 0;
+	std::clock_t secondaryofftime = 0;
+	std::clock_t secondaryontime = 0;
+	std::clock_t evacuationtime;
+	std::clock_t rendevoustime;
+	int primary = 0;
+	int secondary = 0;
 	std::clock_t time = std::clock();
 	while(1){
 		if(msg.msgreceived == 1){
 			if(msg.type == 'p'){
 				if(latestprimary<msg.number){
 					if(msg.purpose == 't'){
+						primary = 1;
 						latestprimary = msg.number;
 						time = std::clock();
-						printf("Primary user started transmitting at time %d\n", (int)(time/CLOCKS_PER_SEC));
+						primaryontime = time;
+						printf("Primary user started transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+						//printf("Primary number: %d Secondar number %d\n", latestprimary, latestsecondary);
 					}
 					if(msg.purpose == 'r'){
+						primary = 0;
 						latestprimary = msg.number;
 						time = std::clock();
-						printf("Primary user stopped transmitting at time %d\n", (int)(time/CLOCKS_PER_SEC));
+						primaryofftime = time;
+						printf("Primary user stopped transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+						//printf("Primary number: %d Secondar number %d\n", latestprimary, latestsecondary);
+					}
+				}
+			}
+			if(msg.type == 's'){
+				if(latestsecondary<msg.number){
+					if(msg.purpose == 't'){
+						secondary = 1;
+						latestsecondary = msg.number;
+						time = std::clock();
+						secondaryontime = time;
+						printf("Secondary user started transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+						//printf("Primary number: %d Secondar number %d\n", latestprimary, latestsecondary);
+						if(primary == 0){
+							rendevoustime = secondaryontime - primaryofftime;
+							printf("Rendevous time = %f seconds\n", ((float)rendevoustime/CLOCKS_PER_SEC));
+						}
+						if(primary == 1){
+							printf("Collision\n");
+						}
+							
+					}
+					if(msg.purpose == 'r'){
+						secondary = 0;
+						latestsecondary = msg.number;
+						time = std::clock();
+						secondaryofftime = time;
+						printf("Secondary user stopped transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+						//printf("Primary number: %d Secondar number %d\n", latestprimary, latestsecondary);
+						if(primary==1){
+							evacuationtime = secondaryofftime - primaryontime;
+							printf("Evacuation time = %f seconds\n", ((float)evacuationtime/CLOCKS_PER_SEC));\
+						}
+						if(primary == 0){
+							printf("False Alarm\n");
+						}
 					}
 				}
 			}

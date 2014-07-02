@@ -3790,7 +3790,7 @@ if(dsa && isController){
 						latestprimary = msg.number;
 						time = std::clock();
 						primaryontime = time;
-						printf("Primary user started transmitting at time %f\n", ((float)time/CLOCKS_PER_SEC));
+						printf("Primary user started transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 						//printf("Primary number: %d Secondar number %d\n", latestprimary, latestsecondary);
 					}
 					if(msg.purpose == 'r'){
@@ -3798,7 +3798,7 @@ if(dsa && isController){
 						latestprimary = msg.number;
 						time = std::clock();
 						primaryofftime = time;
-						printf("Primary user stopped transmitting at time %f\n", ((float)time/CLOCKS_PER_SEC));
+						printf("Primary user stopped transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 						//printf("Primary number: %d Secondar number %d\n", latestprimary, latestsecondary);
 					}
 				}
@@ -3810,11 +3810,11 @@ if(dsa && isController){
 						latestsecondary = msg.number;
 						time = std::clock();
 						secondaryontime = time;
-						printf("Secondary user started transmitting at time %f\n", ((float)time/CLOCKS_PER_SEC));
+						printf("Secondary user started transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 						//printf("Primary number: %d Secondar number %d\n", latestprimary, latestsecondary);
 						if(primary == 0){
 							rendevoustime = secondaryontime - primaryofftime;
-							printf("Rendevous time = %f\n", ((float)rendevoustime/CLOCKS_PER_SEC));
+							printf("Rendevous time = %f seconds\n", ((float)rendevoustime/CLOCKS_PER_SEC));
 						}
 						if(primary == 1){
 							printf("Collision\n");
@@ -3826,11 +3826,11 @@ if(dsa && isController){
 						latestsecondary = msg.number;
 						time = std::clock();
 						secondaryofftime = time;
-						printf("Secondary user stopped transmitting at time %f\n", ((float)time/CLOCKS_PER_SEC));
+						printf("Secondary user stopped transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 						//printf("Primary number: %d Secondar number %d\n", latestprimary, latestsecondary);
 						if(primary==1){
 							evacuationtime = secondaryofftime - primaryontime;
-							printf("Evacuation time = %f\n", ((float)evacuationtime/CLOCKS_PER_SEC));\
+							printf("Evacuation time = %f seconds\n", ((float)evacuationtime/CLOCKS_PER_SEC));\
 						}
 						if(primary == 0){
 							printf("False Alarm\n");
