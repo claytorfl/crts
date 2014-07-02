@@ -1332,14 +1332,18 @@ void * serveTCPclient(void * _sc_ptr){
 
 //Reads the messages from a TCP link to a DSA congnitive radio
 void * serveTCPDSAclient(void * _sc_ptr){
-	int latestprimary = 0;
-	int latestsecondary = 0;
+	//int latestprimary = 0;
+	//int latestsecondary = 0;
 	int number = 0;
+	int primarytest = 0;
 	struct serveClientStruct * sc_ptr = (struct serveClientStruct*) _sc_ptr;
 	struct message read_buffer;
 	struct message *m_ptr = sc_ptr->m_ptr;
 	printf("%d\n", sc_ptr->client);
 	while(1){
+		if(primarytest == 1){
+			printf("Hi\n");
+		}
 		//printf("%d\n", sc_ptr->client);
 		if(m_ptr->msgreceived == 0){
 		    bzero(&read_buffer, sizeof(read_buffer));
@@ -1366,6 +1370,9 @@ void * serveTCPDSAclient(void * _sc_ptr){
 				m_ptr->msgreceived = 1;
 				number = read_buffer.number;
 				printf("Message %c %d received\n", read_buffer.type, read_buffer.number);
+				if(read_buffer.type == 'p'){
+					primarytest = 1;
+				}
 			}
 		}
 		//if (read_buffer && !fb_ptr->block_flag) {*fb_ptr->evm = read_buffer; fb_ptr->block_flag = 1;}
