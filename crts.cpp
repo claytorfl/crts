@@ -1337,6 +1337,7 @@ void * serveTCPDSAclient(void * _sc_ptr){
 	int number = 0;
 	int primarytest = 0;
 	struct serveClientStruct * sc_ptr = (struct serveClientStruct*) _sc_ptr;
+	int client = sc_ptr->client;
 	struct message read_buffer;
 	struct message *m_ptr = sc_ptr->m_ptr;
 	printf("%d\n", sc_ptr->client);
@@ -1347,7 +1348,7 @@ void * serveTCPDSAclient(void * _sc_ptr){
 
 
 		    bzero(&read_buffer, sizeof(read_buffer));
-		    read(sc_ptr->client, &read_buffer, sizeof(read_buffer));
+		    read(client, &read_buffer, sizeof(read_buffer));
 			if(primarytest == 1){ //and read_buffer.type == 'p' and read_buffer.number>number){
 				printf("Message %c %d detected\n", read_buffer.type, read_buffer.number);
 			}
