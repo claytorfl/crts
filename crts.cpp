@@ -1254,7 +1254,7 @@ int rxCallback(unsigned char *  _header,
                     
     // Data that will be sent to server
     // TODO: Send other useful data through feedback array
-	printf("CALLBACK!!!\n\n");
+	//printf("CALLBACK!!!\n\n");
     struct feedbackStruct fb = {};
     fb.header_valid         =   _header_valid;
     fb.payload_valid        =   _payload_valid;
@@ -2051,7 +2051,7 @@ int dsaCallback(unsigned char *  _header,
 	if(ones>zeroes || twos>zeroes){
 		//primary = 1;
 		rxCBS_ptr->primaryon = 1;
-		printf("\n\nPrimary transmission\n\n");
+		//printf("\n\nPrimary transmission\n\n");
 	}
 
 	//If the message has all zeroes then it is a secondary transmission
@@ -2059,7 +2059,7 @@ int dsaCallback(unsigned char *  _header,
 		//primary = 0;
 		//rxCBS_ptr->primaryon = 0;
 		rxCBS_ptr->secondarysending = 1;
-		printf("\n\nSecondary transmission\n\n");
+		//printf("\n\nSecondary transmission\n\n");
 	}
 
     // Variables for checking number of errors 
@@ -2086,7 +2086,7 @@ int dsaCallback(unsigned char *  _header,
                     
     // Data that will be sent to server
     // TODO: Send other useful data through feedback array
-	printf("CALLBACK!!!\n\n");
+	//printf("CALLBACK!!!\n\n");
     struct feedbackStruct fb = {};
     fb.header_valid         =   _header_valid;
     fb.payload_valid        =   _payload_valid;
@@ -3584,7 +3584,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				while(!isLastSymbol && rxCBs.primaryon==0)
 					{
 					usleep(1);
-					printf("%d\n", rxCBs.primaryon);
+					//printf("%d\n", rxCBs.primaryon);
 					isLastSymbol = txcvr.write_symbol();
 					//enactScenarioBaseband(txcvr.fgbuffer, ce, sc);
 					txcvr.transmit_symbol();
