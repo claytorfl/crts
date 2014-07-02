@@ -1339,9 +1339,11 @@ void * serveTCPDSAclient(void * _sc_ptr){
 	struct message *m_ptr = sc_ptr->m_ptr;
 	printf("%d\n", sc_ptr->client);
 	while(1){
+		printf("%d\n", sc_ptr->client);
 		if(m_ptr->msgreceived == 0){
 		    bzero(&read_buffer, sizeof(read_buffer));
 		    read(sc_ptr->client, &read_buffer, sizeof(read_buffer));
+			//printf("Read buffer number %d\n", read_buffer.number);
 			if(read_buffer.type == 'p'){
 				if(read_buffer.number > latestprimary){
 					*m_ptr = read_buffer;
