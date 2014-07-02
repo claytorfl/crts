@@ -3555,10 +3555,11 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			int on = 1;
 			time = 0;
 			start = std::clock();
-			printf("transmitting\n");
+			printf("SU transmitting\n");
 			mess.number = secondarymsgnumber;
 			mess.purpose = 't';
 			write(rxCBs.client, (const void*)&mess, sizeof(mess));
+			printf("%d\n", mess.number);
 			secondarymsgnumber++;
 
 			//If it does not sense the primary user then the secondary user will transmit
@@ -3597,9 +3598,9 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				//primary users appear
 				while(1 > time)
 					{
-					printf("SU transmitting\n");
-					printf("%ju\n", (uintmax_t)time);
-					printf("%d\n", rxCBs.primaryon);
+					//printf("SU transmitting\n");
+					//printf("%ju\n", (uintmax_t)time);
+					//printf("%d\n", rxCBs.primaryon);
 					current = std::clock();
 					time = (current-start)/CLOCKS_PER_SEC;
 					}
