@@ -1337,6 +1337,7 @@ void * serveTCPDSAclient(void * _sc_ptr){
 	struct serveClientStruct * sc_ptr = (struct serveClientStruct*) _sc_ptr;
 	struct message read_buffer;
 	struct message *m_ptr = sc_ptr->m_ptr;
+	printf("%d\n", sc_ptr->client);
 	while(1){
 		if(m_ptr->msgreceived == 0){
 		    bzero(&read_buffer, sizeof(read_buffer));
@@ -1345,14 +1346,14 @@ void * serveTCPDSAclient(void * _sc_ptr){
 				if(read_buffer.number > latestprimary){
 					*m_ptr = read_buffer;
 					m_ptr->msgreceived = 1;
-					//latestprimary = m_ptr->number;
+					latestprimary = m_ptr->number;
 				}
 			}
 			if(read_buffer.type == 's'){
 				if(read_buffer.number > latestsecondary){
 					*m_ptr = read_buffer;
 					m_ptr->msgreceived = 1;
-					//latestsecondary = m_ptr->number;
+					latestsecondary = m_ptr->number;
 				}
 			}
 		}
