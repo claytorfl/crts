@@ -3772,38 +3772,69 @@ if(dsa== 1 && receiver == 1){
 if(dsa && isController){
 	int latestprimary = 0;
 	int latestsecondary = 0;
+	std::clock_t primaryofftime = 0;
+	std::clock_t primaryontime = 0;
+	std::clock_t secondaryofftime = 0;
+	std::clock_t secondaryontime = 0;
+	std::clock_t evacuationtime;
+	std::clock_t rendevoustime;
+	int primary = 0;
+	int secondary = 0;
 	std::clock_t time = std::clock();
 	while(1){
 		if(msg.msgreceived == 1){
 			if(msg.type == 'p'){
 				if(latestprimary<msg.number){
 					if(msg.purpose == 't'){
+						primary = 1;
 						latestprimary = msg.number;
 						time = std::clock();
-						printf("Primary user started transmitting at time %d\n", (int)(time/CLOCKS_PER_SEC));
-						printf("Primary number: %d Secondar number %d\n", latestprimary, latestsecondary);
+						primaryontime = time;
+						printf("Primary user started transmitting at time %f\n", (float)(time/CLOCKS_PER_SEC));
+						//printf("Primary number: %d Secondar number %d\n", latestprimary, latestsecondary);
 					}
 					if(msg.purpose == 'r'){
+						primary = 0;
 						latestprimary = msg.number;
 						time = std::clock();
-						printf("Primary user stopped transmitting at time %d\n", (int)(time/CLOCKS_PER_SEC));
-						printf("Primary number: %d Secondar number %d\n", latestprimary, latestsecondary);
+						primaryofftime = time;
+						printf("Primary user stopped transmitting at time %f\n", (float)(time/CLOCKS_PER_SEC));
+						//printf("Primary number: %d Secondar number %d\n", latestprimary, latestsecondary);
 					}
 				}
 			}
 			if(msg.type == 's'){
 				if(latestsecondary<msg.number){
 					if(msg.purpose == 't'){
+						secondary = 1;
 						latestsecondary = msg.number;
 						time = std::clock();
-						printf("Secondary user started transmitting at time %d\n", (int)(time/CLOCKS_PER_SEC));
-						printf("Primary number: %d Secondar number %d\n", latestprimary, latestsecondary);
+						secondaryontime = time;
+						printf("Secondary user started transmitting at time %f\n", (float)(time/CLOCKS_PER_SEC));
+						//printf("Primary number: %d Secondar number %d\n", latestprimary, latestsecondary);
+						if(primary == 0){
+							rendevoustime = secondaryontime - primaryofftime;
+							printf("Rendevous time = %f\n", (float)(rendevoustime/CLOCKS_PER_SEC));
+						}
+						if(primary == 1){
+							printf("Collision\n");
+						}
+							
 					}
 					if(msg.purpose == 'r'){
+						secondary = 0;
 						latestsecondary = msg.number;
 						time = std::clock();
-						printf("Secondary user stopped transmitting at time %d\n", (int)(time/CLOCKS_PER_SEC));
-						printf("Primary number: %d Secondar number %d\n", latestprimary, latestsecondary);
+						secondaryofftime = time;
+						printf("Secondary user stopped transmitting at time %f\n", (float)(time/CLOCKS_PER_SEC));
+						//printf("Primary number: %d Secondar number %d\n", latestprimary, latestsecondary);
+						if(primary==1){
+							evacuationtime = secondaryofftime - primaryontime;
+							printf("Evacuation time = %f\n", (float)(evacuationtime/CLOCKS_PER_SEC));\
+						}
+						if(primary == 0){
+							printf("False Alarm\n");
+						}
 					}
 				}
 			}
