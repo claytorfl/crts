@@ -1345,11 +1345,12 @@ void * serveTCPDSAclient(void * _sc_ptr){
 		//printf("%d\n", sc_ptr->client);
 		if(m_ptr->msgreceived == 0){
 
-			if(primarytest == 1){
-				printf("Hi\n");
-			}
+
 		    bzero(&read_buffer, sizeof(read_buffer));
 		    read(sc_ptr->client, &read_buffer, sizeof(read_buffer));
+			if(primarytest == 1){ //and read_buffer.type == 'p' and read_buffer.number>number){
+				printf("Message %c %d detected\n", read_buffer.type, read_buffer.number);
+			}
 			//printf("Read buffer number %d\n", read_buffer.number);
 			/*if(read_buffer.type == 'p'){
 				if(read_buffer.number > latestprimary){
