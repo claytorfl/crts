@@ -1361,7 +1361,7 @@ void * serveTCPDSAclient(void * _sc_ptr){
 					printf("Secondary Message %d\n", latestsecondary);
 				}
 			}*/
-			if(read_buffer.number > number && (read_buffer.type == 'p' || read_buffer.type == 's')){
+			if(read_buffer.number > number and (read_buffer.type == 'p' or read_buffer.type == 's')){
 				*m_ptr = read_buffer;
 				m_ptr->msgreceived = 1;
 				number = read_buffer.number;
