@@ -3630,9 +3630,9 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				//This while loop below will run for secondaryscantime seconds
 				while(secondaryscantime > time)
 					{
-					printf("scanning\n");
-					printf("%ju\n", (uintmax_t)time);
-					printf("%d\n", rxCBs.primaryon);
+					//printf("scanning\n");
+					//printf("%ju\n", (uintmax_t)time);
+					//printf("%d\n", rxCBs.primaryon);
 					current = std::clock();
 					time = (current-start)/CLOCKS_PER_SEC;
 					}			
@@ -3786,13 +3786,13 @@ if(dsa && isController){
 						latestprimary = msg.number;
 						time = std::clock();
 						printf("Primary user started transmitting at time %d\n", (int)(time/CLOCKS_PER_SEC));
-						printf("Primary number: %d Secondar number %d", latestprimary, latestsecondary);
+						printf("Primary number: %d Secondar number %d\n", latestprimary, latestsecondary);
 					}
 					if(msg.purpose == 'r'){
 						latestprimary = msg.number;
 						time = std::clock();
 						printf("Primary user stopped transmitting at time %d\n", (int)(time/CLOCKS_PER_SEC));
-						printf("Primary number: %d Secondar number %d", latestprimary, latestsecondary);
+						printf("Primary number: %d Secondar number %d\n", latestprimary, latestsecondary);
 					}
 				}
 			}
@@ -3802,13 +3802,13 @@ if(dsa && isController){
 						latestsecondary = msg.number;
 						time = std::clock();
 						printf("Secondary user started transmitting at time %d\n", (int)(time/CLOCKS_PER_SEC));
-						printf("Primary number: %d Secondar number %d", latestprimary, latestsecondary);
+						printf("Primary number: %d Secondar number %d\n", latestprimary, latestsecondary);
 					}
 					if(msg.purpose == 'r'){
 						latestsecondary = msg.number;
 						time = std::clock();
 						printf("Secondary user stopped transmitting at time %d\n", (int)(time/CLOCKS_PER_SEC));
-						printf("Primary number: %d Secondar number %d", latestprimary, latestsecondary);
+						printf("Primary number: %d Secondar number %d\n", latestprimary, latestsecondary);
 					}
 				}
 			}
