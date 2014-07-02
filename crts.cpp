@@ -1334,6 +1334,7 @@ void * serveTCPclient(void * _sc_ptr){
 void * serveTCPDSAclient(void * _sc_ptr){
 	int latestprimary = 0;
 	int latestsecondary = 0;
+	int number = 0;
 	struct serveClientStruct * sc_ptr = (struct serveClientStruct*) _sc_ptr;
 	struct message read_buffer;
 	struct message *m_ptr = sc_ptr->m_ptr;
@@ -1344,7 +1345,7 @@ void * serveTCPDSAclient(void * _sc_ptr){
 		    bzero(&read_buffer, sizeof(read_buffer));
 		    read(sc_ptr->client, &read_buffer, sizeof(read_buffer));
 			//printf("Read buffer number %d\n", read_buffer.number);
-			if(read_buffer.type == 'p'){
+			/*if(read_buffer.type == 'p'){
 				if(read_buffer.number > latestprimary){
 					*m_ptr = read_buffer;
 					m_ptr->msgreceived = 1;
@@ -1359,6 +1360,12 @@ void * serveTCPDSAclient(void * _sc_ptr){
 					latestsecondary = read_buffer.number;
 					printf("Secondary Message %d\n", latestsecondary);
 				}
+			}*/
+			if(read_buffer.number > number){
+				*m_ptr = read_buffer;
+				m_ptr->msgreceived = 1;
+				number = read_buffer.number;
+				printf("Message %c %d received\n", read_buffer.type, read_buffer.number);
 			}
 		}
 		//if (read_buffer && !fb_ptr->block_flag) {*fb_ptr->evm = read_buffer; fb_ptr->block_flag = 1;}
