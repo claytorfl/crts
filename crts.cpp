@@ -1348,6 +1348,13 @@ void * serveTCPDSAclient(void * _sc_ptr){
 					latestprimary = m_ptr->number;
 				}
 			}
+			if(read_buffer.type == 's'){
+				if(read_buffer.number > latestsecondary){
+					*m_ptr = read_buffer;
+					m_ptr->msgreceived = 1;
+					latestprimary = m_ptr->number;
+				}
+			}
 		}
 		//if (read_buffer && !fb_ptr->block_flag) {*fb_ptr->evm = read_buffer; fb_ptr->block_flag = 1;}
     }
