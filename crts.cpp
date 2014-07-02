@@ -1340,43 +1340,14 @@ void * serveTCPDSAclient(void * _sc_ptr){
 	int client = sc_ptr->client;
 	struct message read_buffer;
 	struct message *m_ptr = sc_ptr->m_ptr;
-	printf("%d\n", sc_ptr->client);
 	while(1){
-
-		//printf("%d\n", sc_ptr->client);
 		if(m_ptr->msgreceived == 0){
-
-
 		    bzero(&read_buffer, sizeof(read_buffer));
 		    read(client, &read_buffer, sizeof(read_buffer));
-			if(primarytest == 1){ //and read_buffer.type == 'p' and read_buffer.number>number){
-				printf("Message %c %d detected\n", read_buffer.type, read_buffer.number);
-			}
-			//printf("Read buffer number %d\n", read_buffer.number);
-			/*if(read_buffer.type == 'p'){
-				if(read_buffer.number > latestprimary){
-					*m_ptr = read_buffer;
-					m_ptr->msgreceived = 1;
-					latestprimary = read_buffer.number;
-					printf("Primary Message %d\n", latestprimary);
-				}
-			}
-			if(read_buffer.type == 's'){
-				if(read_buffer.number > latestsecondary){
-					*m_ptr = read_buffer;
-					m_ptr->msgreceived = 1;
-					latestsecondary = read_buffer.number;
-					printf("Secondary Message %d\n", latestsecondary);
-				}
-			}*/
 			if(read_buffer.number > number and (read_buffer.type == 'p' or read_buffer.type == 's')){
 				*m_ptr = read_buffer;
 				m_ptr->msgreceived = 1;
 				number = read_buffer.number;
-				printf("Message %c %d received\n", read_buffer.type, read_buffer.number);
-				if(read_buffer.type == 'p'){
-					primarytest = 1;
-				}
 			}
 		}
 		//if (read_buffer && !fb_ptr->block_flag) {*fb_ptr->evm = read_buffer; fb_ptr->block_flag = 1;}
