@@ -3459,7 +3459,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		start = std::clock();
 		//primarybursttime = 5;
 		//primaryresttime = 2;
-		while(true){
+		for(int o = 0; o<totaltime; ++o){
 			int on = 1;
 			time = 0;
 			start = std::clock();
@@ -3561,18 +3561,18 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				{
 				//printf("%d\n", rxCBs.primaryon);
 				//if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
-				modulation_scheme ms = convertModScheme(ce.modScheme, &ce.bitsPerSym);
+				modulation_scheme ms = convertModScheme(suce.modScheme, &suce.bitsPerSym);
 
 				// Set Cyclic Redundency Check Scheme
 				//crc_scheme check = convertCRCScheme(ce.crcScheme);
 
 				// Set inner forward error correction scheme
 				//if (verbose) printf("Inner FEC: ");
-				fec_scheme fec0 = convertFECScheme(ce.innerFEC, verbose);
+				fec_scheme fec0 = convertFECScheme(suce.innerFEC, verbose);
 
 				// Set outer forward error correction scheme
 				//if (verbose) printf("Outer FEC: ");
-				fec_scheme fec1 = convertFECScheme(ce.outerFEC, verbose);
+				fec_scheme fec1 = convertFECScheme(suce.outerFEC, verbose);
 				usleep(1);
 				txcvr.assemble_frame(header, payload, suce.payloadLen, ms, fec0, fec1);
 				int isLastSymbol = 0;
@@ -3817,7 +3817,7 @@ if(dsa && isController){
 							printf("Rendevous time = %f seconds\n", ((float)rendevoustime/CLOCKS_PER_SEC));
 						}
 						if(primary == 1){
-							printf("Collision\n");
+							printf("False Alarm\n");
 						}
 							
 					}
@@ -3833,7 +3833,7 @@ if(dsa && isController){
 							printf("Evacuation time = %f seconds\n", ((float)evacuationtime/CLOCKS_PER_SEC));\
 						}
 						if(primary == 0){
-							printf("False Alarm\n");
+							printf("Wasted Spectrum Hole\n");
 						}
 					}
 				}

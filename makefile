@@ -1,7 +1,7 @@
 CC=g++
 CFLAGS=-Wall
 
-all: crts 
+all: crts crts1
 
 crts: crts.cpp
 	$(CC) $(CFLAGS) crts.cpp -o crts -lm -lliquid -lpthread -lconfig -luhd -lliquidusrp
