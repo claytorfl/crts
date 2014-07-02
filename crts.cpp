@@ -1341,11 +1341,13 @@ void * serveTCPDSAclient(void * _sc_ptr){
 	struct message *m_ptr = sc_ptr->m_ptr;
 	printf("%d\n", sc_ptr->client);
 	while(1){
-		if(primarytest == 1){
-			printf("Hi\n");
-		}
+
 		//printf("%d\n", sc_ptr->client);
 		if(m_ptr->msgreceived == 0){
+
+			if(primarytest == 1){
+				printf("Hi\n");
+			}
 		    bzero(&read_buffer, sizeof(read_buffer));
 		    read(sc_ptr->client, &read_buffer, sizeof(read_buffer));
 			//printf("Read buffer number %d\n", read_buffer.number);
