@@ -1352,7 +1352,7 @@ void * serveTCPDSAclient(void * _sc_ptr){
 				if(read_buffer.number > latestsecondary){
 					*m_ptr = read_buffer;
 					m_ptr->msgreceived = 1;
-					latestprimary = m_ptr->number;
+					latestsecondary = m_ptr->number;
 				}
 			}
 		}
@@ -3517,6 +3517,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 	//Either sensing for the primary user or transmitting with small pauses for sening
 	if(secondary == 1){
 		mess.type = 's';
+		mess.msgreceived = 1;
 		verbose = 0;
 		printf("secondary\n");
 
