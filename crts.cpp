@@ -1345,14 +1345,14 @@ void * serveTCPDSAclient(void * _sc_ptr){
 				if(read_buffer.number > latestprimary){
 					*m_ptr = read_buffer;
 					m_ptr->msgreceived = 1;
-					latestprimary = m_ptr->number;
+					//latestprimary = m_ptr->number;
 				}
 			}
 			if(read_buffer.type == 's'){
 				if(read_buffer.number > latestsecondary){
 					*m_ptr = read_buffer;
 					m_ptr->msgreceived = 1;
-					latestsecondary = m_ptr->number;
+					//latestsecondary = m_ptr->number;
 				}
 			}
 		}
