@@ -3487,14 +3487,14 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			while(primarybursttime > time){
 				//printf("%f\n", (float)time);
 				txcvr.assemble_frame(header, payload, puce.payloadLen, ms, fec0, fec1);
-				current = std::clock();
-				time = (current-start)/CLOCKS_PER_SEC;
+				//current = std::clock();
+				//time = (current-start)/CLOCKS_PER_SEC;
 				int isLastSymbol = 0;
 				while(!isLastSymbol) //&& primarybursttime > time)
 					{
 					isLastSymbol = txcvr.write_symbol();
-					current = std::clock();
-					time = (current-start)/CLOCKS_PER_SEC;
+					//current = std::clock();
+					//time = (current-start)/CLOCKS_PER_SEC;
 					//printf("%f\n", (float)time);
 					//enactScenarioBaseband(txcvr.fgbuffer, ce, sc);
 					txcvr.transmit_symbol();
@@ -3593,7 +3593,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				int isLastSymbol = 0;
 				while(!isLastSymbol) //&& rxCBs.primaryon==0)
 					{
-					//usleep(1);
+					usleep(1);
 					//printf("%d\n", rxCBs.primaryon);
 					isLastSymbol = txcvr.write_symbol();
 					//enactScenarioBaseband(txcvr.fgbuffer, ce, sc);
