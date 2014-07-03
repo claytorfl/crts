@@ -9,7 +9,7 @@ detectiontype = "simple";
 
 PU=
 {
-bursttime = 5.0;
+bursttime = 10.0;
 resttime = 8.0;
 ce = "ce1.txt";
 completeframe = 0;
