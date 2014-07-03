@@ -3515,6 +3515,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			primarymsgnumber++;
 			//printf("%d\n", mess.number);
 			while(primaryresttime>time){
+				printf("Resting time %f\n", (float)std::clock());
 				//printf("%f\n", (float)time);
 				current = std::clock();
 				time = (current-start)/CLOCKS_PER_SEC;
