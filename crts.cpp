@@ -3484,7 +3484,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			write(rxCBs.client, (const void*)&mess, sizeof(mess));
 			primarymsgnumber++;
 			//printf("%d\n", mess.number);
-			while(primarybursttime/4 > time){
+			while(primarybursttime/4.0 > time){
 				//printf("Primary time %d\n", CLOCKS_PER_SEC);
 				//printf("%f\n", (float)time);
 				txcvr.assemble_frame(header, payload, puce.payloadLen, ms, fec0, fec1);
@@ -3502,7 +3502,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 					}
 		   		txcvr.end_transmit_frame();
 				current = std::clock();
-				time = (current-start)/CLOCKS_PER_SEC;
+				time = ((float)(current-start))/CLOCKS_PER_SEC;
 			}
 			on = 0;
 			time = 0;
