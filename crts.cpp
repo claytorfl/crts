@@ -140,6 +140,8 @@ struct rxCBstruct {
 	int client;
 	int primaryon;
 	int secondarysending;
+	char usrptype;
+	int number;
 };
 
 struct feedbackStruct {
@@ -294,6 +296,7 @@ struct rxCBstruct CreaterxCBStruct() {
     rxCB.bandwidth = 1.0e6;
     rxCB.serverAddr = (char*) "127.0.0.1";
     rxCB.verbose = 1;
+	rxCB.number = 1;
     return rxCB;
 } // End CreaterxCBStruct()
 
@@ -2025,6 +2028,7 @@ int dsaCallback(unsigned char *  _header,
 	int ones = 0;
 	int zeroes = 0;
 	int twos = 0;
+	char received;
 
 	//The different kinds of transmissions are determined by the content of the header
 	//and its number of 0's, 1's, and 2's
@@ -2045,6 +2049,7 @@ int dsaCallback(unsigned char *  _header,
 	if(ones>zeroes || twos>zeroes){
 		//primary = 1;
 		rxCBS_ptr->primaryon = 1;
+		received = 'P';
 		//printf("\n\nPrimary transmission\n\n");
 	}
 
@@ -2053,11 +2058,12 @@ int dsaCallback(unsigned char *  _header,
 		//primary = 0;
 		//rxCBS_ptr->primaryon = 0;
 		rxCBS_ptr->secondarysending = 1;
+		received = 'S';
 		//printf("\n\nSecondary transmission\n\n");
 	}
 
     // Variables for checking number of errors 
-    unsigned int payloadByteErrors  =   0;
+    /*unsigned int payloadByteErrors  =   0;
     unsigned int payloadBitErrors   =   0;
     int j,m;
 	unsigned int tx_byte;
@@ -2105,8 +2111,14 @@ int dsaCallback(unsigned char *  _header,
         feedbackStruct_print(&fb);
     }
 
-    // Receiver sends data to server
-    write(rxCBS_ptr->client, (void*)&fb, sizeof(fb));
+    // Receiver sends data to server*/
+	struct message mess;
+	mess.type = rxCBS_ptr->usrptype;
+	mess.purpose = received;
+	mess.number = rxCBS_ptr->number;
+	++rxCBS_ptr->number;
+	
+    write(rxCBS_ptr->client, (void*)&mess, sizeof(mess));
 
     return 0;
 
@@ -3415,9 +3427,10 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 	}
 	
 	//If it is a primary transmitter then the USRP ofdmtxrx object tranmists for its burst
-	//time then rrest for its rest time
+	//time then rest for its rest time
 	if(primary == 1){
-		mess.type = 'p';
+		mess.type = 'P';
+		rxCBs.usrptype = 'P';
 		verbose = 0;
 		float a;
 		printf("primary\n");
@@ -3441,19 +3454,19 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		txcvr.set_tx_rate(puce.bandwidth);
 		txcvr.set_tx_gain_soft(puce.txgain_dB);
 		txcvr.set_tx_gain_uhd(puce.uhd_txgain_dB);
-        if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
-        modulation_scheme ms = convertModScheme(ce.modScheme, &ce.bitsPerSym);
+        if (verbose) printf("Modulation scheme: %s\n", puce.modScheme);
+        modulation_scheme ms = convertModScheme(puce.modScheme, &ce.bitsPerSym);
 
         // Set Cyclic Redundency Check Scheme
         //crc_scheme check = convertCRCScheme(ce.crcScheme);
 
         // Set inner forward error correction scheme
         if (verbose) printf("Inner FEC: ");
-        fec_scheme fec0 = convertFECScheme(ce.innerFEC, verbose);
+        fec_scheme fec0 = convertFECScheme(puce.innerFEC, verbose);
 
         // Set outer forward error correction scheme
         if (verbose) printf("Outer FEC: ");
-        fec_scheme fec1 = convertFECScheme(ce.outerFEC, verbose);
+        fec_scheme fec1 = convertFECScheme(puce.outerFEC, verbose);
 		int on = 1;
 		std::clock_t time = 0;
 		start = std::clock();
@@ -3464,6 +3477,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			time = 0;
 			start = std::clock();
 			a=1.0;
+			printf("Cycle %d\n", o);
 			printf("PU transmitting\n");
 			mess.number = primarymsgnumber;
 			mess.purpose = 't';
@@ -3476,7 +3490,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				current = std::clock();
 				time = (current-start)/CLOCKS_PER_SEC;
 				int isLastSymbol = 0;
-				while(!isLastSymbol && primarybursttime > time)
+				while(!isLastSymbol) //&& primarybursttime > time)
 					{
 					isLastSymbol = txcvr.write_symbol();
 					current = std::clock();
@@ -3510,7 +3524,8 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 	//If it is a secondary user then the node acts as a secondary transmitter
 	//Either sensing for the primary user or transmitting with small pauses for sening
 	if(secondary == 1){
-		mess.type = 's';
+		mess.type = 'S';
+		rxCBs.usrptype = 'S';
 		mess.msgreceived = 1;
 		verbose = 0;
 		printf("secondary\n");
@@ -3576,9 +3591,9 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				usleep(1);
 				txcvr.assemble_frame(header, payload, suce.payloadLen, ms, fec0, fec1);
 				int isLastSymbol = 0;
-				while(!isLastSymbol && rxCBs.primaryon==0)
+				while(!isLastSymbol) //&& rxCBs.primaryon==0)
 					{
-					usleep(1);
+					//usleep(1);
 					//printf("%d\n", rxCBs.primaryon);
 					isLastSymbol = txcvr.write_symbol();
 					//enactScenarioBaseband(txcvr.fgbuffer, ce, sc);
@@ -3590,7 +3605,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 
 				//The secondary user will wait in this while loop and wait and see if any
 				//primary users appear
-				while(1 > time)
+				while(0.5 > (float)time)
 					{
 					//printf("SU transmitting\n");
 					//printf("%ju\n", (uintmax_t)time);
@@ -3670,14 +3685,51 @@ if(receiver == 1 && dsa != 1){
 
 }
 
+//If a receiver is being used but not DSA then a basic receiver is made. It does nothing
+//but wait to receive transmissions and execute the dsaCallback function
+if(receiver == 1 && dsa == 1 && primary == 1){
+	struct message mess;
+	mess.type = 'p';
+	rxCBs.usrptype = 'p';
+	ce = CreateCognitiveEngine();
+	readCEConfigFile(&ce, "ce1.txt", verbose);
+	printf("receiver\n");
+	int u;
+	unsigned char * p = NULL;   // default subcarrier allocation
+	if (verbose) 
+	printf("Using ofdmtxrx\n");
+
+	//Basic transceiver setup
+	printf("%d %d %d\n", ce.numSubcarriers, ce.CPLen, ce.taperLen);
+	ofdmtxrx txcvr(ce.numSubcarriers, ce.CPLen, ce.taperLen, p, dsaCallback, (void*) &rxCBs);
+	txcvr.set_tx_freq(ce.frequency);
+	txcvr.set_tx_rate(ce.bandwidth);
+	txcvr.set_tx_gain_soft(ce.txgain_dB);
+	txcvr.set_tx_gain_uhd(ce.uhd_txgain_dB);
+    txcvr.set_rx_freq(frequency);
+    txcvr.set_rx_rate(bandwidth);
+    txcvr.set_rx_gain_uhd(uhd_rxgain);
+	txcvr.start_rx();
+
+	//The receiver sits in this infinite while loop and does nothing but wait to receive
+	//liquid frames that it will interpret with dsaCallback
+	while(true){
+		u=1;
+	}
+	return 0;
+
+}
+
 //If DSA is used and a receiver is used then a DSA receiver is made
 //This is a receiver that the secondary transmitter will broadcast to
 //Typically this DSA receiver will only sit and receive, unless it senses the
 //primary user. Then it will send a warning message to the secondary transmitter to tell
 //it to switch to scanning mode
-if(dsa== 1 && receiver == 1){
+if(dsa== 1 && receiver == 1 && secondary==1){
+	struct message mess;
 	printf("DSA receiver\n");
-
+	mess.type = 's';
+	rxCBs.usrptype = 's';
 	//The DSA receiver has a header and payload of all 2's for easy identification
 	for(int h = 0; h<8; h++){
 		header[h] = 2;
@@ -3783,7 +3835,7 @@ if(dsa && isController){
 	std::clock_t time = std::clock();
 	while(1){
 		if(msg.msgreceived == 1){
-			if(msg.type == 'p'){
+			if(msg.type == 'P'){
 				if(latestprimary<msg.number){
 					if(msg.purpose == 't'){
 						primary = 1;
@@ -3803,7 +3855,7 @@ if(dsa && isController){
 					}
 				}
 			}
-			if(msg.type == 's'){
+			if(msg.type == 'S'){
 				if(latestsecondary<msg.number){
 					if(msg.purpose == 't'){
 						secondary = 1;
@@ -3838,6 +3890,28 @@ if(dsa && isController){
 					}
 				}
 			}
+			if(msg.type == 'p'){
+				if(msg.purpose == 'P'){
+					time = std::clock();
+					printf("Primary receiver received primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+				}
+				if(msg.purpose == 'S'){;
+					time = std::clock();
+					printf("Primary receiver received secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+				}
+			}
+			if(msg.type == 's'){
+				if(msg.purpose == 'P'){
+					time = std::clock();
+					printf("Secondary receiver received primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+				}
+				if(msg.purpose == 'S'){;
+					time = std::clock();
+					printf("Secondary receiver received secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+				}
+			}
+			
+
 		msg.msgreceived = 0;
 		}
 	};
