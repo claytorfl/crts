@@ -173,6 +173,7 @@ struct message{
 	struct feedbackStruct feed;
 	int number;
 	int msgreceived;
+	int client;
 };
 
 
@@ -2117,14 +2118,25 @@ int dsaCallback(unsigned char *  _header,
 	mess.purpose = received;
 	mess.number = rxCBS_ptr->number;
 	++rxCBS_ptr->number;
-	
-    write(rxCBS_ptr->client, (void*)&mess, sizeof(mess));
+	if(rxCBS_ptr->usrptype == 'p' or rxCBS_ptr->usrptype == 's'){
+    write(rxCBS_ptr->client, (void*)&mess, sizeof(mess));}
 
     return 0;
 
 } // end rxCallback()
 
-
+/*int finder(int * int_ptr, int * length, int value){
+	int iterator;
+	int len = *length;
+	for(iterator=0, iterator<len, ++iterator){
+		if(int_ptr[iterator] == value){
+			return iterator;
+		}
+	}
+	int_ptr[len] = value;
+	*length = len + 1;
+	return len;
+}*/
 
 
 int main(int argc, char ** argv){
@@ -3484,6 +3496,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			write(rxCBs.client, (const void*)&mess, sizeof(mess));
 			primarymsgnumber++;
 			//printf("%d\n", mess.number);
+			//For some reason time is about 5 times slower in this while loop
 			while(primarybursttime/5.0 > time){
 				//printf("Primary time %d\n", CLOCKS_PER_SEC);
 				//printf("%f\n", (float)time);
@@ -3524,6 +3537,8 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				time = (current-start)/CLOCKS_PER_SEC;
 			}
 		}
+		mess.purpose = 'F';
+		write(rxCBs.client, (const void*)&mess, sizeof(mess));
 	}
 
 	//If it is a secondary user then the node acts as a secondary transmitter
@@ -3827,6 +3842,8 @@ if(dsa== 1 && receiver == 1 && secondary==1){
 }
 
 if(dsa && isController){
+	int * clientlist;
+	int clientlistlength;
 	int latestprimary = 0;
 	int latestsecondary = 0;
 	std::clock_t primaryofftime = 0;
@@ -3838,7 +3855,8 @@ if(dsa && isController){
 	int primary = 0;
 	int secondary = 0;
 	std::clock_t time = std::clock();
-	while(1){
+	int loop = 1;
+	while(loop){
 		if(msg.msgreceived == 1){
 			if(msg.type == 'P'){
 				if(latestprimary<msg.number){
@@ -3856,7 +3874,12 @@ if(dsa && isController){
 						time = std::clock();
 						primaryofftime = time;
 						printf("Primary user stopped transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
-						//printf("Primary number: %d Secondar number %d\n", latestprimary, latestsecondary);
+					}
+					if(msg.purpose == 'F'){
+						primary = 0;
+						latestprimary = msg.number;
+						loop = 0;
+						printf("Testing Over!!!\n", ((float)time/CLOCKS_PER_SEC));
 					}
 				}
 			}
@@ -3867,8 +3890,7 @@ if(dsa && isController){
 						latestsecondary = msg.number;
 						time = std::clock();
 						secondaryontime = time;
-						printf("Secondary user started transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
-						//printf("Primary number: %d Secondar number %d\n", latestprimary, latestsecondary);
+						printf("Secondary user started transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));;
 						if(primary == 0){
 							rendevoustime = secondaryontime - primaryofftime;
 							printf("Rendevous time = %f seconds\n", ((float)rendevoustime/CLOCKS_PER_SEC));
@@ -3920,6 +3942,8 @@ if(dsa && isController){
 		msg.msgreceived = 0;
 		}
 	};
+	printf("Testing Complete\n");
+	return 1;
 }
 
 if(tester==1){
