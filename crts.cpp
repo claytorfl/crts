@@ -3392,7 +3392,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		if (config_setting_lookup_float(setting, "bursttime", &tmpD))
 		{
 		primarybursttime = tmpD;
-		printf("%d\n", primarybursttime);
+		printf("%f\n", primarybursttime);
 		}
 		if (config_setting_lookup_float(setting, "resttime", &tmpD))
 		{
@@ -3485,6 +3485,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			primarymsgnumber++;
 			//printf("%d\n", mess.number);
 			while(primarybursttime > time){
+				printf("Primary time %f\n", (float)time);
 				//printf("%f\n", (float)time);
 				txcvr.assemble_frame(header, payload, puce.payloadLen, ms, fec0, fec1);
 				//current = std::clock();
