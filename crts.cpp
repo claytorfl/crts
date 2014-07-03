@@ -1347,7 +1347,7 @@ void * serveTCPDSAclient(void * _sc_ptr){
 		if(m_ptr->msgreceived == 0){
 		    bzero(&read_buffer, sizeof(read_buffer));
 		    read(client, &read_buffer, sizeof(read_buffer));
-			if(read_buffer.number > number and (read_buffer.type == 'p' or read_buffer.type == 's')){
+			if(read_buffer.number > number and (read_buffer.type == 'p' or read_buffer.type == 's' or read_buffer.type == 'P' or read_buffer.type == 'S')){
 				*m_ptr = read_buffer;
 				m_ptr->msgreceived = 1;
 				number = read_buffer.number;
