@@ -3485,7 +3485,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			primarymsgnumber++;
 			//printf("%d\n", mess.number);
 			while(primarybursttime > time){
-				printf("Primary time %f\n", (float)time);
+				printf("Primary time %f\n", (float)std::clock());
 				//printf("%f\n", (float)time);
 				txcvr.assemble_frame(header, payload, puce.payloadLen, ms, fec0, fec1);
 				//current = std::clock();
