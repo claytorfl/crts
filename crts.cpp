@@ -3484,7 +3484,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			write(rxCBs.client, (const void*)&mess, sizeof(mess));
 			primarymsgnumber++;
 			//printf("%d\n", mess.number);
-			while(primarybursttime/10.0 > time){
+			while(primarybursttime/5.0 > time){
 				//printf("Primary time %d\n", CLOCKS_PER_SEC);
 				//printf("%f\n", (float)time);
 		   		txcvr.end_transmit_frame();
