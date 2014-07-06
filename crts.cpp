@@ -2050,7 +2050,7 @@ int dsaCallback(unsigned char *  _header,
 	if(ones>zeroes || twos>zeroes){
 		//primary = 1;
 		rxCBS_ptr->primaryon = 1;
-		received = 'P';
+		received = 'f';
 		//printf("\n\nPrimary transmission\n\n");
 	}
 
@@ -2059,7 +2059,7 @@ int dsaCallback(unsigned char *  _header,
 		//primary = 0;
 		//rxCBS_ptr->primaryon = 0;
 		rxCBS_ptr->secondarysending = 1;
-		received = 'S';
+		received = 'F';
 		//printf("\n\nSecondary transmission\n\n");
 	}
 
@@ -2113,22 +2113,40 @@ int dsaCallback(unsigned char *  _header,
     }
 
     // Receiver sends data to server*/
-	struct message mess;
-	mess.type = rxCBS_ptr->usrptype;
-	mess.purpose = received;
-	mess.number = rxCBS_ptr->number;
-	++rxCBS_ptr->number;
+	struct feedbackStruct fb = {};
 	if(rxCBS_ptr->usrptype == 'p' or rxCBS_ptr->usrptype == 's'){
-    write(rxCBS_ptr->client, (void*)&mess, sizeof(mess));}
+		struct message mess;
+		mess.type = rxCBS_ptr->usrptype;
+		mess.feed = fb;
+		mess.purpose = received;
+		mess.number = rxCBS_ptr->number;
+		++rxCBS_ptr->number;
+	
+		write(rxCBS_ptr->client, (void*)&mess, sizeof(mess));
+	}
 
     return 0;
 
 } // end rxCallback()
 
-/*int finder(int * int_ptr, int * length, int value){
+struct feedbackStruct feedbackadder(struct feedbackStruct fb1, struct feedbackStruct fb2){
+	struct feedbackStruct resultfb;
+	resultfb.header_valid = fb1.header_valid + fb2.header_valid;
+	resultfb.payload_valid = fb1.payload_valid + fb2.payload_valid;
+   	resultfb.payload_len = fb1.payload_len + fb2.payload_len;
+	resultfb.payloadByteErrors = fb1.payloadByteErrors + fb2.payloadByteErrors;
+   	resultfb.payloadBitErrors = fb1.payloadBitErrors + fb2.payloadBitErrors;
+	resultfb.iteration = fb1.iteration + fb2.iteration;
+   	resultfb.evm = fb1.evm + fb2.evm;
+	resultfb. rssi = fb1.rssi + fb2.rssi;
+	resultfb.cfo = fb1.cfo + fb2.cfo;
+	return resultfb;
+}
+
+int finder(int * int_ptr, int * length, int value){
 	int iterator;
 	int len = *length;
-	for(iterator=0, iterator<len, ++iterator){
+	for(iterator=0; iterator<len; ++iterator){
 		if(int_ptr[iterator] == value){
 			return iterator;
 		}
@@ -2136,7 +2154,7 @@ int dsaCallback(unsigned char *  _header,
 	int_ptr[len] = value;
 	*length = len + 1;
 	return len;
-}*/
+}
 
 
 int main(int argc, char ** argv){
@@ -3489,7 +3507,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			time = 0;
 			start = std::clock();
 			a=1.0;
-			printf("Cycle %d\n", o);
+			printf("Cycle %d\n", o+1);
 			printf("PU transmitting\n");
 			mess.number = primarymsgnumber;
 			mess.purpose = 't';
@@ -3843,9 +3861,31 @@ if(dsa== 1 && receiver == 1 && secondary==1){
 
 if(dsa && isController){
 	int * clientlist;
-	int clientlistlength;
+	int clientlistlength = 0;
 	int latestprimary = 0;
 	int latestsecondary = 0;
+	int totalfalsealarm = 0;
+	int totalmissedhole = 0;
+	int totalcycles = 0;
+	int index = 0;
+	int fblistlength = 10;
+	struct feedbackStruct fblist[fblistlength];
+	int feedbacknum[fblistlength];
+
+	for(int o; o<fblistlength; ++o){
+		fblist[o].header_valid = 0;
+		fblist[o].payload_valid = 0;
+	   	fblist[o].payload_len = 0;
+		fblist[o].payloadByteErrors = 0;
+	   	fblist[o].payloadBitErrors = 0;
+		fblist[o].iteration = 0;
+	   	fblist[o].evm = 0.0;
+		fblist[o]. rssi = 0.0;
+		fblist[o].cfo = 0.0;
+		fblist[o].block_flag = 0;
+		feedbacknum[o] = 0;
+	}
+		
 	std::clock_t primaryofftime = 0;
 	std::clock_t primaryontime = 0;
 	std::clock_t secondaryofftime = 0;
@@ -3873,6 +3913,7 @@ if(dsa && isController){
 						latestprimary = msg.number;
 						time = std::clock();
 						primaryofftime = time;
+						++totalcycles;
 						printf("Primary user stopped transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					}
 					if(msg.purpose == 'F'){
@@ -3897,6 +3938,7 @@ if(dsa && isController){
 						}
 						if(primary == 1){
 							printf("False Alarm\n");
+							++totalfalsealarm;
 						}
 							
 					}
@@ -3913,18 +3955,29 @@ if(dsa && isController){
 						}
 						if(primary == 0){
 							printf("Wasted Spectrum Hole\n");
+							++totalmissedhole;
 						}
 					}
 				}
 			}
 			if(msg.type == 'p'){
+				index = finder(clientlist, &clientlistlength, msg.client); 
 				if(msg.purpose == 'P'){
+					fblist[index] = feedbackadder(fblist[index], msg.feed);
 					time = std::clock();
 					printf("Primary receiver received primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 				}
 				if(msg.purpose == 'S'){;
 					time = std::clock();
 					printf("Primary receiver received secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+				}
+				if(msg.purpose == 'f'){;
+					time = std::clock();
+					printf("Received feedback from primary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+				}
+				if(msg.purpose == 'F'){;
+					time = std::clock();
+					printf("Received feedback from primary receiver with secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 				}
 			}
 			if(msg.type == 's'){
@@ -3936,6 +3989,14 @@ if(dsa && isController){
 					time = std::clock();
 					printf("Secondary receiver received secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 				}
+				if(msg.purpose == 'f'){;
+					time = std::clock();
+					printf("Received feedback from secondary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+				}
+				if(msg.purpose == 'F'){;
+					time = std::clock();
+					printf("Received feedback from secondary receiver with secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+				}
 			}
 			
 
@@ -3944,32 +4005,6 @@ if(dsa && isController){
 	};
 	printf("Testing Complete\n");
 	return 1;
-}
-
-if(tester==1){
-	printf("%d\n", rxCBs.client);
-	while(true){
-		struct message mess = {};
-		mess.type = 'p';		
-		float time = 0;
-		std::clock_t current;
-		std::clock_t start = std::clock();
-		printf("transmitting\n");
-		write(rxCBs.client, (const void*)&mess, sizeof(mess));
-		while(5 > (float)time){
-			current = std::clock();
-			time = (current-start)/CLOCKS_PER_SEC;
-		}
-		time = 0;
-		start = std::clock();
-		printf("resting\n");
-		mess.type = 'd';
-		write(rxCBs.client, (const void*)&mess, sizeof(mess));
-		while(5>(float)time){
-			current = std::clock();
-			time = (current-start)/CLOCKS_PER_SEC;
-		}
-	}
 }
 
 return 0;
