@@ -3594,7 +3594,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		txcvr.start_rx();
 	
 		int on = 1;
-		std::clock_t time = 0;	
+		float time = 0;	
 		int cantransmit = 0;
 		start = std::clock();
 		while(true)
@@ -3638,13 +3638,14 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 					txcvr.transmit_symbol();
 					}
 		   		txcvr.end_transmit_frame();
-				time = 0;
+				time = 0.0;
 				txcvr.start_rx();
 
 				//The secondary user will wait in this while loop and wait and see if any
 				//primary users appear
 				while(1 > (float)time)
 					{
+					printf("%f\n", time);
 					//printf("SU transmitting\n");
 					//printf("%ju\n", (uintmax_t)time);
 					//printf("%d\n", rxCBs.primaryon);
