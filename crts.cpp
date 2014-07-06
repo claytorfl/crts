@@ -3640,6 +3640,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		   		txcvr.end_transmit_frame();
 				time = 0.0;
 				txcvr.start_rx();
+				start = std::clock();
 
 				//The secondary user will wait in this while loop and wait and see if any
 				//primary users appear
