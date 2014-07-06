@@ -176,7 +176,34 @@ struct message{
 	int client;
 };
 
+//Adds together the values of 2 feedback structures
+struct feedbackStruct feedbackadder(struct feedbackStruct fb1, struct feedbackStruct fb2){
+	struct feedbackStruct resultfb;
+	resultfb.header_valid = fb1.header_valid + fb2.header_valid;
+	resultfb.payload_valid = fb1.payload_valid + fb2.payload_valid;
+   	resultfb.payload_len = fb1.payload_len + fb2.payload_len;
+	resultfb.payloadByteErrors = fb1.payloadByteErrors + fb2.payloadByteErrors;
+   	resultfb.payloadBitErrors = fb1.payloadBitErrors + fb2.payloadBitErrors;
+	resultfb.iteration = fb1.iteration + fb2.iteration;
+   	resultfb.evm = fb1.evm + fb2.evm;
+	resultfb. rssi = fb1.rssi + fb2.rssi;
+	resultfb.cfo = fb1.cfo + fb2.cfo;
+	return resultfb;
+}
 
+//Finds the position of an integer in an array of ints
+int finder(int * int_ptr, int * length, int value){
+	int iterator;
+	int len = *length;
+	for(iterator=0; iterator<len; ++iterator){
+		if(int_ptr[iterator] == value){
+			return iterator;
+		}
+	}
+	int_ptr[len] = value;
+	*length = len + 1;
+	return len;
+}
 
 
 struct serverThreadStruct {
@@ -1359,6 +1386,83 @@ void * serveTCPDSAclient(void * _sc_ptr){
     return NULL;
 }
 
+void * feedbackThread(void * v_ptr){
+	struct message * m_ptr = (struct message*) v_ptr;
+	int * clientlist;
+	int clientlistlength = 0;
+	int totalcycles = 0;
+	int index = 0;
+	int fblistlength = 10;
+	struct feedbackStruct fblist[fblistlength];
+	int feedbacknum[fblistlength];
+	struct feedbackStruct basicfb;
+	int fbnum = 0;
+
+	//Zeroes out the feedback structures so they can be added to when
+	//new feedback is received
+	for(int o; o<fblistlength; ++o){
+		fblist[o].header_valid = 0;
+		fblist[o].payload_valid = 0;
+	   	fblist[o].payload_len = 0;
+		fblist[o].payloadByteErrors = 0;
+	   	fblist[o].payloadBitErrors = 0;
+		fblist[o].iteration = 0;
+	   	fblist[o].evm = 0.0;
+		fblist[o]. rssi = 0.0;
+		fblist[o].cfo = 0.0;
+		fblist[o].block_flag = 0;
+		basicfb.payload_valid = 0;
+	   	basicfb.payload_len = 0;
+		basicfb.payloadByteErrors = 0;
+	   	basicfb.payloadBitErrors = 0;
+		basicfb.iteration = 0;
+	   	basicfb.evm = 0.0;
+		basicfb. rssi = 0.0;
+		basicfb.cfo = 0.0;
+		basicfb.block_flag = 0;
+		feedbacknum[o] = 0;
+	}
+	int primary = 0;
+	int secondary = 0;
+	std::clock_t time = std::clock();
+	int loop = 1;
+	
+	while(loop){
+		if(m_ptr->msgreceived == 1){
+			if(m_ptr->type == 'p'){
+				//index = finder(clientlist, &clientlistlength, msg.client); 
+				if(m_ptr->purpose == 'P'){
+					//fblist[index] = feedbackadder(fblist[index], msg.feed);
+					time = std::clock();
+					printf("Primary receiver received primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+					primary++;
+				}
+				if(m_ptr->purpose == 'S'){;
+					time = std::clock();
+					printf("Primary receiver received secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+					secondary++;
+				}
+				if(m_ptr->purpose == 'f'){;
+					time = std::clock();
+					printf("Received feedback from primary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+					primary++;
+					fbnum++;
+					basicfb = feedbackadder(basicfb, m_ptr->feed);
+				}
+				if(m_ptr->purpose == 'F'){;
+					time = std::clock();
+					printf("Received feedback from primary receiver with secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+					secondary++;
+				}
+			}
+		m_ptr->msgreceived = 0;
+		}
+	};
+	printf("Testing Complete\n");
+	return NULL;
+	
+}
+	
 
 
 // Create a TCP socket for the server and bind it to a port
@@ -2064,10 +2168,12 @@ int dsaCallback(unsigned char *  _header,
 	}
 
     // Variables for checking number of errors 
-    /*unsigned int payloadByteErrors  =   0;
+    unsigned int payloadByteErrors  =   0;
     unsigned int payloadBitErrors   =   0;
     int j,m;
 	unsigned int tx_byte;
+	if(received == 'f') tx_byte = 1;
+	if(received == 'F') tx_byte = 0;
 
     // Calculate byte error rate and bit error rate for payload
     for (m=0; m<(signed int)_payload_len; m++)
@@ -2113,7 +2219,7 @@ int dsaCallback(unsigned char *  _header,
     }
 
     // Receiver sends data to server*/
-	struct feedbackStruct fb = {};
+	//struct feedbackStruct fb = {};
 	if(rxCBS_ptr->usrptype == 'p' or rxCBS_ptr->usrptype == 's'){
 		struct message mess;
 		mess.type = rxCBS_ptr->usrptype;
@@ -2129,32 +2235,7 @@ int dsaCallback(unsigned char *  _header,
 
 } // end rxCallback()
 
-struct feedbackStruct feedbackadder(struct feedbackStruct fb1, struct feedbackStruct fb2){
-	struct feedbackStruct resultfb;
-	resultfb.header_valid = fb1.header_valid + fb2.header_valid;
-	resultfb.payload_valid = fb1.payload_valid + fb2.payload_valid;
-   	resultfb.payload_len = fb1.payload_len + fb2.payload_len;
-	resultfb.payloadByteErrors = fb1.payloadByteErrors + fb2.payloadByteErrors;
-   	resultfb.payloadBitErrors = fb1.payloadBitErrors + fb2.payloadBitErrors;
-	resultfb.iteration = fb1.iteration + fb2.iteration;
-   	resultfb.evm = fb1.evm + fb2.evm;
-	resultfb. rssi = fb1.rssi + fb2.rssi;
-	resultfb.cfo = fb1.cfo + fb2.cfo;
-	return resultfb;
-}
 
-int finder(int * int_ptr, int * length, int value){
-	int iterator;
-	int len = *length;
-	for(iterator=0; iterator<len; ++iterator){
-		if(int_ptr[iterator] == value){
-			return iterator;
-		}
-	}
-	int_ptr[len] = value;
-	*length = len + 1;
-	return len;
-}
 
 
 int main(int argc, char ** argv){
@@ -2330,7 +2411,7 @@ int main(int argc, char ** argv){
 	else{
 		ss.type = 'n';
 	}
-    if (isController) 
+    if (isController or (broadcasting == 1 and usingUSRPs == 1)) 
         pthread_create( &TCPServerThread, NULL, startTCPServer, (void*) &ss);
 
     struct rxCBstruct rxCBs = CreaterxCBStruct();
@@ -2381,7 +2462,7 @@ int main(int argc, char ** argv){
         if (verbose)
             printf("Connected to Server.\n");
 	}
-	if(usingUSRPs && isController){
+	if(usingUSRPs && isController or (broadcasting == 1 and usingUSRPs == 1)){
 		printf("\nPress any key once all nodes have connected to the TCP server\n");
 		getchar();
 	}
@@ -2718,7 +2799,7 @@ int main(int argc, char ** argv){
 
 //Simple Broadcasting
 //Simulate broadcasting with one transmitting radio
-if(broadcasting == 1){
+if(broadcasting == 1 && usingUSRPs == 0){
 
 printf("broadcasting\n");
 printf("%d\n", usingUSRPs);
@@ -3367,7 +3448,7 @@ if(dsa==1 && !usingUSRPs){
 //secondary transmitter with sensing capabilities
 if(dsa==1 && usingUSRPs && !receiver && !isController){
 
-
+	pthread_t receiverfeedbackThread;
 	struct message mess;
 	int primarymsgnumber = 1;
 	int secondarymsgnumber = 1;
@@ -3375,6 +3456,8 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 	double primaryresttime;
 	double secondarybursttime;
 	double secondaryscantime;
+	int primaryburstrandom;
+	int primaryrestrandom;
 	struct CognitiveEngine puce;
 	struct CognitiveEngine suce;
 	struct Scenario sc = CreateScenario();
@@ -3428,6 +3511,14 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		{
 		primaryresttime = tmpD;
 		}
+		if (config_setting_lookup_int(setting, "burstrandom", &tmpI))
+		{
+		primaryburstrandom = tmpI;
+		}
+		if (config_setting_lookup_int(setting, "restrandom", &tmpI))
+		{
+		primaryrestrandom = tmpI;
+		}
 		if (config_setting_lookup_string(setting, "ce", &str))
 		{
 		str2 = (char *)str;
@@ -3459,6 +3550,8 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 	//If it is a primary transmitter then the USRP ofdmtxrx object tranmists for its burst
 	//time then rest for its rest time
 	if(primary == 1){
+		if(broadcasting==1){
+		pthread_create( &receiverfeedbackThread, NULL, feedbackThread, (void*) &msg);}
 		mess.type = 'P';
 		rxCBs.usrptype = 'P';
 		verbose = 0;
@@ -3500,9 +3593,12 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		int on = 1;
 		std::clock_t time = 0;
 		start = std::clock();
-		//primarybursttime = 5;
-		//primaryresttime = 2;
+		srand(std::clock());
+		double primarybasebursttime = primarybursttime;
+		double primarybaseresttime = primaryresttime;
 		for(int o = 0; o<totaltime; ++o){
+			primarybursttime = primarybasebursttime + rand() % primaryburstrandom + 1;
+			primaryresttime = primarybaseresttime + rand() % primaryrestrandom + 1;
 			int on = 1;
 			time = 0;
 			start = std::clock();
@@ -3644,9 +3740,9 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 
 				//The secondary user will wait in this while loop and wait and see if any
 				//primary users appear
-				while(1 > (float)time)
+				while(0.5 > (float)time && rxCBs.primaryon == 0)
 					{
-					printf("%f\n", time);
+					//printf("%f\n", time);
 					//printf("SU transmitting\n");
 					//printf("%ju\n", (uintmax_t)time);
 					//printf("%d\n", rxCBs.primaryon);
