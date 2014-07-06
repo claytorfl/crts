@@ -3643,13 +3643,13 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 
 				//The secondary user will wait in this while loop and wait and see if any
 				//primary users appear
-				while(0.5 > (float)time)
+				while(1 > (float)time)
 					{
 					//printf("SU transmitting\n");
 					//printf("%ju\n", (uintmax_t)time);
 					//printf("%d\n", rxCBs.primaryon);
 					current = std::clock();
-					time = (current-start)/CLOCKS_PER_SEC;
+					time = ((float)(current-start))/CLOCKS_PER_SEC;
 					}
 				}
 			time = 0;
