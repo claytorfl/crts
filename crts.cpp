@@ -3593,12 +3593,12 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		int on = 1;
 		std::clock_t time = 0;
 		start = std::clock();
-		srand(std::clock());
+		//srand(std::clock());
 		double primarybasebursttime = primarybursttime;
 		double primarybaseresttime = primaryresttime;
 		for(int o = 0; o<totaltime; ++o){
-			primarybursttime = primarybasebursttime + rand() % primaryburstrandom + 1;
-			primaryresttime = primarybaseresttime + rand() % primaryrestrandom + 1;
+			primarybursttime = primarybasebursttime + rand() % primaryburstrandom;
+			primaryresttime = primarybaseresttime + rand() % primaryrestrandom;
 			int on = 1;
 			time = 0;
 			start = std::clock();
