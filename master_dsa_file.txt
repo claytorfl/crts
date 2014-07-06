@@ -10,7 +10,9 @@ detectiontype = "simple";
 PU=
 {
 bursttime = 5.0;
+burstrandom = 4;
 resttime = 8.0;
+restrandom = 5;
 ce = "ce1.txt";
 completeframe = 0;
 };
