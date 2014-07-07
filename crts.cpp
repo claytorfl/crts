@@ -3811,7 +3811,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 
 				//The secondary user will wait in this while loop and wait and see if any
 				//primary users appear
-				while(0.5 > (float)time && rxCBs.primaryon == 0)
+				while(0.5 > (float)time) //&& rxCBs.primaryon == 0)
 					{
 					//printf("%f\n", time);
 					//printf("SU transmitting\n");
