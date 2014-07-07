@@ -1399,7 +1399,8 @@ void * feedbackThread(void * v_ptr){
 	int client = bfi_ptr->client;
 	struct message msg;
 	msg.type = 'P';
-	int * clientlist = NULL;
+	int clientlist[10];
+	clientlist[0] = 0;
 	int clientlistlength = 1;
 	int totalcycles = 0;
 	int index = 0;
