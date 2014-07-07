@@ -3693,6 +3693,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 					//enactScenarioBaseband(txcvr.fgbuffer, ce, sc);
 					txcvr.transmit_symbol();
 					}
+				usleep(100);
 		   		txcvr.end_transmit_frame();
 				current = std::clock();
 				time = ((float)(current-start))/CLOCKS_PER_SEC;
