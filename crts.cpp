@@ -1442,7 +1442,7 @@ void * feedbackThread(void * v_ptr){
 	int h;
 	
 	while(loop){
-		printf("%d\n", bfi_ptr->msgnumber);
+		printf("%d\n", *bfi_ptr->msgnumber);
 		if(m_ptr->msgreceived == 1){
 			if(m_ptr->type == 'p'){
 				//index = finder(clientlist, &clientlistlength, msg.client); 
