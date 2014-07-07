@@ -3614,12 +3614,14 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 	//time then rest for its rest time
 	if(primary == 1){
 		struct broadcastfeedbackinfo bfi;
+		float timedivisor = 5.0;
 		if(broadcasting==1){
-		
+		timedivisor = 1.0;
 		bfi.client = rxCBs.client;
 		bfi.m_ptr = &msg;
 		bfi.msgnumber = &primarymsgnumber;
-		pthread_create( &receiverfeedbackThread, NULL, feedbackThread, (void*) &bfi);}
+		pthread_create( &receiverfeedbackThread, NULL, feedbackThread, (void*) &bfi);
+		}
 		mess.type = 'P';
 		rxCBs.usrptype = 'P';
 		verbose = 0;
@@ -3681,7 +3683,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			primarymsgnumber++;
 			//printf("%d\n", mess.number);
 			//For some reason time is about 5 times slower in this while loop
-			while(primarybursttime > time){
+			while(primarybursttime/timedivisor > time){
 				//printf("Primary time %d\n", CLOCKS_PER_SEC);
 				//printf("%f\n", (float)time);
 		   		txcvr.end_transmit_frame();
