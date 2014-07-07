@@ -1384,9 +1384,6 @@ void * serveTCPDSAclient(void * _sc_ptr){
 		    bzero(&read_buffer, sizeof(read_buffer));
 		    read(client, &read_buffer, sizeof(read_buffer));
 			if(read_buffer.number > number and (read_buffer.type == 'p' or read_buffer.type == 's' or read_buffer.type == 'P' or read_buffer.type == 'S')){
-				if(read_buffer.type == 'P'){
-					printf("Primary\n");
-				}
 				*m_ptr = read_buffer;
 				m_ptr->msgreceived = 1;
 				number = read_buffer.number;
@@ -1428,6 +1425,7 @@ void * feedbackThread(void * v_ptr){
 		fblist[o]. rssi = 0.0;
 		fblist[o].cfo = 0.0;
 		fblist[o].block_flag = 0;*/
+		basicfb.header_valid = 0;
 		basicfb.payload_valid = 0;
 	   	basicfb.payload_len = 0;
 		basicfb.payloadByteErrors = 0;
@@ -1479,6 +1477,7 @@ void * feedbackThread(void * v_ptr){
 						}
 					else{
 						//printf("%d\n", client);
+						basicfb.header_valid /= fbnum;
 						basicfb.payload_valid /= fbnum;
 					   	basicfb.payload_len /= fbnum;
 						basicfb.payloadByteErrors /= fbnum;
@@ -1494,6 +1493,7 @@ void * feedbackThread(void * v_ptr){
 						//printf("%d\n", msg.number);
 						write(client, (const void *)&msg, sizeof(msg));
 						(*bfi_ptr->msgnumber)++;
+						basicfb.header_valid = 0;
 						basicfb.payload_valid = 0;
 					   	basicfb.payload_len = 0;
 						basicfb.payloadByteErrors = 0;
