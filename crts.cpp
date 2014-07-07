@@ -1442,7 +1442,7 @@ void * feedbackThread(void * v_ptr){
 	int h;
 	
 	while(loop){
-		printf("%d\n", *bfi_ptr->msgnumber);
+		//printf("%d\n", *bfi_ptr->msgnumber);
 		if(m_ptr->msgreceived == 1){
 			if(m_ptr->type == 'p'){
 				//index = finder(clientlist, &clientlistlength, msg.client); 
@@ -1487,8 +1487,8 @@ void * feedbackThread(void * v_ptr){
 						msg.feed = basicfb;
 						msg.purpose = 'f';
 						msg.number = *bfi_ptr->msgnumber;
-						printf("%d\n", msg.number);
-						write(client, (const void *)&msg, sizeof(&msg));
+						//printf("%d\n", msg.number);
+						write(client, (const void *)&msg, sizeof(msg));
 						(*bfi_ptr->msgnumber)++;
 						basicfb.payload_valid = 0;
 					   	basicfb.payload_len = 0;
@@ -3659,6 +3659,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		double primarybasebursttime = primarybursttime;
 		double primarybaseresttime = primaryresttime;
 		for(int o = 0; o<totaltime; ++o){
+			printf("%d\n", primarymsgnumber);
 			primarybursttime = primarybasebursttime + rand() % primaryburstrandom;
 			primaryresttime = primarybaseresttime + rand() % primaryrestrandom;
 			int on = 1;
