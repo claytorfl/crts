@@ -1405,15 +1405,15 @@ void * feedbackThread(void * v_ptr){
 	int totalcycles = 0;
 	int index = 0;
 	int fblistlength = 10;
-	struct feedbackStruct fblist[fblistlength];
-	int feedbacknum[fblistlength];
+	//struct feedbackStruct fblist[fblistlength];
+	//int feedbacknum[fblistlength];
 	struct feedbackStruct basicfb;
 	int fbnum = 0;
 
 	//Zeroes out the feedback structures so they can be added to when
 	//new feedback is received
 	for(int o; o<fblistlength; ++o){
-		fblist[o].header_valid = 0;
+		/*fblist[o].header_valid = 0;
 		fblist[o].payload_valid = 0;
 	   	fblist[o].payload_len = 0;
 		fblist[o].payloadByteErrors = 0;
@@ -1422,7 +1422,7 @@ void * feedbackThread(void * v_ptr){
 	   	fblist[o].evm = 0.0;
 		fblist[o]. rssi = 0.0;
 		fblist[o].cfo = 0.0;
-		fblist[o].block_flag = 0;
+		fblist[o].block_flag = 0;*/
 		basicfb.payload_valid = 0;
 	   	basicfb.payload_len = 0;
 		basicfb.payloadByteErrors = 0;
@@ -1432,7 +1432,7 @@ void * feedbackThread(void * v_ptr){
 		basicfb. rssi = 0.0;
 		basicfb.cfo = 0.0;
 		basicfb.block_flag = 0;
-		feedbacknum[o] = 0;
+		//feedbacknum[o] = 0;
 	}
 	int primary = 0;
 	int secondary = 0;
@@ -3606,7 +3606,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		struct broadcastfeedbackinfo bfi;
 		bfi.client = rxCBs.client;
 		bfi.m_ptr = &msg;
-		pthread_create( &receiverfeedbackThread, NULL, feedbackThread, (void*) &msg);}
+		pthread_create( &receiverfeedbackThread, NULL, feedbackThread, (void*) &bfi);}
 		mess.type = 'P';
 		rxCBs.usrptype = 'P';
 		verbose = 0;
