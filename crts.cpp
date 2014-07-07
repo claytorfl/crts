@@ -221,6 +221,11 @@ struct serveClientStruct {
 	struct message * m_ptr;
 };
 
+struct broadcastfeedbackinfo{
+	struct message * m_ptr;
+	int client;
+};
+
 struct scenarioSummaryInfo{
 	int total_frames[60][60];
 	int valid_headers[60][60];
@@ -343,6 +348,8 @@ struct serveClientStruct CreateServeClientStruct() {
 	sc.fb_ptr = NULL;
 	return sc;
 }; // End CreateServeClientStruct
+
+
 
 void feedbackStruct_print(feedbackStruct * fb_ptr)
 {
@@ -1387,9 +1394,13 @@ void * serveTCPDSAclient(void * _sc_ptr){
 }
 
 void * feedbackThread(void * v_ptr){
-	struct message * m_ptr = (struct message*) v_ptr;
-	int * clientlist;
-	int clientlistlength = 0;
+	struct broadcastfeedbackinfo * bfi_ptr = (struct broadcastfeedbackinfo*) v_ptr;
+	struct message * m_ptr = bfi_ptr->m_ptr;
+	int client = bfi_ptr->client;
+	struct message msg;
+	msg.type = 'P';
+	int * clientlist = NULL;
+	int clientlistlength = 1;
 	int totalcycles = 0;
 	int index = 0;
 	int fblistlength = 10;
@@ -1426,6 +1437,7 @@ void * feedbackThread(void * v_ptr){
 	int secondary = 0;
 	std::clock_t time = std::clock();
 	int loop = 1;
+	int h;
 	
 	while(loop){
 		if(m_ptr->msgreceived == 1){
@@ -1446,8 +1458,46 @@ void * feedbackThread(void * v_ptr){
 					time = std::clock();
 					printf("Received feedback from primary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					primary++;
-					fbnum++;
-					basicfb = feedbackadder(basicfb, m_ptr->feed);
+					for(h = 0; h<clientlistlength; h++){
+						if(clientlist[h] == m_ptr->client){
+							break;
+						}
+					}
+					//index = std::find(clientlist, clientlistlength, m_ptr->client);
+					if(h == clientlist[clientlistlength]){
+						fbnum++;
+						basicfb = feedbackadder(basicfb, m_ptr->feed);
+						clientlist[clientlistlength] = m_ptr->client;
+						clientlistlength++;
+						}
+					else{
+						basicfb.payload_valid /= fbnum;
+					   	basicfb.payload_len /= fbnum;
+						basicfb.payloadByteErrors /= fbnum;
+					   	basicfb.payloadBitErrors /= fbnum;
+						basicfb.iteration /= fbnum;
+					   	basicfb.evm /= fbnum;
+						basicfb. rssi /= fbnum;
+						basicfb.cfo /= fbnum;
+						basicfb.block_flag /= fbnum;
+						msg.feed = basicfb;
+						msg.purpose = 'f';
+						write(client, &msg, sizeof(&msg));
+						basicfb.payload_valid = 0;
+					   	basicfb.payload_len = 0;
+						basicfb.payloadByteErrors = 0;
+					   	basicfb.payloadBitErrors = 0;
+						basicfb.iteration = 0;
+					   	basicfb.evm = 0.0;
+						basicfb. rssi = 0.0;
+						basicfb.cfo = 0.0;
+						basicfb.block_flag = 0;	
+						basicfb = feedbackadder(basicfb, m_ptr->feed);			
+						fbnum = 1;
+						clientlist[0] = m_ptr->client;
+						clientlistlength = 1;
+					}
+						
 				}
 				if(m_ptr->purpose == 'F'){;
 					time = std::clock();
@@ -2226,6 +2276,7 @@ int dsaCallback(unsigned char *  _header,
 		mess.feed = fb;
 		mess.purpose = received;
 		mess.number = rxCBS_ptr->number;
+		mess.client = rxCBS_ptr->client;
 		++rxCBS_ptr->number;
 	
 		write(rxCBS_ptr->client, (void*)&mess, sizeof(mess));
@@ -3551,6 +3602,9 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 	//time then rest for its rest time
 	if(primary == 1){
 		if(broadcasting==1){
+		struct broadcastfeedbackinfo bfi;
+		bfi.client = rxCBs.client;
+		bfi.m_ptr = &msg;
 		pthread_create( &receiverfeedbackThread, NULL, feedbackThread, (void*) &msg);}
 		mess.type = 'P';
 		rxCBs.usrptype = 'P';
@@ -3942,7 +3996,7 @@ if(dsa== 1 && receiver == 1 && secondary==1){
 			rxCBs.secondarysending = 0;
 
 			time = 0;
-			rxCBs.primaryon == 0;
+			rxCBs.primaryon = 0;
 			start = std::clock();
 			while(1>time){
 				//printf("%ju\n", (uintmax_t)time);
@@ -3958,14 +4012,14 @@ if(dsa== 1 && receiver == 1 && secondary==1){
 }
 
 if(dsa && isController){
-	int * clientlist;
-	int clientlistlength = 0;
+	//int * clientlist;
+	//int clientlistlength = 0;
 	int latestprimary = 0;
 	int latestsecondary = 0;
 	int totalfalsealarm = 0;
 	int totalmissedhole = 0;
 	int totalcycles = 0;
-	int index = 0;
+	//int index = 0;
 	int fblistlength = 10;
 	struct feedbackStruct fblist[fblistlength];
 	int feedbacknum[fblistlength];
@@ -3991,7 +4045,7 @@ if(dsa && isController){
 	std::clock_t evacuationtime;
 	std::clock_t rendevoustime;
 	int primary = 0;
-	int secondary = 0;
+	//int secondary = 0;
 	std::clock_t time = std::clock();
 	int loop = 1;
 	while(loop){
@@ -4018,7 +4072,14 @@ if(dsa && isController){
 						primary = 0;
 						latestprimary = msg.number;
 						loop = 0;
-						printf("Testing Over!!!\n", ((float)time/CLOCKS_PER_SEC));
+						printf("Testing Over!!!\n");
+					}
+					if(msg.purpose == 'f'){
+						
+						latestprimary = msg.number;
+						
+						printf("Primary feedback!!!\n");
+						feedbackStruct_print(&msg.feed);
 					}
 				}
 			}
@@ -4058,7 +4119,7 @@ if(dsa && isController){
 					}
 				}
 			}
-			if(msg.type == 'p'){
+			/*if(msg.type == 'p'){
 				index = finder(clientlist, &clientlistlength, msg.client); 
 				if(msg.purpose == 'P'){
 					fblist[index] = feedbackadder(fblist[index], msg.feed);
@@ -4095,7 +4156,7 @@ if(dsa && isController){
 					time = std::clock();
 					printf("Received feedback from secondary receiver with secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 				}
-			}
+			}*/
 			
 
 		msg.msgreceived = 0;
