@@ -1485,7 +1485,7 @@ void * feedbackThread(void * v_ptr){
 						basicfb.cfo /= fbnum;
 						basicfb.block_flag /= fbnum;
 						msg.feed = basicfb;
-						msg.purpose = 'f';
+						msg.purpose = 't';
 						msg.number = *bfi_ptr->msgnumber;
 						//printf("%d\n", msg.number);
 						write(client, (const void *)&msg, sizeof(msg));
