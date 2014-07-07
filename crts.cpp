@@ -1384,6 +1384,9 @@ void * serveTCPDSAclient(void * _sc_ptr){
 		    bzero(&read_buffer, sizeof(read_buffer));
 		    read(client, &read_buffer, sizeof(read_buffer));
 			if(read_buffer.number > number and (read_buffer.type == 'p' or read_buffer.type == 's' or read_buffer.type == 'P' or read_buffer.type == 'S')){
+				if(read_buffer.type == 'P'){
+					printf("Primary\n");
+				}
 				*m_ptr = read_buffer;
 				m_ptr->msgreceived = 1;
 				number = read_buffer.number;
@@ -3672,6 +3675,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			printf("PU transmitting\n");
 			mess.number = primarymsgnumber;
 			mess.purpose = 't';
+			printf("%d\n", rxCBs.client);
 			write(rxCBs.client, (const void*)&mess, sizeof(mess));
 			primarymsgnumber++;
 			//printf("%d\n", mess.number);
