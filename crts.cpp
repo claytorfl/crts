@@ -1486,6 +1486,7 @@ void * feedbackThread(void * v_ptr){
 						msg.feed = basicfb;
 						msg.purpose = 'f';
 						msg.number = *bfi_ptr->msgnumber;
+						printf("%d\n", msg.number);
 						write(client, (const void *)&msg, sizeof(&msg));
 						*bfi_ptr->msgnumber++;
 						basicfb.payload_valid = 0;
