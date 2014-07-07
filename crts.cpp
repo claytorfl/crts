@@ -2239,7 +2239,7 @@ int dsaCallback(unsigned char *  _header,
     // Calculate byte error rate and bit error rate for payload
     for (m=0; m<(signed int)_payload_len; m++)
     {
-		tx_byte = msequence_generate_symbol(rx_ms,8);
+		//tx_byte = msequence_generate_symbol(rx_ms,8);
 		//printf( "%1i %1i\n", (signed int)_payload[m], tx_byte );
         if (((int)_payload[m] != tx_byte))
         {
