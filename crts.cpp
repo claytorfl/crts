@@ -1457,7 +1457,7 @@ void * feedbackThread(void * v_ptr){
 				}
 				if(m_ptr->purpose == 'f'){;
 					time = std::clock();
-					printf("Received feedback from primary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+					//printf("Received feedback from primary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					primary++;
 					for(h = 0; h<clientlistlength; h++){
 						if(clientlist[h] == m_ptr->client){
@@ -1465,7 +1465,7 @@ void * feedbackThread(void * v_ptr){
 						}
 					}
 					//index = std::find(clientlist, clientlistlength, m_ptr->client);
-					if(h == clientlist[clientlistlength]){
+					if(h == clientlistlength){
 						fbnum++;
 						basicfb = feedbackadder(basicfb, m_ptr->feed);
 						clientlist[clientlistlength] = m_ptr->client;
