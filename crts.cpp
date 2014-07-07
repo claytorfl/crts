@@ -3615,7 +3615,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 	if(primary == 1){
 		if(broadcasting==1){
 		struct broadcastfeedbackinfo bfi;
-		bfi.client = client;
+		bfi.client = rxCBs.client;
 		bfi.m_ptr = &msg;
 		bfi.msgnumber = &primarymsgnumber;
 		pthread_create( &receiverfeedbackThread, NULL, feedbackThread, (void*) &bfi);}
