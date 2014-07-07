@@ -1398,6 +1398,7 @@ void * feedbackThread(void * v_ptr){
 	struct broadcastfeedbackinfo * bfi_ptr = (struct broadcastfeedbackinfo*) v_ptr;
 	struct message * m_ptr = bfi_ptr->m_ptr;
 	int client = bfi_ptr->client;
+	printf("%d\n", client);
 	struct message msg;
 	msg.type = 'P';
 	int clientlist[10];
@@ -2489,7 +2490,7 @@ int main(int argc, char ** argv){
     usleep(0.1e6);
 
 	//signal (SIGPIPE, SIG_IGN);
-
+	int client;
 	const int socket_to_server = socket(AF_INET, SOCK_STREAM, 0);
 	if(!isController  || !usingUSRPs){
 		// Create a client TCP socket] 
@@ -2517,6 +2518,7 @@ int main(int argc, char ** argv){
 		}
 
 		rxCBs.client = socket_to_server;
+		client = rxCBs.client;
         if (verbose)
             printf("Connected to Server.\n");
 	}
@@ -3610,7 +3612,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 	if(primary == 1){
 		if(broadcasting==1){
 		struct broadcastfeedbackinfo bfi;
-		bfi.client = rxCBs.client;
+		bfi.client = client;
 		bfi.m_ptr = &msg;
 		bfi.msgnumber = &primarymsgnumber;
 		pthread_create( &receiverfeedbackThread, NULL, feedbackThread, (void*) &bfi);}
