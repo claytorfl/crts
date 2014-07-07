@@ -1408,7 +1408,7 @@ void * feedbackThread(void * v_ptr){
 	//struct feedbackStruct fblist[fblistlength];
 	//int feedbacknum[fblistlength];
 	struct feedbackStruct basicfb;
-	int fbnum = 0;
+	int fbnum = 1;
 
 	//Zeroes out the feedback structures so they can be added to when
 	//new feedback is received
