@@ -224,6 +224,7 @@ struct serveClientStruct {
 struct broadcastfeedbackinfo{
 	struct message * m_ptr;
 	int client;
+	int * msgnumber;
 };
 
 struct scenarioSummaryInfo{
@@ -1483,7 +1484,9 @@ void * feedbackThread(void * v_ptr){
 						basicfb.block_flag /= fbnum;
 						msg.feed = basicfb;
 						msg.purpose = 'f';
+						msg.number = *bfi_ptr->msgnumber;
 						write(client, &msg, sizeof(&msg));
+						*bfi_ptr->msgnumber++;
 						basicfb.payload_valid = 0;
 					   	basicfb.payload_len = 0;
 						basicfb.payloadByteErrors = 0;
@@ -3606,6 +3609,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		struct broadcastfeedbackinfo bfi;
 		bfi.client = rxCBs.client;
 		bfi.m_ptr = &msg;
+		bfi.msgnumber = &primarymsgnumber;
 		pthread_create( &receiverfeedbackThread, NULL, feedbackThread, (void*) &bfi);}
 		mess.type = 'P';
 		rxCBs.usrptype = 'P';
@@ -3666,7 +3670,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			primarymsgnumber++;
 			//printf("%d\n", mess.number);
 			//For some reason time is about 5 times slower in this while loop
-			while(primarybursttime/5.0 > time){
+			while(primarybursttime > time){
 				//printf("Primary time %d\n", CLOCKS_PER_SEC);
 				//printf("%f\n", (float)time);
 		   		txcvr.end_transmit_frame();
