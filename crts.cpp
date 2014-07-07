@@ -1478,7 +1478,7 @@ void * feedbackThread(void * v_ptr){
 						clientlistlength++;
 						}
 					else{
-						printf("%d\n", client);
+						//printf("%d\n", client);
 						basicfb.payload_valid /= fbnum;
 					   	basicfb.payload_len /= fbnum;
 						basicfb.payloadByteErrors /= fbnum;
@@ -3613,8 +3613,9 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 	//If it is a primary transmitter then the USRP ofdmtxrx object tranmists for its burst
 	//time then rest for its rest time
 	if(primary == 1){
-		if(broadcasting==1){
 		struct broadcastfeedbackinfo bfi;
+		if(broadcasting==1){
+		
 		bfi.client = rxCBs.client;
 		bfi.m_ptr = &msg;
 		bfi.msgnumber = &primarymsgnumber;
@@ -3675,7 +3676,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			printf("PU transmitting\n");
 			mess.number = primarymsgnumber;
 			mess.purpose = 't';
-			printf("%d\n", rxCBs.client);
+			printf("%d %d\n", rxCBs.client, bfi.client);
 			write(rxCBs.client, (const void*)&mess, sizeof(mess));
 			primarymsgnumber++;
 			//printf("%d\n", mess.number);
