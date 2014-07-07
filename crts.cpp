@@ -1473,6 +1473,7 @@ void * feedbackThread(void * v_ptr){
 						clientlistlength++;
 						}
 					else{
+						printf("Sending message\n");
 						basicfb.payload_valid /= fbnum;
 					   	basicfb.payload_len /= fbnum;
 						basicfb.payloadByteErrors /= fbnum;
