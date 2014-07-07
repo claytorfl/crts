@@ -1401,7 +1401,7 @@ void * feedbackThread(void * v_ptr){
 	struct broadcastfeedbackinfo * bfi_ptr = (struct broadcastfeedbackinfo*) v_ptr;
 	struct message * m_ptr = bfi_ptr->m_ptr;
 	int client = bfi_ptr->client;
-	printf("%d\n", client);
+	//printf("%d\n", client);
 	struct message msg;
 	msg.type = 'P';
 	int clientlist[10];
@@ -1489,7 +1489,7 @@ void * feedbackThread(void * v_ptr){
 						basicfb.cfo /= fbnum;
 						basicfb.block_flag /= fbnum;
 						msg.feed = basicfb;
-						msg.purpose = 't';
+						msg.purpose = 'f';
 						msg.number = *bfi_ptr->msgnumber;
 						//printf("%d\n", msg.number);
 						write(client, (const void *)&msg, sizeof(msg));
@@ -3665,7 +3665,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		double primarybasebursttime = primarybursttime;
 		double primarybaseresttime = primaryresttime;
 		for(int o = 0; o<totaltime; ++o){
-			printf("%d\n", primarymsgnumber);
+			//printf("%d\n", primarymsgnumber);
 			primarybursttime = primarybasebursttime + rand() % primaryburstrandom;
 			primaryresttime = primarybaseresttime + rand() % primaryrestrandom;
 			int on = 1;
@@ -3676,7 +3676,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			printf("PU transmitting\n");
 			mess.number = primarymsgnumber;
 			mess.purpose = 't';
-			printf("%d %d\n", rxCBs.client, bfi.client);
+			//printf("%d %d\n", rxCBs.client, bfi.client);
 			write(rxCBs.client, (const void*)&mess, sizeof(mess));
 			primarymsgnumber++;
 			//printf("%d\n", mess.number);
