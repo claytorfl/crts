@@ -4052,11 +4052,11 @@ if(dsa && isController){
 	int fblistlength = 10;
 	struct feedbackStruct fblist[fblistlength];
 	int feedbacknum[fblistlength];
-	std::string args = "";
-	double rssi;
-	std::string strings = "A:0";
-	uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
-	usrp->set_rx_subdev_spec(strings, 0);
+	//std::string args = "";
+	//double rssi;
+	//std::string strings = "A:0";
+	//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
+	//usrp->set_rx_subdev_spec(strings, 0);
 	for(int o; o<fblistlength; ++o){
 		fblist[o].header_valid = 0;
 		fblist[o].payload_valid = 0;
@@ -4082,8 +4082,8 @@ if(dsa && isController){
 	std::clock_t time = std::clock();
 	int loop = 1;
 	while(loop){
-		rssi = usrp->uhd::usrp::multi_usrp::read_rssi(0);
-		printf("%f\n", rssi);
+		//rssi = usrp->uhd::usrp::multi_usrp::read_rssi(0);
+		//printf("%f\n", rssi);
 		if(msg.msgreceived == 1){
 			if(msg.type == 'P'){
 				if(latestprimary<msg.number){
