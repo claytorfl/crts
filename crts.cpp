@@ -4081,7 +4081,7 @@ if(dsa && isController){
 	int loop = 1;
 	while(loop){
 		//rssi = uhd::usrp::multi_usrp::read_rssi(0);
-		printf("%f\n", rssi);
+		//printf("%f\n", rssi);
 		if(msg.msgreceived == 1){
 			if(msg.type == 'P'){
 				if(latestprimary<msg.number){
