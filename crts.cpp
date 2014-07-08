@@ -3392,7 +3392,7 @@ if(dsa==1 && !usingUSRPs){
     if (setting != NULL)
     {
         // Read the strings
-        if (config_setting_lookup_int(setting, "totaltime", &tmpI))
+        if (config_setting_lookup_int(setting, "totalcycles", &tmpI))
         {
 		totaltime = tmpI;
         }
@@ -3725,6 +3725,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			}
 		}
 		mess.purpose = 'F';
+		mess.number = primarymsgnumber;
 		write(rxCBs.client, (const void*)&mess, sizeof(mess));
 	}
 
@@ -4053,7 +4054,7 @@ if(dsa && isController){
 	int feedbacknum[fblistlength];
 	std::string args = "";
 	double rssi;
-	//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
+	uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
 
 	for(int o; o<fblistlength; ++o){
 		fblist[o].header_valid = 0;
@@ -4080,8 +4081,8 @@ if(dsa && isController){
 	std::clock_t time = std::clock();
 	int loop = 1;
 	while(loop){
-		//rssi = uhd::usrp::multi_usrp::read_rssi(0);
-		//printf("%f\n", rssi);
+		rssi = usrp->uhd::usrp::multi_usrp::read_rssi(0);
+		printf("%f\n", rssi);
 		if(msg.msgreceived == 1){
 			if(msg.type == 'P'){
 				if(latestprimary<msg.number){
@@ -4106,6 +4107,7 @@ if(dsa && isController){
 						latestprimary = msg.number;
 						loop = 0;
 						printf("Testing Over!!!\n");
+						break;
 					}
 					if(msg.purpose == 'f'){
 						
