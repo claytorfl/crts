@@ -4081,7 +4081,7 @@ if(dsa && isController){
 	std::clock_t time = std::clock();
 	int loop = 1;
 	while(loop){
-		rssi = usrp->uhd::usrp::multi_usrp::read_rssi(0);
+		rssi = usrp->uhd::usrp::multi_usrp::read_rssi(5);
 		printf("%f\n", rssi);
 		if(msg.msgreceived == 1){
 			if(msg.type == 'P'){

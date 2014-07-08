@@ -2,7 +2,7 @@
 
 params=
 {
-totaltime = 10;
+totalcycles = 10;
 dsatype = "justsource";
 detectiontype = "simple";
 };
