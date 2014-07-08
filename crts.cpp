@@ -3521,6 +3521,10 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 	double secondaryscantime;
 	int primaryburstrandom;
 	int primaryrestrandom;
+	int uninterruptedframes = 1;
+	int adapt = 0;
+	int usescenario = 0;
+	
 	struct CognitiveEngine puce;
 	struct CognitiveEngine suce;
 	struct Scenario sc = CreateScenario();
@@ -3582,11 +3586,29 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		{
 		primaryrestrandom = tmpI;
 		}
+		if (config_setting_lookup_int(setting, "adapt", &tmpI))
+		{
+		adapt = tmpI;
+		}
+		if (config_setting_lookup_int(setting, "usescenario", &tmpI))
+		{
+		usescenario = tmpI;
+		}
+		if (config_setting_lookup_int(setting, "uninterruptedframes", &tmpI))
+		{
+		uninterruptedframes = tmpI;
+		}
 		if (config_setting_lookup_string(setting, "ce", &str))
 		{
 		str2 = (char *)str;
 		puce = CreateCognitiveEngine();
 		readCEConfigFile(&puce, str2, verbose);
+		}
+		if (config_setting_lookup_string(setting, "scenario", &str))
+		{
+		str2 = (char *)str;
+		sc = CreateScenario();
+		readScConfigFile(&sc, str2, verbose);
 		}
 	}
 	setting = config_lookup(&cfg, "SU");
@@ -3601,12 +3623,29 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		{
 		secondaryscantime = tmpD;
 		}
-
+		if (config_setting_lookup_int(setting, "adapt", &tmpI))
+		{
+		adapt = tmpI;
+		}
+		if (config_setting_lookup_int(setting, "usescenario", &tmpI))
+		{
+		usescenario = tmpI;
+		}
+		if (config_setting_lookup_int(setting, "uninterruptedframes", &tmpI))
+		{
+		uninterruptedframes = tmpI;
+		}
 		if (config_setting_lookup_string(setting, "ce", &str))
 		{
 		str2 = (char *)str;
-		suce = CreateCognitiveEngine();
-		readCEConfigFile(&suce, str2, verbose);
+		puce = CreateCognitiveEngine();
+		readCEConfigFile(&puce, str2, verbose);
+		}
+		if (config_setting_lookup_string(setting, "scenario", &str))
+		{
+		str2 = (char *)str;
+		sc = CreateScenario();
+		readScConfigFile(&sc, str2, verbose);
 		}
 	}
 	
@@ -3699,11 +3738,13 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 					//current = std::clock();
 					//time = (current-start)/CLOCKS_PER_SEC;
 					//printf("%f\n", (float)time);
-					//enactScenarioBaseband(txcvr.fgbuffer, ce, sc);
+					if(usescenario){
+					enactScenarioBaseband(txcvr.fgbuffer, ce, sc);}
 					txcvr.transmit_symbol();
 					}
 				usleep(100);
 		   		txcvr.end_transmit_frame();
+				postTxTasks(&puce, &msg.feed, verbose);
 				current = std::clock();
 				time = ((float)(current-start))/CLOCKS_PER_SEC;
 			}
@@ -3778,36 +3819,42 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			write(rxCBs.client, (const void*)&mess, sizeof(mess));
 			//printf("%d\n", mess.number);
 			secondarymsgnumber++;
-
+			int t;
 			//If it does not sense the primary user then the secondary user will transmit
 			while(rxCBs.primaryon==0)
 				{
-				//printf("%d\n", rxCBs.primaryon);
-				//if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
-				modulation_scheme ms = convertModScheme(suce.modScheme, &suce.bitsPerSym);
-
-				// Set Cyclic Redundency Check Scheme
-				//crc_scheme check = convertCRCScheme(ce.crcScheme);
-
-				// Set inner forward error correction scheme
-				//if (verbose) printf("Inner FEC: ");
-				fec_scheme fec0 = convertFECScheme(suce.innerFEC, verbose);
-
-				// Set outer forward error correction scheme
-				//if (verbose) printf("Outer FEC: ");
-				fec_scheme fec1 = convertFECScheme(suce.outerFEC, verbose);
-				usleep(1);
-				txcvr.assemble_frame(header, payload, suce.payloadLen, ms, fec0, fec1);
-				int isLastSymbol = 0;
-				while(!isLastSymbol) //&& rxCBs.primaryon==0)
-					{
-					usleep(1);
+				for(t=0; t<uninterruptedframes; t++){
 					//printf("%d\n", rxCBs.primaryon);
-					isLastSymbol = txcvr.write_symbol();
-					//enactScenarioBaseband(txcvr.fgbuffer, ce, sc);
-					txcvr.transmit_symbol();
-					}
-		   		txcvr.end_transmit_frame();
+					//if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
+					modulation_scheme ms = convertModScheme(suce.modScheme, &suce.bitsPerSym);
+
+					// Set Cyclic Redundency Check Scheme
+					//crc_scheme check = convertCRCScheme(ce.crcScheme);
+
+					// Set inner forward error correction scheme
+					//if (verbose) printf("Inner FEC: ");
+					fec_scheme fec0 = convertFECScheme(suce.innerFEC, verbose);
+
+					// Set outer forward error correction scheme
+					//if (verbose) printf("Outer FEC: ");
+					fec_scheme fec1 = convertFECScheme(suce.outerFEC, verbose);
+					usleep(1);
+					txcvr.assemble_frame(header, payload, suce.payloadLen, ms, fec0, fec1);
+					int isLastSymbol = 0;
+					while(!isLastSymbol) //&& rxCBs.primaryon==0)
+						{
+						usleep(1);
+						//printf("%d\n", rxCBs.primaryon);
+						isLastSymbol = txcvr.write_symbol();
+						if(usescenario){
+						enactScenarioBaseband(txcvr.fgbuffer, ce, sc);}
+						txcvr.transmit_symbol();
+						}
+			   		txcvr.end_transmit_frame();
+					usleep(1);
+					if(adapt){
+					postTxTasks(&suce, &msg.feed, verbose);}
+				}
 				time = 0.0;
 				txcvr.start_rx();
 				start = std::clock();
