@@ -2359,10 +2359,10 @@ int main(int argc, char ** argv){
 		case 'B':	broadcasting = 1; break;
 		case 'Q':   tester = 1; break;
 		//Designate the node as a primary user
-		case 'P':	primary = 1; break;
+		case 'P':	primary = 1; dsa = 1; break;
 
 		//Designate the node as a secondary user
-		case 'S':	secondary = 1; break;
+		case 'S':	secondary = 1; dsa = 1; break;
 
 		//Designate the node as a receiver
 		case 'R':	receiver = 1; break;
@@ -4035,13 +4035,25 @@ if(dsa && isController){
 	//int clientlistlength = 0;
 	int latestprimary = 0;
 	int latestsecondary = 0;
-	int totalfalsealarm = 0;
-	int totalmissedhole = 0;
-	int totalcycles = 0;
+	float rendcounter = 0.0;
+	float evaccounter = 0.0;
+	float totalfalsealarm = 0.0;
+	float totalmissedhole = 0.0;
+	float totalcycles = 0.0;
+	float success = 0.0;
+	float falsealarmprob = 0.0;
+	float probofdetection = 0.0;
+	std::clock_t totalevacuationtime = 0;
+	std::clock_t totalrendevoustime = 0;
+	std::clock_t averageevacuationtime;
+	std::clock_t averagerendevoustime;
 	//int index = 0;
 	int fblistlength = 10;
 	struct feedbackStruct fblist[fblistlength];
 	int feedbacknum[fblistlength];
+	std::string args = "";
+	double rssi;
+	//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
 
 	for(int o; o<fblistlength; ++o){
 		fblist[o].header_valid = 0;
@@ -4068,6 +4080,8 @@ if(dsa && isController){
 	std::clock_t time = std::clock();
 	int loop = 1;
 	while(loop){
+		//rssi = uhd::usrp::multi_usrp::read_rssi(0);
+		printf("%f\n", rssi);
 		if(msg.msgreceived == 1){
 			if(msg.type == 'P'){
 				if(latestprimary<msg.number){
@@ -4112,7 +4126,10 @@ if(dsa && isController){
 						printf("Secondary user started transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));;
 						if(primary == 0){
 							rendevoustime = secondaryontime - primaryofftime;
-							printf("Rendevous time = %f seconds\n", ((float)rendevoustime/CLOCKS_PER_SEC));
+							rendcounter++;
+							printf("Rendezvous time = %f seconds\n", ((float)rendevoustime/CLOCKS_PER_SEC));
+							success++;
+							totalrendevoustime += rendevoustime;
 						}
 						if(primary == 1){
 							printf("False Alarm\n");
@@ -4129,7 +4146,9 @@ if(dsa && isController){
 						//printf("Primary number: %d Secondar number %d\n", latestprimary, latestsecondary);
 						if(primary==1){
 							evacuationtime = secondaryofftime - primaryontime;
-							printf("Evacuation time = %f seconds\n", ((float)evacuationtime/CLOCKS_PER_SEC));\
+							printf("Evacuation time = %f seconds\n", ((float)evacuationtime/CLOCKS_PER_SEC));
+							evaccounter++;
+							totalevacuationtime += evacuationtime;
 						}
 						if(primary == 0){
 							printf("Wasted Spectrum Hole\n");
@@ -4182,6 +4201,15 @@ if(dsa && isController){
 		}
 	};
 	printf("Testing Complete\n");
+	falsealarmprob = totalfalsealarm/totalcycles;
+	printf("Probability of False Alarm: % %f\n", falsealarmprob);
+	probofdetection = success/totalcycles;
+	printf("Probability of Detection: % %f\n", probofdetection);
+	averageevacuationtime = totalevacuationtime/totalcycles;
+	printf("Average Evacuation Time: %f seconds\n", averageevacuationtime/CLOCKS_PER_SEC);
+	averagerendevoustime = totalrendevoustime/totalcycles;
+	printf("Average Rendezvous Time: %f seconds\n", averagerendevoustime/CLOCKS_PER_SEC);
+	
 	return 1;
 }
 

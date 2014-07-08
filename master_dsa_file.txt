@@ -2,7 +2,7 @@
 
 params=
 {
-totaltime = 100;
+totaltime = 10;
 dsatype = "justsource";
 detectiontype = "simple";
 };
