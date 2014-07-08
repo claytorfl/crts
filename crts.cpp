@@ -4054,7 +4054,7 @@ if(dsa && isController){
 	int feedbacknum[fblistlength];
 	std::string args = "";
 	double rssi;
-	std::string strings = "A:A";
+	std::string strings = "A:0";
 	uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
 	usrp->set_rx_subdev_spec(strings, 0);
 	for(int o; o<fblistlength; ++o){
