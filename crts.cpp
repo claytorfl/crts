@@ -143,6 +143,8 @@ struct rxCBstruct {
 	int secondarysending;
 	char usrptype;
 	int number;
+	char * dsatype;
+	char * detectiontype;
 };
 
 struct feedbackStruct {
@@ -2189,6 +2191,8 @@ int dsaCallback(unsigned char *  _header,
                void *           _userdata)
 {
     struct rxCBstruct * rxCBS_ptr = (struct rxCBstruct *) _userdata;
+	if(rxCBS_ptr->usrptype == 'S' and rxCBS_ptr->detectiontype == "energy")
+	return 1;
     int verbose = rxCBS_ptr->verbose;
 	msequence rx_ms = *rxCBS_ptr->rx_ms_ptr; 
 	int primary;
@@ -2320,6 +2324,8 @@ int fftscan(struct CognitiveEngine ce){
     //uhd::set_thread_priority_safe();
  	//printf("1\n");
     //variables to be set by po
+
+	int cantransmit;
     std::string args, file, ant, subdev, ref;
 	ref = "internal";
     size_t total_num_samps = 0;
@@ -2333,6 +2339,7 @@ int fftscan(struct CognitiveEngine ce){
 	double chbw = bw/10;
     std::string addr, port, mode;
 	ant = "TX/RX";
+	float noisefloor = 60.0;
     //printf("2\n");
     // This for "chnsts" mode, for test purposes we will use this threshold value and can be adjusted as required.
     // More work is needed to compute threshold based on USRP noise figure, gain and even center freq
@@ -2464,11 +2471,17 @@ int fftscan(struct CognitiveEngine ce){
 
         num_acc_samps += num_rx_samps;
 	} done_loop:
-	printf("%f\n", totalpower);
+	//printf("%f\n", totalpower);
 	fftwf_destroy_plan(p);
+	if(totalpower > noisefloor){
+		cantransmit = 0;
+	}
+	else{
+		cantransmit = 1;
+	}
 
 
-	return 1;
+	return cantransmit;
 }
 
 
@@ -3823,6 +3836,16 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		sc = CreateScenario();
 		readScConfigFile(&sc, str2, verbose);
 		}
+		if (config_setting_lookup_string(setting, "dsatype", &str))
+		{
+		str2 = (char *)str;
+		rxCBs.dsatype = str2;
+		}
+		if (config_setting_lookup_string(setting, "detectiontype", &str))
+		{
+		str2 = (char *)str;
+		rxCBs.detectiontype = str2;
+		}
 	}
 	
 	//If it is a primary transmitter then the USRP ofdmtxrx object tranmists for its burst
@@ -4037,14 +4060,29 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 
 				//The secondary user will wait in this while loop and wait and see if any
 				//primary users appear
-				while(0.5 > (float)time) //&& rxCBs.primaryon == 0)
-					{
-					//printf("%f\n", time);
-					//printf("SU transmitting\n");
-					//printf("%ju\n", (uintmax_t)time);
-					//printf("%d\n", rxCBs.primaryon);
-					current = std::clock();
-					time = ((float)(current-start))/CLOCKS_PER_SEC;
+				if(rxCBs.detectiontype == "match"){
+					while(0.5 > (float)time) //&& rxCBs.primaryon == 0)
+						{
+						//printf("%f\n", time);
+						//printf("SU transmitting\n");
+						//printf("%ju\n", (uintmax_t)time);
+						//printf("%d\n", rxCBs.primaryon);
+						current = std::clock();
+						time = ((float)(current-start))/CLOCKS_PER_SEC;
+						}
+					}
+				if(rxCBs.detectiontype == "energy"){
+					rxCBs.primaryon = 1;
+					while(0.2 > (float)time) //&& rxCBs.primaryon == 0)
+						{
+						//printf("%f\n", time);
+						//printf("SU transmitting\n");
+						//printf("%ju\n", (uintmax_t)time);
+						//printf("%d\n", rxCBs.primaryon);
+						rxCBs.primaryon = fftscan(suce);
+						current = std::clock();
+						time = ((float)(current-start))/CLOCKS_PER_SEC;
+						}
 					}
 				}
 			time = 0;
@@ -4071,13 +4109,29 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				//finishes without a new primary transmission switching it to 1 then
 				//the secondary user will assume it has stopped and resume transmitting
 				//This while loop below will run for secondaryscantime seconds
-				while(secondaryscantime > time)
-					{
-					//printf("scanning\n");
-					//printf("%ju\n", (uintmax_t)time);
-					//printf("%d\n", rxCBs.primaryon);
-					current = std::clock();
-					time = (current-start)/CLOCKS_PER_SEC;
+				if(rxCBs.detectiontype == "match"){
+					while(secondaryscantime > (float)time) //&& rxCBs.primaryon == 0)
+						{
+						//printf("%f\n", time);
+						//printf("SU transmitting\n");
+						//printf("%ju\n", (uintmax_t)time);
+						//printf("%d\n", rxCBs.primaryon);
+						current = std::clock();
+						time = ((float)(current-start))/CLOCKS_PER_SEC;
+						}
+					}
+				if(rxCBs.detectiontype == "energy"){
+					rxCBs.primaryon = 1;
+					while(secondaryscantime > (float)time) //&& rxCBs.primaryon == 0)
+						{
+						//printf("%f\n", time);
+						//printf("SU transmitting\n");
+						//printf("%ju\n", (uintmax_t)time);
+						//printf("%d\n", rxCBs.primaryon);
+						rxCBs.primaryon = fftscan(suce);
+						current = std::clock();
+						time = ((float)(current-start))/CLOCKS_PER_SEC;
+						}
 					}			
 				}
 			}
