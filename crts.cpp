@@ -2320,11 +2320,11 @@ std::vector<float> Moving_Avg(std::vector<std::complex<float> > fft_data, unsign
 return ret_vect;
 }
 
-int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
+int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp2){
     //uhd::set_thread_priority_safe();
  	//printf("1\n");
     //variables to be set by po
-
+	uhd::usrp::multi_usrp::sptr usrp;
 	int cantransmit;
     std::string args, file, ant, subdev, ref;
 	ref = "internal";
