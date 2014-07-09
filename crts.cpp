@@ -2322,7 +2322,7 @@ int fftscan(struct CognitiveEngine ce){
     //variables to be set by po
     std::string args, file, ant, subdev, ref;
 	ref = "internal";
-    size_t total_num_samps = 10;
+    size_t total_num_samps = 0;
     size_t num_bins = 1024;
     unsigned int Moving_Avg_size = 4;
 	unsigned int navrg = 5;
