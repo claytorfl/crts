@@ -2439,16 +2439,10 @@ int fftscan(struct CognitiveEngine ce){
 
 		//printf("8\n");
         fftwf_execute(p);
-		printf("1 %f\n", out_buff[0]);
-		printf("2 %f\n", out_buff[1]);
-		printf("3 %f\n", out_buff[2]);
-		printf("4 %f\n", out_buff[3]);
-		printf("5 %f\n", out_buff[4]);
-		printf("6 %f\n", out_buff[5]);
-		printf("7 %f\n", out_buff[6]);
-		printf("8 %f\n", out_buff[7]);
-		printf("9 %f\n", out_buff[8]);
-		printf("10 %f\n", out_buff[9]);
+		int x;
+		for(x=0; x<bw/chbw; x++){
+		printf("%d %g +i%g\n", x+1, out_buff[x]);
+		}
         //calculate avmfft from moving average function
         send_avmfft=Moving_Avg(out_buff,Moving_Avg_size);
 		//printf("9\n");
