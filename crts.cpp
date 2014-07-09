@@ -2339,7 +2339,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
 	double chbw = bw/10;
     std::string addr, port, mode;
 	ant = "TX/RX";
-	float noisefloor = 60.0;
+	float noisefloor = 200.0;
     //printf("2\n");
     // This for "chnsts" mode, for test purposes we will use this threshold value and can be adjusted as required.
     // More work is needed to compute threshold based on USRP noise figure, gain and even center freq
