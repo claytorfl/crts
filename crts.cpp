@@ -2320,7 +2320,7 @@ std::vector<float> Moving_Avg(std::vector<std::complex<float> > fft_data, unsign
 return ret_vect;
 }
 
-int fftscan(struct CognitiveEngine ce){
+int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
     //uhd::set_thread_priority_safe();
  	//printf("1\n");
     //variables to be set by po
@@ -2345,7 +2345,7 @@ int fftscan(struct CognitiveEngine ce){
     // More work is needed to compute threshold based on USRP noise figure, gain and even center freq
     // because noise figure changes with freq
     double thresh=0.00015;
-	uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
+	//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
 	usrp->set_clock_source(ref);
 	usrp->set_rx_rate(rate);
 	usrp->set_rx_freq(freq);
@@ -2355,7 +2355,7 @@ int fftscan(struct CognitiveEngine ce){
 	//printf("3\n");
     std::vector<std::string> sensor_names;
     sensor_names = usrp->get_rx_sensor_names(0);
-    if (std::find(sensor_names.begin(), sensor_names.end(), "lo_locked") != sensor_names.end()) {
+    /*if (std::find(sensor_names.begin(), sensor_names.end(), "lo_locked") != sensor_names.end()) {
         uhd::sensor_value_t lo_locked = usrp->get_rx_sensor("lo_locked",0);
         UHD_ASSERT_THROW(lo_locked.to_bool());
     }
@@ -2367,7 +2367,7 @@ int fftscan(struct CognitiveEngine ce){
     if ((ref == "external") and (std::find(sensor_names.begin(), sensor_names.end(), "ref_locked") != sensor_names.end())) {
         uhd::sensor_value_t ref_locked = usrp->get_mboard_sensor("ref_locked",0);
         UHD_ASSERT_THROW(ref_locked.to_bool());
-    }
+    }*/
     uhd::stream_args_t stream_args("fc32"); //complex floats
     uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
  	//printf("4\n");
@@ -4100,6 +4100,8 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			}
 		}
 	if(secondary == 1 && rxCBs.detectiontype == 'e'){
+		std::string args = "internal";
+		uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
 		int cantransmit = 0;
 		int primaryoncounter;
 		int primaryoffcounter;
@@ -4191,7 +4193,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 						{
 						primaryoncounter = 0;
 						primaryoffcounter = 0;
-						cantransmit = fftscan(suce);
+						cantransmit = fftscan(suce, usrp);
 						if(cantransmit==1){
 							primaryoffcounter++;
 						}
@@ -4237,7 +4239,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 					{
 					primaryoncounter = 0;
 					primaryoffcounter = 0;
-					cantransmit = fftscan(suce);
+					cantransmit = fftscan(suce, usrp);
 					if(cantransmit==1){
 						primaryoffcounter++;
 					}
@@ -4617,7 +4619,8 @@ if(dsa && isController){
 if(tester==1){
 	struct CognitiveEngine ce = CreateCognitiveEngine();
 	readCEConfigFile(&ce, (char*) "ce1.txt", 0);
-	fftscan(ce);
+	uhd::usrp::multi_usrp::sptr usrp;
+	fftscan(ce, usrp);
 	return 1;
 }
 
