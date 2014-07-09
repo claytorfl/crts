@@ -3847,7 +3847,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		rxCBs.detectiontype = str[0];
 		}
 	}
-	
+	rxCBs.detectiontype = 'e';
 	//If it is a primary transmitter then the USRP ofdmtxrx object tranmists for its burst
 	//time then rest for its rest time
 	if(primary == 1){
@@ -4098,7 +4098,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 					}			
 				}
 			}
-		
+		}
 	if(secondary == 1 && rxCBs.detectiontype == 'e'){
 		int cantransmit = 0;
 		int primaryoncounter;
@@ -4254,7 +4254,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				
 				}
 			}
-		};}
+		};
 	return 0;
 	
 }
