@@ -3753,9 +3753,19 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		{
 		totaltime = tmpI;
 		}
+		if (config_setting_lookup_string(setting, "dsatype", &str))
+		{
+		str2 = (char *)str;
+		rxCBs.dsatype = str[0];
+		}
+		if (config_setting_lookup_string(setting, "detectiontype", &str))
+		{
+		str2 = (char *)str;
+		rxCBs.detectiontype = str[0];
+		}
 	}
 	setting = config_lookup(&cfg, "PU");
-	if (setting != NULL)
+	if (setting != NULL && primary == 1)
 	{
 		// Read the strings
 		if (config_setting_lookup_float(setting, "bursttime", &tmpD))
@@ -3801,7 +3811,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		}
 	}
 	setting = config_lookup(&cfg, "SU");
-	if (setting != NULL)
+	if (setting != NULL && secondary == 1)
 	{
 		// Read the strings
 		if (config_setting_lookup_float(setting, "bursttime", &tmpD))
@@ -3836,18 +3846,9 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		sc = CreateScenario();
 		readScConfigFile(&sc, str2, verbose);
 		}
-		if (config_setting_lookup_string(setting, "dsatype", &str))
-		{
-		str2 = (char *)str;
-		rxCBs.dsatype = str[0];
-		}
-		if (config_setting_lookup_string(setting, "detectiontype", &str))
-		{
-		str2 = (char *)str;
-		rxCBs.detectiontype = str[0];
-		}
+
 	}
-	rxCBs.detectiontype = 'e';
+	//rxCBs.detectiontype = 'e';
 	//If it is a primary transmitter then the USRP ofdmtxrx object tranmists for its burst
 	//time then rest for its rest time
 	if(primary == 1){
@@ -3934,15 +3935,14 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				while(!isLastSymbol) //&& primarybursttime > time)
 					{
 					isLastSymbol = txcvr.write_symbol();
-					//current = std::clock();
-					//time = (current-start)/CLOCKS_PER_SEC;
-					//printf("%f\n", (float)time);
 					if(usescenario){
 					enactScenarioBaseband(txcvr.fgbuffer, ce, sc);}
 					txcvr.transmit_symbol();
 					}
 				usleep(100);
 		   		txcvr.end_transmit_frame();
+				usleep(100);
+				if(adapt==1)
 				postTxTasks(&puce, &msg.feed, verbose);
 				current = std::clock();
 				time = ((float)(current-start))/CLOCKS_PER_SEC;
@@ -4018,36 +4018,42 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			write(rxCBs.client, (const void*)&mess, sizeof(mess));
 			//printf("%d\n", mess.number);
 			secondarymsgnumber++;
-
+			int z;
 			//If it does not sense the primary user then the secondary user will transmit
 			while(rxCBs.primaryon==0)
 				{
-				//printf("%d\n", rxCBs.primaryon);
-				//if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
-				modulation_scheme ms = convertModScheme(suce.modScheme, &suce.bitsPerSym);
-
-				// Set Cyclic Redundency Check Scheme
-				//crc_scheme check = convertCRCScheme(ce.crcScheme);
-
-				// Set inner forward error correction scheme
-				//if (verbose) printf("Inner FEC: ");
-				fec_scheme fec0 = convertFECScheme(suce.innerFEC, verbose);
-
-				// Set outer forward error correction scheme
-				//if (verbose) printf("Outer FEC: ");
-				fec_scheme fec1 = convertFECScheme(suce.outerFEC, verbose);
-				usleep(1);
-				txcvr.assemble_frame(header, payload, suce.payloadLen, ms, fec0, fec1);
-				int isLastSymbol = 0;
-				while(!isLastSymbol) //&& rxCBs.primaryon==0)
-					{
-					usleep(1);
+				for(z=0; z<uninterruptedframes; z++){
 					//printf("%d\n", rxCBs.primaryon);
-					isLastSymbol = txcvr.write_symbol();
-					//enactScenarioBaseband(txcvr.fgbuffer, ce, sc);
-					txcvr.transmit_symbol();
-					}
-		   		txcvr.end_transmit_frame();
+					//if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
+					modulation_scheme ms = convertModScheme(suce.modScheme, &suce.bitsPerSym);
+
+					// Set Cyclic Redundency Check Scheme
+					//crc_scheme check = convertCRCScheme(ce.crcScheme);
+
+					// Set inner forward error correction scheme
+					//if (verbose) printf("Inner FEC: ");
+					fec_scheme fec0 = convertFECScheme(suce.innerFEC, verbose);
+
+					// Set outer forward error correction scheme
+					//if (verbose) printf("Outer FEC: ");
+					fec_scheme fec1 = convertFECScheme(suce.outerFEC, verbose);
+					usleep(1);
+					txcvr.assemble_frame(header, payload, suce.payloadLen, ms, fec0, fec1);
+					int isLastSymbol = 0;
+					while(!isLastSymbol) //&& rxCBs.primaryon==0)
+						{
+						usleep(1);
+						//printf("%d\n", rxCBs.primaryon);
+						isLastSymbol = txcvr.write_symbol();
+						if(usescenario)
+						enactScenarioBaseband(txcvr.fgbuffer, suce, sc);
+						txcvr.transmit_symbol();
+						}
+			   		txcvr.end_transmit_frame();
+					usleep(100);
+					if(adapt==1)
+					postTxTasks(&suce, &msg.feed, verbose);
+				}
 				time = 0.0;
 				txcvr.start_rx();
 				start = std::clock();
@@ -4056,10 +4062,6 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				//primary users appear
 				while(0.5 > (float)time) //&& rxCBs.primaryon == 0)
 					{
-					//printf("%f\n", time);
-					//printf("SU transmitting\n");
-					//printf("%ju\n", (uintmax_t)time);
-					//printf("%d\n", rxCBs.primaryon);
 					current = std::clock();
 					time = ((float)(current-start))/CLOCKS_PER_SEC;
 					}
@@ -4151,36 +4153,42 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			write(rxCBs.client, (const void*)&mess, sizeof(mess));
 			//printf("%d\n", mess.number);
 			secondarymsgnumber++;
-
+			int z;
 			//If it does not sense the primary user then the secondary user will transmit
 			while(cantransmit==1)
 				{
-				//printf("%d\n", rxCBs.primaryon);
-				//if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
-				modulation_scheme ms = convertModScheme(suce.modScheme, &suce.bitsPerSym);
-
-				// Set Cyclic Redundency Check Scheme
-				//crc_scheme check = convertCRCScheme(ce.crcScheme);
-
-				// Set inner forward error correction scheme
-				//if (verbose) printf("Inner FEC: ");
-				fec_scheme fec0 = convertFECScheme(suce.innerFEC, verbose);
-
-				// Set outer forward error correction scheme
-				//if (verbose) printf("Outer FEC: ");
-				fec_scheme fec1 = convertFECScheme(suce.outerFEC, verbose);
-				usleep(1);
-				txcvr.assemble_frame(header, payload, suce.payloadLen, ms, fec0, fec1);
-				int isLastSymbol = 0;
-				while(!isLastSymbol) //&& rxCBs.primaryon==0)
-					{
-					usleep(1);
+				for(z=0; z<uninterruptedframes; z++){
 					//printf("%d\n", rxCBs.primaryon);
-					isLastSymbol = txcvr.write_symbol();
-					//enactScenarioBaseband(txcvr.fgbuffer, ce, sc);
-					txcvr.transmit_symbol();
+					//if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
+					modulation_scheme ms = convertModScheme(suce.modScheme, &suce.bitsPerSym);
+
+					// Set Cyclic Redundency Check Scheme
+					//crc_scheme check = convertCRCScheme(ce.crcScheme);
+
+					// Set inner forward error correction scheme
+					//if (verbose) printf("Inner FEC: ");
+					fec_scheme fec0 = convertFECScheme(suce.innerFEC, verbose);
+
+					// Set outer forward error correction scheme
+					//if (verbose) printf("Outer FEC: ");
+					fec_scheme fec1 = convertFECScheme(suce.outerFEC, verbose);
+					usleep(1);
+					txcvr.assemble_frame(header, payload, suce.payloadLen, ms, fec0, fec1);
+					int isLastSymbol = 0;
+					while(!isLastSymbol) //&& rxCBs.primaryon==0)
+						{
+						usleep(1);
+						//printf("%d\n", rxCBs.primaryon);
+						isLastSymbol = txcvr.write_symbol();
+						if(usescenario)
+						enactScenarioBaseband(txcvr.fgbuffer, suce, sc);
+						txcvr.transmit_symbol();
+						}
+				   		txcvr.end_transmit_frame();
+						usleep(100);
+						if(adapt==1)
+						postTxTasks(&puce, &msg.feed, verbose);
 					}
-			   		txcvr.end_transmit_frame();
 					time = 0.0;
 					//txcvr.start_rx();
 					start = std::clock();
