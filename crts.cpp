@@ -3971,7 +3971,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 
 	//If it is a secondary user then the node acts as a secondary transmitter
 	//Either sensing for the primary user or transmitting with small pauses for sening
-	if(secondary == 1 && rxCBs.detectiontype == "match"){
+	if(secondary == 1 && rxCBs.detectiontype[0] == 'm'){
 		mess.type = 'S';
 		rxCBs.usrptype = 'S';
 		mess.msgreceived = 1;
@@ -4099,7 +4099,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				}
 			}
 		};
-	if(secondary == 1 && rxCBs.detectiontype == "energy"){
+	if(secondary == 1 && rxCBs.detectiontype[0] == 'e'){
 		int cantransmit = 0;
 		int primaryoncounter;
 		int primaryoffcounter;
