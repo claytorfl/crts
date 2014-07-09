@@ -2320,11 +2320,11 @@ std::vector<float> Moving_Avg(std::vector<std::complex<float> > fft_data, unsign
 return ret_vect;
 }
 
-int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp2){
+int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
     //uhd::set_thread_priority_safe();
  	//printf("1\n");
     //variables to be set by po
-	uhd::usrp::multi_usrp::sptr usrp;
+	//uhd::usrp::multi_usrp::sptr usrp;
 	int cantransmit;
     std::string args, file, ant, subdev, ref;
 	ref = "internal";
@@ -2338,7 +2338,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp2){
 	double bw = 100;//ce.bandwidth;
 	double chbw = bw/10;
     std::string addr, port, mode;
-	ant = "TX/RX";
+	ant = "RX2";
 	float noisefloor = 200.0;
     //printf("2\n");
     // This for "chnsts" mode, for test purposes we will use this threshold value and can be adjusted as required.
@@ -4191,6 +4191,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 					
 					while(0.5 > (float)time) //&& rxCBs.primaryon == 0)
 						{
+						//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
 						primaryoncounter = 0;
 						primaryoffcounter = 0;
 						cantransmit = fftscan(suce, usrp);
@@ -4204,6 +4205,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 						time = ((float)(current-start))/CLOCKS_PER_SEC;
 						}
 					}
+					//delete usrp;
 					if(primaryoffcounter > primaryoncounter){
 						cantransmit = 1;
 
@@ -4223,6 +4225,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				write(rxCBs.client, (const void*)&mess, sizeof(mess));
 				secondarymsgnumber++;
 				//printf("%d\n", mess.number);
+			//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
 			while(cantransmit==0)
 				{
 				//printf("%d\n", rxCBs.primaryon);
@@ -4252,6 +4255,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				}
 				if(primaryoffcounter > primaryoncounter){
 					cantransmit = 1;
+					//delete usrp;
 				}
 				else{
 					cantransmit = 0;
