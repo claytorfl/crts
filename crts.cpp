@@ -2325,7 +2325,7 @@ int fftscan(struct CognitiveEngine ce){
     size_t total_num_samps;
     size_t num_bins = 20;
     unsigned int Moving_Avg_size, navrg;
-    double rate = 1;
+    double rate = 195312;
 	double freq = ce.frequency;
 	double gain = ce.uhd_txgain_dB;
 	double bw = ce.bandwidth;
