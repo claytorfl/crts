@@ -2331,7 +2331,7 @@ int fftscan(struct CognitiveEngine ce){
 	double bw = ce.bandwidth;
 	double chbw = 1000000/20;
     std::string addr, port, mode;
-	ant = "A:0";
+	ant = "TX/RX";
      
     // This for "chnsts" mode, for test purposes we will use this threshold value and can be adjusted as required.
     // More work is needed to compute threshold based on USRP noise figure, gain and even center freq
