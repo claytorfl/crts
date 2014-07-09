@@ -2323,7 +2323,7 @@ int fftscan(struct CognitiveEngine ce){
     std::string args, file, ant, subdev, ref;
 	ref = "internal";
     size_t total_num_samps = 0;
-    size_t num_bins = 20;
+    size_t num_bins = 1024;
     unsigned int Moving_Avg_size, navrg;
     double rate = 195312;
 	double freq = ce.frequency;
