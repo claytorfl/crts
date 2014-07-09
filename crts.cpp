@@ -2441,7 +2441,7 @@ int fftscan(struct CognitiveEngine ce){
         fftwf_execute(p);
 		int x;
         for (unsigned int i=0; i<out_buff.size();i++)
-             out_buff_norm[i]=pow(abs(out_buff[i]),2);
+             out_buff_norm[i]=sqrt(pow(abs(out_buff[i]),2));
 		for(x=0; x<bw/chbw; x++){
 		printf("%d %f\n", x+1, out_buff_norm[x]);
 		}
