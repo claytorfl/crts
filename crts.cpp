@@ -2411,8 +2411,10 @@ int fftscan(struct CognitiveEngine ce){
 
    //printf("7\n");
    //main loop
-    
-    while((num_acc_samps < total_num_samps or total_num_samps == 0)){
+    int y;
+	float totalpower = 0;
+	for(y=0; y<100; ++y){    
+	//while((num_acc_samps < total_num_samps or total_num_samps == 0)){
         size_t num_rx_samps = rx_stream->recv(
             &buff.front(), buff.size(), md, 3.0
         );
@@ -2443,7 +2445,8 @@ int fftscan(struct CognitiveEngine ce){
         for (unsigned int i=0; i<out_buff.size();i++)
              out_buff_norm[i]=sqrt(pow(abs(out_buff[i]),2));
 		for(x=0; x<bw/chbw; x++){
-		printf("%d %f\n", x+1, out_buff_norm[x]);
+			printf("%d %f\n", x+1, out_buff_norm[x]);
+			totalpower += out_buff_norm[x];
 		}
         //calculate avmfft from moving average function
         send_avmfft=Moving_Avg(out_buff,Moving_Avg_size);
@@ -2461,6 +2464,7 @@ int fftscan(struct CognitiveEngine ce){
 
         num_acc_samps += num_rx_samps;
 	} done_loop:
+	printf("%f\n", totalpower);
 	fftwf_destroy_plan(p);
 
 
