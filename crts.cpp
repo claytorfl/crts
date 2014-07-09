@@ -2435,46 +2435,20 @@ int fftscan(struct CognitiveEngine ce){
             ) % md.error_code << std::endl;
             goto done_loop;
         }
-        if (nAvrgCount<navrg)
-            {
-            fftwf_execute(p);
-            for (unsigned int i=0; i<out_buff.size();i++)
-                 out_buff_norm[i]=pow(abs(out_buff[i]),2);
-                 //out_buff_norm[i]=std::norm(out_buff[i]);
-            std::vector<float>::iterator it1;//=out_buff_norm.begin();
-            std::vector<float>::iterator it2;//=out_buff_norm.begin();
-         
-            for( unsigned int ch_i=0;ch_i<nChs;ch_i++)
-            {
-                it1=out_buff_norm.begin()+ ch_i*nSlize;
-                it2=out_buff_norm.begin()+ (ch_i+1)*nSlize-1;
-                while ( it1!=it2 ) {vChCusum[ch_i] = vChCusum[ch_i] + 2*(*it1++)/nSlize;}
-            }
-            nAvrgCount++;
-            }
-      // after number of averages is finished--> calculate channel status   
-       else
-           {
-            //std::cout<<nChs<<std::endl;
-            for( unsigned int ch_j=0;ch_j<nChs;ch_j++)
-            {
-              if ((vChCusum[ch_j]/nAvrgCount) >thresh) //threshold
-                {
-                send_chnsts[ch_j]=1;
-                //std::cout<<"Ch"<<ch_i<<" "<<send_chnsts[ch_i]<<"\t";
-                }
-              else
-                {
-                send_chnsts[ch_j]=0;   
-                }
-             // constructing text frame for ncurses display
-             std::cout << "Ch" << boost::lexical_cast<std::string>(ch_j) << " " << boost::lexical_cast<std::string>(send_chnsts[ch_j])<<"\t" << boost::lexical_cast<std::string>(vChCusum[ch_j]/nAvrgCount)+"\n" << std::endl;//+"  "+boost::lexical_cast<std::string>(nAvrgCount)+"\t";
-             vChCusum[ch_j]=0;
-            }
-		}
+
 
 		//printf("8\n");
-        /*fftwf_execute(p);
+        fftwf_execute(p);
+		printf("1 %f\n", out_buff[0]);
+		printf("2 %f\n", out_buff[1]);
+		printf("3 %f\n", out_buff[2]);
+		printf("4 %f\n", out_buff[3]);
+		printf("5 %f\n", out_buff[4]);
+		printf("6 %f\n", out_buff[5]);
+		printf("7 %f\n", out_buff[6]);
+		printf("8 %f\n", out_buff[7]);
+		printf("9 %f\n", out_buff[8]);
+		printf("10 %f\n", out_buff[9]);
         //calculate avmfft from moving average function
         send_avmfft=Moving_Avg(out_buff,Moving_Avg_size);
 		//printf("9\n");
@@ -2487,7 +2461,7 @@ int fftscan(struct CognitiveEngine ce){
 		printf("7 %f\n", send_avmfft[6]);
 		printf("8 %f\n", send_avmfft[7]);
 		printf("9 %f\n", send_avmfft[8]);
-		printf("10 %f\n", send_avmfft[9]);*/
+		printf("10 %f\n", send_avmfft[9]);
 
         num_acc_samps += num_rx_samps;
 	} done_loop:
