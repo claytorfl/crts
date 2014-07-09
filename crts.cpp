@@ -4132,7 +4132,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
     	txcvr.set_rx_freq(frequency);
    		txcvr.set_rx_rate(bandwidth);
     	txcvr.set_rx_gain_uhd(uhd_rxgain);
-		txcvr.start_rx();
+		//txcvr.start_rx();
 	
 		int on = 1;
 		float time = 0;	
@@ -4186,6 +4186,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 					//The secondary user will wait in this while loop and wait and see if any
 					//primary users appear
 					cantransmit = 0;
+					
 					while(0.5 > (float)time) //&& rxCBs.primaryon == 0)
 						{
 						primaryoncounter = 0;
@@ -4203,6 +4204,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 					}
 					if(primaryoffcounter > primaryoncounter){
 						cantransmit = 1;
+
 					}
 					else{
 						cantransmit = 0;
