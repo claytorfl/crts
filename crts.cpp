@@ -4098,7 +4098,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 					}			
 				}
 			}
-		};
+		
 	if(secondary == 1 && rxCBs.detectiontype == 'e'){
 		int cantransmit = 0;
 		int primaryoncounter;
@@ -4254,7 +4254,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				
 				}
 			}
-		};
+		};}
 	return 0;
 	
 }
