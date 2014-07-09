@@ -4,6 +4,7 @@
 #include <math.h>
 #include <complex>
 #include <liquid/liquid.h>
+#include <fftw3.h>
 // Definition of liquid_float_complex changes depending on
 // whether <complex> is included before or after liquid.h
 #include <liquid/ofdmtxrx.h>
@@ -2297,6 +2298,155 @@ int dsaCallback(unsigned char *  _header,
 
 } // end rxCallback()
 
+// Moving average function for avmfft mode, centered moving window same final vector length
+std::vector<float> Moving_Avg(std::vector<std::complex<float> > fft_data, unsigned int nWindow_size) {
+     std::vector<float> ret_vect(fft_data.size());
+      for (unsigned int i=0; i<fft_data.size();i++)
+      {
+          float p1=i-std::floor(nWindow_size/2);
+          float p2=i+std::floor(nWindow_size/2);
+          if (p1<std::floor(nWindow_size/2)) p1=0;
+          if (p2>fft_data.size()-1+std::floor(nWindow_size/2)) p2=fft_data.size()-1;
+          float cusum=0;
+    for (unsigned int j=p1;j<=p2;++j)
+        cusum+=abs(fft_data[j]);
+        ret_vect[i]=cusum/(p2-p1+1);
+      }
+        //std::cout<<std::endl;
+return ret_vect;
+}
+
+int fftscan(struct CognitiveEngine ce){
+    //uhd::set_thread_priority_safe();
+ 
+    //variables to be set by po
+    std::string args, file, ant, subdev, ref;
+	ref = "internal";
+    size_t total_num_samps;
+    size_t num_bins = 20;
+    unsigned int Moving_Avg_size, navrg;
+    double rate = 1;
+	double freq = ce.frequency;
+	double gain = ce.uhd_txgain_dB;
+	double bw = ce.bandwidth;
+	double chbw = 1;
+    std::string addr, port, mode;
+	ant = "A:0";
+     
+    // This for "chnsts" mode, for test purposes we will use this threshold value and can be adjusted as required.
+    // More work is needed to compute threshold based on USRP noise figure, gain and even center freq
+    // because noise figure changes with freq
+    double thresh=0.00015;
+	uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
+	usrp->set_clock_source(ref);
+	usrp->set_rx_rate(rate);
+	usrp->set_rx_freq(freq);
+	usrp->set_rx_gain(gain);
+	usrp->set_rx_bandwidth(bw);
+	usrp->set_rx_antenna(ant);
+	
+    std::vector<std::string> sensor_names;
+    sensor_names = usrp->get_rx_sensor_names(0);
+    if (std::find(sensor_names.begin(), sensor_names.end(), "lo_locked") != sensor_names.end()) {
+        uhd::sensor_value_t lo_locked = usrp->get_rx_sensor("lo_locked",0);
+        UHD_ASSERT_THROW(lo_locked.to_bool());
+    }
+    sensor_names = usrp->get_mboard_sensor_names(0);
+    if ((ref == "mimo") and (std::find(sensor_names.begin(), sensor_names.end(), "mimo_locked") != sensor_names.end())) {
+        uhd::sensor_value_t mimo_locked = usrp->get_mboard_sensor("mimo_locked",0);
+        UHD_ASSERT_THROW(mimo_locked.to_bool());
+    }
+    if ((ref == "external") and (std::find(sensor_names.begin(), sensor_names.end(), "ref_locked") != sensor_names.end())) {
+        uhd::sensor_value_t ref_locked = usrp->get_mboard_sensor("ref_locked",0);
+        UHD_ASSERT_THROW(ref_locked.to_bool());
+    }
+    uhd::stream_args_t stream_args("fc32"); //complex floats
+    uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
+ 
+    // rm// setup streaming ... 0 means continues
+     uhd::stream_cmd_t stream_cmd((total_num_samps == 0)?
+     uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS:
+     uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE
+    );
+    stream_cmd.num_samps = total_num_samps;// total_num_samps=0 means coninuous mode 
+    stream_cmd.stream_now = true;
+    stream_cmd.time_spec = uhd::time_spec_t();
+    usrp->issue_stream_cmd(stream_cmd);
+	size_t num_acc_samps = 0; //number of accumulated samples
+    size_t  nAvrgCount = 0;
+    uhd::rx_metadata_t md;
+     
+    std::vector<std::complex<float> > buff(num_bins);
+    std::vector<std::complex<float> > out_buff(num_bins);
+    std::vector<float> out_buff_norm(num_bins);
+     
+    //std::vector<float> send_avmfft(num_bins-Moving_Avg_size);
+     std::vector<float> send_avmfft(num_bins);
+    // there is actually no need for the two below vectors since send_cmpfft equals the output of fft buff
+    // and send_tmsmps equals to buff from USRP, I will leave it like this for clarity and in case we need
+    // extra calculations before sending the buff
+    std::vector<std::complex<float> > send_cmpfft(num_bins);
+    std::vector<std::complex<float> > send_tmsmps;
+    //initializing sum of channels matrix
+    // calculating number of channels in chnsts mode
+    unsigned int nChs,nSlize;
+    nChs=static_cast <int> (std::floor((rate/2)/chbw));
+    nSlize=static_cast <int> (std::floor((num_bins/2)/nChs));
+     
+     
+    std::vector<float> vChCusum(nChs,0);
+    // create chnsts buffer to send this could be boolean vector also
+    std::vector<unsigned short> send_chnsts(nChs,0);
+     
+    //initialize fft plan
+    fftwf_complex *in = (fftwf_complex*)&buff.front();
+    fftwf_complex *out = (fftwf_complex*)&out_buff.front();
+    fftwf_plan p;
+    p = fftwf_plan_dft_1d(num_bins, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+     
+
+     
+     
+
+    
+   //main loop
+    
+    while((num_acc_samps < total_num_samps or total_num_samps == 0)){
+        size_t num_rx_samps = rx_stream->recv(
+            &buff.front(), buff.size(), md, 3.0
+        );
+         
+        //handle the error codes
+        switch(md.error_code){
+        case uhd::rx_metadata_t::ERROR_CODE_NONE:
+            break;
+ 
+        case uhd::rx_metadata_t::ERROR_CODE_TIMEOUT:
+            if (num_acc_samps == 0) continue;
+            std::cout << boost::format(
+                "Got timeout before all samples received, possible packet loss, exiting loop..."
+            ) << std::endl;
+            goto done_loop;
+ 
+        default:
+            std::cout << boost::format(
+                "Got error code 0x%x, exiting loop..."
+            ) % md.error_code << std::endl;
+            goto done_loop;
+        }
+        fftwf_execute(p);
+        //calculate avmfft from moving average function
+        send_avmfft=Moving_Avg(out_buff,Moving_Avg_size);
+        num_acc_samps += num_rx_samps;
+	} done_loop:
+	fftwf_destroy_plan(p);
+
+
+	return 1;
+}
+
+
+
 
 
 
@@ -4260,6 +4410,13 @@ if(dsa && isController){
 	averagerendevoustime = totalrendevoustime/totalcycles;
 	printf("Average Rendezvous Time: %f seconds\n", averagerendevoustime/CLOCKS_PER_SEC);
 	
+	return 1;
+}
+
+if(tester==1){
+	struct CognitiveEngine ce = CreateCognitiveEngine();
+	readCEConfigFile(&ce, (char*) "ce1.txt", 0);
+	fftscan(ce);
 	return 1;
 }
 
