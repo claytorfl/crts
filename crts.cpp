@@ -255,7 +255,7 @@ struct cognitiveEngineSummaryInfo{
 // Default parameters for a Cognitive Engine
 struct CognitiveEngine CreateCognitiveEngine() {
     struct CognitiveEngine ce = {};
-    ce.default_tx_power = 10.0;
+    ce.default_tx_power = 30.0;
     ce.threshold = 1.0;                 // Desired value for goal
     ce.latestGoalValue = 0.0;           // Value of goal to be compared to threshold
     ce.iteration = 1;                 // Count of total simulations.
@@ -2318,22 +2318,22 @@ return ret_vect;
 
 int fftscan(struct CognitiveEngine ce){
     //uhd::set_thread_priority_safe();
- 	printf("1\n");
+ 	//printf("1\n");
     //variables to be set by po
     std::string args, file, ant, subdev, ref;
 	ref = "internal";
-    size_t total_num_samps = 0;
+    size_t total_num_samps = 10;
     size_t num_bins = 1024;
     unsigned int Moving_Avg_size = 4;
 	unsigned int navrg = 5;
     double rate = 195312;
 	double freq = ce.frequency;
-	double gain = ce.uhd_txgain_dB;
+	double gain = 0;//ce.uhd_txgain_dB;
 	double bw = ce.bandwidth;
 	double chbw = 1000000/20;
     std::string addr, port, mode;
 	ant = "TX/RX";
-    printf("2\n");
+    //printf("2\n");
     // This for "chnsts" mode, for test purposes we will use this threshold value and can be adjusted as required.
     // More work is needed to compute threshold based on USRP noise figure, gain and even center freq
     // because noise figure changes with freq
@@ -2345,7 +2345,7 @@ int fftscan(struct CognitiveEngine ce){
 	usrp->set_rx_gain(gain);
 	usrp->set_rx_bandwidth(bw);
 	usrp->set_rx_antenna(ant);
-	printf("3\n");
+	//printf("3\n");
     std::vector<std::string> sensor_names;
     sensor_names = usrp->get_rx_sensor_names(0);
     if (std::find(sensor_names.begin(), sensor_names.end(), "lo_locked") != sensor_names.end()) {
@@ -2363,7 +2363,7 @@ int fftscan(struct CognitiveEngine ce){
     }
     uhd::stream_args_t stream_args("fc32"); //complex floats
     uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
- 	printf("4\n");
+ 	//printf("4\n");
     // rm// setup streaming ... 0 means continues
      uhd::stream_cmd_t stream_cmd((total_num_samps == 0)?
      uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS:
@@ -2376,7 +2376,7 @@ int fftscan(struct CognitiveEngine ce){
 	size_t num_acc_samps = 0; //number of accumulated samples
     size_t  nAvrgCount = 0;
     uhd::rx_metadata_t md;
-    printf("5\n");
+    //printf("5\n");
     std::vector<std::complex<float> > buff(num_bins);
     std::vector<std::complex<float> > out_buff(num_bins);
     std::vector<float> out_buff_norm(num_bins);
@@ -2394,7 +2394,7 @@ int fftscan(struct CognitiveEngine ce){
     nChs=static_cast <int> (std::floor((rate/2)/chbw));
     nSlize=static_cast <int> (std::floor((num_bins/2)/nChs));
      
-    printf("6\n");
+    //printf("6\n");
     std::vector<float> vChCusum(nChs,0);
     // create chnsts buffer to send this could be boolean vector also
     std::vector<unsigned short> send_chnsts(nChs,0);
@@ -2409,7 +2409,7 @@ int fftscan(struct CognitiveEngine ce){
      
      
 
-    printf("7\n");
+   //printf("7\n");
    //main loop
     
     while((num_acc_samps < total_num_samps or total_num_samps == 0)){
@@ -2435,11 +2435,11 @@ int fftscan(struct CognitiveEngine ce){
             ) % md.error_code << std::endl;
             goto done_loop;
         }
-		printf("8\n");
+		//printf("8\n");
         fftwf_execute(p);
         //calculate avmfft from moving average function
         send_avmfft=Moving_Avg(out_buff,Moving_Avg_size);
-		printf("9\n");
+		//printf("9\n");
 		printf("%f\n", send_avmfft[0]);
         num_acc_samps += num_rx_samps;
 	} done_loop:
