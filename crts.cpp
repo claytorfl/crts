@@ -3827,8 +3827,8 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		if (config_setting_lookup_string(setting, "ce", &str))
 		{
 		str2 = (char *)str;
-		puce = CreateCognitiveEngine();
-		readCEConfigFile(&puce, str2, verbose);
+		suce = CreateCognitiveEngine();
+		readCEConfigFile(&suce, str2, verbose);
 		}
 		if (config_setting_lookup_string(setting, "scenario", &str))
 		{
