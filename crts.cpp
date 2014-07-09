@@ -3839,12 +3839,12 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		if (config_setting_lookup_string(setting, "dsatype", &str))
 		{
 		str2 = (char *)str;
-		rxCBs.dsatype = str2[0];
+		rxCBs.dsatype = str[0];
 		}
 		if (config_setting_lookup_string(setting, "detectiontype", &str))
 		{
 		str2 = (char *)str;
-		rxCBs.detectiontype = str2[0];
+		rxCBs.detectiontype = str[0];
 		}
 	}
 	
