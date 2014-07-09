@@ -2329,7 +2329,7 @@ int fftscan(struct CognitiveEngine ce){
     double rate = 195312;
 	double freq = ce.frequency;
 	double gain = 0;//ce.uhd_txgain_dB;
-	double bw = 1000;//ce.bandwidth;
+	double bw = 100;//ce.bandwidth;
 	double chbw = bw/10;
     std::string addr, port, mode;
 	ant = "TX/RX";
