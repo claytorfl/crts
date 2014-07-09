@@ -2479,7 +2479,7 @@ int fftscan(struct CognitiveEngine ce){
 	else{
 		cantransmit = 1;
 	}
-
+	printf("%d %d", cantransmit, totalpower);
 
 	return cantransmit;
 }
