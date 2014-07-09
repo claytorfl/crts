@@ -143,8 +143,8 @@ struct rxCBstruct {
 	int secondarysending;
 	char usrptype;
 	int number;
-	char * dsatype;
-	char * detectiontype;
+	char dsatype;
+	char detectiontype;
 };
 
 struct feedbackStruct {
@@ -2191,7 +2191,7 @@ int dsaCallback(unsigned char *  _header,
                void *           _userdata)
 {
     struct rxCBstruct * rxCBS_ptr = (struct rxCBstruct *) _userdata;
-	if(rxCBS_ptr->usrptype == 'S' and rxCBS_ptr->detectiontype == "energy")
+	if(rxCBS_ptr->usrptype == 'S' and rxCBS_ptr->detectiontype == 'e')
 	return 1;
     int verbose = rxCBS_ptr->verbose;
 	msequence rx_ms = *rxCBS_ptr->rx_ms_ptr; 
@@ -3839,12 +3839,12 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		if (config_setting_lookup_string(setting, "dsatype", &str))
 		{
 		str2 = (char *)str;
-		rxCBs.dsatype = str2;
+		rxCBs.dsatype = str2[0];
 		}
 		if (config_setting_lookup_string(setting, "detectiontype", &str))
 		{
 		str2 = (char *)str;
-		rxCBs.detectiontype = str2;
+		rxCBs.detectiontype = str2[0];
 		}
 	}
 	
@@ -3971,7 +3971,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 
 	//If it is a secondary user then the node acts as a secondary transmitter
 	//Either sensing for the primary user or transmitting with small pauses for sening
-	if(secondary == 1 && rxCBs.detectiontype[0] == 'm'){
+	if(secondary == 1 && rxCBs.detectiontype == 'm'){
 		mess.type = 'S';
 		rxCBs.usrptype = 'S';
 		mess.msgreceived = 1;
@@ -4099,7 +4099,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				}
 			}
 		};
-	if(secondary == 1 && rxCBs.detectiontype[0] == 'e'){
+	if(secondary == 1 && rxCBs.detectiontype == 'e'){
 		int cantransmit = 0;
 		int primaryoncounter;
 		int primaryoffcounter;
