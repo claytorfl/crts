@@ -2452,13 +2452,13 @@ int fftscan(struct CognitiveEngine ce){
         for (unsigned int i=0; i<out_buff.size();i++)
              out_buff_norm[i]=sqrt(pow(abs(out_buff[i]),2));
 		for(x=0; x<bw/chbw; x++){
-			printf("%d %f\n", x+1, out_buff_norm[x]);
+			//printf("%d %f\n", x+1, out_buff_norm[x]);
 			totalpower += out_buff_norm[x];
 		}
         //calculate avmfft from moving average function
         send_avmfft=Moving_Avg(out_buff,Moving_Avg_size);
 		//printf("9\n");
-		printf("1 %f\n", send_avmfft[0]);
+		/*printf("1 %f\n", send_avmfft[0]);
 		printf("2 %f\n", send_avmfft[1]);
 		printf("3 %f\n", send_avmfft[2]);
 		printf("4 %f\n", send_avmfft[3]);
@@ -2467,7 +2467,7 @@ int fftscan(struct CognitiveEngine ce){
 		printf("7 %f\n", send_avmfft[6]);
 		printf("8 %f\n", send_avmfft[7]);
 		printf("9 %f\n", send_avmfft[8]);
-		printf("10 %f\n", send_avmfft[9]);
+		printf("10 %f\n", send_avmfft[9]);*/
 
         num_acc_samps += num_rx_samps;
 	} done_loop:
@@ -4018,71 +4018,50 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			write(rxCBs.client, (const void*)&mess, sizeof(mess));
 			//printf("%d\n", mess.number);
 			secondarymsgnumber++;
-			int t;
+
 			//If it does not sense the primary user then the secondary user will transmit
 			while(rxCBs.primaryon==0)
 				{
-				for(t=0; t<uninterruptedframes; t++){
+				//printf("%d\n", rxCBs.primaryon);
+				//if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
+				modulation_scheme ms = convertModScheme(suce.modScheme, &suce.bitsPerSym);
+
+				// Set Cyclic Redundency Check Scheme
+				//crc_scheme check = convertCRCScheme(ce.crcScheme);
+
+				// Set inner forward error correction scheme
+				//if (verbose) printf("Inner FEC: ");
+				fec_scheme fec0 = convertFECScheme(suce.innerFEC, verbose);
+
+				// Set outer forward error correction scheme
+				//if (verbose) printf("Outer FEC: ");
+				fec_scheme fec1 = convertFECScheme(suce.outerFEC, verbose);
+				usleep(1);
+				txcvr.assemble_frame(header, payload, suce.payloadLen, ms, fec0, fec1);
+				int isLastSymbol = 0;
+				while(!isLastSymbol) //&& rxCBs.primaryon==0)
+					{
+					usleep(1);
 					//printf("%d\n", rxCBs.primaryon);
-					//if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
-					modulation_scheme ms = convertModScheme(suce.modScheme, &suce.bitsPerSym);
-
-					// Set Cyclic Redundency Check Scheme
-					//crc_scheme check = convertCRCScheme(ce.crcScheme);
-
-					// Set inner forward error correction scheme
-					//if (verbose) printf("Inner FEC: ");
-					fec_scheme fec0 = convertFECScheme(suce.innerFEC, verbose);
-
-					// Set outer forward error correction scheme
-					//if (verbose) printf("Outer FEC: ");
-					fec_scheme fec1 = convertFECScheme(suce.outerFEC, verbose);
-					usleep(1);
-					txcvr.assemble_frame(header, payload, suce.payloadLen, ms, fec0, fec1);
-					int isLastSymbol = 0;
-					while(!isLastSymbol) //&& rxCBs.primaryon==0)
-						{
-						usleep(1);
-						//printf("%d\n", rxCBs.primaryon);
-						isLastSymbol = txcvr.write_symbol();
-						if(usescenario){
-						enactScenarioBaseband(txcvr.fgbuffer, ce, sc);}
-						txcvr.transmit_symbol();
-						}
-			   		txcvr.end_transmit_frame();
-					usleep(1);
-					if(adapt){
-					postTxTasks(&suce, &msg.feed, verbose);}
-				}
+					isLastSymbol = txcvr.write_symbol();
+					//enactScenarioBaseband(txcvr.fgbuffer, ce, sc);
+					txcvr.transmit_symbol();
+					}
+		   		txcvr.end_transmit_frame();
 				time = 0.0;
 				txcvr.start_rx();
 				start = std::clock();
 
 				//The secondary user will wait in this while loop and wait and see if any
 				//primary users appear
-				if(rxCBs.detectiontype == "match"){
-					while(0.5 > (float)time) //&& rxCBs.primaryon == 0)
-						{
-						//printf("%f\n", time);
-						//printf("SU transmitting\n");
-						//printf("%ju\n", (uintmax_t)time);
-						//printf("%d\n", rxCBs.primaryon);
-						current = std::clock();
-						time = ((float)(current-start))/CLOCKS_PER_SEC;
-						}
-					}
-				if(rxCBs.detectiontype == "energy"){
-					rxCBs.primaryon = 1;
-					while(0.2 > (float)time) //&& rxCBs.primaryon == 0)
-						{
-						//printf("%f\n", time);
-						//printf("SU transmitting\n");
-						//printf("%ju\n", (uintmax_t)time);
-						//printf("%d\n", rxCBs.primaryon);
-						rxCBs.primaryon = fftscan(suce);
-						current = std::clock();
-						time = ((float)(current-start))/CLOCKS_PER_SEC;
-						}
+				while(0.5 > (float)time) //&& rxCBs.primaryon == 0)
+					{
+					//printf("%f\n", time);
+					//printf("SU transmitting\n");
+					//printf("%ju\n", (uintmax_t)time);
+					//printf("%d\n", rxCBs.primaryon);
+					current = std::clock();
+					time = ((float)(current-start))/CLOCKS_PER_SEC;
 					}
 				}
 			time = 0;
@@ -4109,29 +4088,13 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				//finishes without a new primary transmission switching it to 1 then
 				//the secondary user will assume it has stopped and resume transmitting
 				//This while loop below will run for secondaryscantime seconds
-				if(rxCBs.detectiontype == "match"){
-					while(secondaryscantime > (float)time) //&& rxCBs.primaryon == 0)
-						{
-						//printf("%f\n", time);
-						//printf("SU transmitting\n");
-						//printf("%ju\n", (uintmax_t)time);
-						//printf("%d\n", rxCBs.primaryon);
-						current = std::clock();
-						time = ((float)(current-start))/CLOCKS_PER_SEC;
-						}
-					}
-				if(rxCBs.detectiontype == "energy"){
-					rxCBs.primaryon = 1;
-					while(secondaryscantime > (float)time) //&& rxCBs.primaryon == 0)
-						{
-						//printf("%f\n", time);
-						//printf("SU transmitting\n");
-						//printf("%ju\n", (uintmax_t)time);
-						//printf("%d\n", rxCBs.primaryon);
-						rxCBs.primaryon = fftscan(suce);
-						current = std::clock();
-						time = ((float)(current-start))/CLOCKS_PER_SEC;
-						}
+				while(secondaryscantime > time)
+					{
+					//printf("scanning\n");
+					//printf("%ju\n", (uintmax_t)time);
+					//printf("%d\n", rxCBs.primaryon);
+					current = std::clock();
+					time = (current-start)/CLOCKS_PER_SEC;
 					}			
 				}
 			}
