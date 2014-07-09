@@ -3749,7 +3749,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 	if (setting != NULL)
 	{
 		// Read the strings
-		if (config_setting_lookup_int(setting, "totaltime", &tmpI))
+		if (config_setting_lookup_int(setting, "totalcycles", &tmpI))
 		{
 		totaltime = tmpI;
 		}
