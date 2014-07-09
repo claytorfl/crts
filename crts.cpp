@@ -2434,9 +2434,11 @@ int fftscan(struct CognitiveEngine ce){
             ) % md.error_code << std::endl;
             goto done_loop;
         }
+		printf("8\n");
         fftwf_execute(p);
         //calculate avmfft from moving average function
         send_avmfft=Moving_Avg(out_buff,Moving_Avg_size);
+		printf("9\n");
 		printf("%f\n", send_avmfft[0]);
         num_acc_samps += num_rx_samps;
 	} done_loop:
