@@ -5,6 +5,8 @@ params=
 totalcycles = 10;
 dsatype = "justsource";
 detectiontype = "simple";
+fftbandwidth = 1.0e6;
+fftchannelbandwidth = 5.0e4
 };
 
 PU=

@@ -2329,7 +2329,7 @@ int fftscan(struct CognitiveEngine ce){
 	double freq = ce.frequency;
 	double gain = ce.uhd_txgain_dB;
 	double bw = ce.bandwidth;
-	double chbw = 1;
+	double chbw = 1000000/20;
     std::string addr, port, mode;
 	ant = "A:0";
      
@@ -2437,6 +2437,7 @@ int fftscan(struct CognitiveEngine ce){
         fftwf_execute(p);
         //calculate avmfft from moving average function
         send_avmfft=Moving_Avg(out_buff,Moving_Avg_size);
+		printf("%f\n", send_avmfft[0]);
         num_acc_samps += num_rx_samps;
 	} done_loop:
 	fftwf_destroy_plan(p);
