@@ -2322,7 +2322,7 @@ int fftscan(struct CognitiveEngine ce){
     //variables to be set by po
     std::string args, file, ant, subdev, ref;
 	ref = "internal";
-    size_t total_num_samps;
+    size_t total_num_samps = 0;
     size_t num_bins = 20;
     unsigned int Moving_Avg_size, navrg;
     double rate = 195312;
@@ -2364,8 +2364,8 @@ int fftscan(struct CognitiveEngine ce){
     uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
  
     // rm// setup streaming ... 0 means continues
-     uhd::stream_cmd_t stream_cmd(//(total_num_samps == 0)?
-     //uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS:
+     uhd::stream_cmd_t stream_cmd((total_num_samps == 0)?
+     uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS:
      uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE
     );
     stream_cmd.num_samps = total_num_samps;// total_num_samps=0 means coninuous mode 
