@@ -2451,6 +2451,12 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
 		int x;
         for (unsigned int i=0; i<out_buff.size();i++)
              out_buff_norm[i]=sqrt(pow(abs(out_buff[i]),2));
+		for(unsigned int i=1; i<out_buff.size();i++){
+			noisefloor += out_buff_norm[i] * out_buff_norm[i];
+		}
+		noisefloor /= 9.0;
+		noisefloor = sqrt(noisefloor);
+		printf("%f\n", noisefloor);
 		for(x=0; x<bw/chbw; x++){
 			//printf("%d %f\n", x+1, out_buff_norm[x]);
 			totalpower += out_buff_norm[x];
