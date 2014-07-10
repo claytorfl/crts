@@ -2478,7 +2478,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
         //calculate avmfft from moving average function
         send_avmfft=Moving_Avg(out_buff,Moving_Avg_size);
 		//printf("9\n");
-		/*printf("1 %f\n", send_avmfft[0]);
+		printf("1 %f\n", send_avmfft[0]);
 		printf("2 %f\n", send_avmfft[1]);
 		printf("3 %f\n", send_avmfft[2]);
 		printf("4 %f\n", send_avmfft[3]);
@@ -2487,7 +2487,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
 		printf("7 %f\n", send_avmfft[6]);
 		printf("8 %f\n", send_avmfft[7]);
 		printf("9 %f\n", send_avmfft[8]);
-		printf("10 %f\n", send_avmfft[9]);*/
+		printf("10 %f\n", send_avmfft[9]);
 
         num_acc_samps += num_rx_samps;
 	} done_loop:
