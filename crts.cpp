@@ -2426,7 +2426,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
    //main loop
     int y;
 	float totalpower = 0;
-	for(y=0; y<100; ++y){    
+	for(y=0; y<navrg+1; ++y){    
 	//while((num_acc_samps < total_num_samps or total_num_samps == 0)){
         size_t num_rx_samps = rx_stream->recv(
             &buff.front(), buff.size(), md, 3.0
@@ -2451,9 +2451,46 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
             goto done_loop;
         }
 
-
+        if (nAvrgCount<navrg)
+                {
+                fftwf_execute(p);
+                for (unsigned int i=0; i<out_buff.size();i++)
+                     out_buff_norm[i]=pow(abs(out_buff[i]),2);
+                     //out_buff_norm[i]=std::norm(out_buff[i]);
+                std::vector<float>::iterator it1;//=out_buff_norm.begin();
+                std::vector<float>::iterator it2;//=out_buff_norm.begin();
+             
+                for( unsigned int ch_i=0;ch_i<nChs;ch_i++)
+                {
+                    it1=out_buff_norm.begin()+ ch_i*nSlize;
+                    it2=out_buff_norm.begin()+ (ch_i+1)*nSlize-1;
+                    while ( it1!=it2 ) {vChCusum[ch_i] = vChCusum[ch_i] + 2*(*it1++)/nSlize;}
+                }
+                nAvrgCount++;
+                }
+          // after number of averages is finished--> calculate channel status   
+           else
+               {
+                //std::cout<<nChs<<std::endl;
+                for( unsigned int ch_j=0;ch_j<nChs;ch_j++)
+                {
+                  if ((vChCusum[ch_j]/nAvrgCount) >thresh) //threshold
+                    {
+                    send_chnsts[ch_j]=1;
+					printf("1\n");
+                    //std::cout<<"Ch"<<ch_i<<" "<<send_chnsts[ch_i]<<"\t";
+                    }
+                  else
+                    {
+                    send_chnsts[ch_j]=0;   
+					printf("0\n");
+                    }
+                 // constructing text frame for ncurses display
+                 vChCusum[ch_j]=0;
+                }
+		}
 		//printf("8\n");
-        fftwf_execute(p);
+        /*fftwf_execute(p);
 		int x;
         for (unsigned int i=0; i<out_buff.size();i++)
              out_buff_norm[i]=sqrt(pow(abs(out_buff[i]),2));
