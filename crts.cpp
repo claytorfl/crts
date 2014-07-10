@@ -2460,7 +2460,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
 		noiseiterator = 0;
 		noisefloor = 0;
 		for(t=1; t<out_buff.size();t++){
-			noisefloor += out_buff_norm[t] * out_buff_norm[t];
+			noisefloor += pow(abs(out_buff[t]),2);
 			noiseiterator++;
 		}
 		noisefloor /= noiseiterator;
