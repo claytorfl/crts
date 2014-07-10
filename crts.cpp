@@ -4,6 +4,7 @@
 #include <math.h>
 #include <complex>
 #include <liquid/liquid.h>
+//Library containing functions for FFT and Energy Detection
 #include <fftw3.h>
 // Definition of liquid_float_complex changes depending on
 // whether <complex> is included before or after liquid.h
@@ -52,6 +53,12 @@ void usage() {
     printf("  -M     :   number of subcarriers (when not controller. default: 64)\n");
     printf("  -C     :   cyclic prefix length (when not controller. default: 16)\n");
     printf("  -T     :   taper length (when not controller. default: 4)\n");
+    printf("  -D     :   using DSA\n");
+    printf("  -B     :   node is a broadcasting transmitter that can be linked to by receivers\n");
+	printf("  -P     :   primary user\n");
+	printf("  -S     :   secondary user\n");
+	printf("  -R     :   broadcasting receiver\n");
+	printf("  -Q     :   run test program (for debugging)\n");
     //printf("  f     :   center frequency [Hz], default: 462 MHz\n");
     //printf("  b     :   bandwidth [Hz], default: 250 kHz\n");
     //printf("  G     :   uhd rx gain [dB] (default: 20dB)\n");
@@ -139,11 +146,22 @@ struct rxCBstruct {
     int sc_num;
     int frameNum;
 	int client;
+
+	//Tells program whether the primary user is on or not
 	int primaryon;
+
+	//Tells program if secondary transmissions have been received
 	int secondarysending;
+
+	//Char that indicates whether the node is primary or secondary and if it is a transmitter or receiver
 	char usrptype;
+
 	int number;
+
+	//Records the dsa type being used
 	char dsatype;
+
+	//The detection type being used, either match filter or energy detection
 	char detectiontype;
 };
 
@@ -170,12 +188,31 @@ struct feedbackStruct {
 //Structure for using TCP to pass both feedback structs and info on when primaries and secondaries
 //turn on and off
 struct message{
-	std::clock_t timestamp;
+	//Type signifies where the message came from
+	//P - primary transmitter
+	//S - secondary transmitter
+	//p - primary receiver
+	//s - seconary receiver
 	char type;
+
+	//Purpose determines the info the message was meant to send
+	//t - transmitter is turning on
+	//r - transmitter is turning off
+	//f - feedback from receiver of primary transmission
+	//F - feedback form receiver of secondary transmission or primary transmitter signalling its finished
+	//its cycles
 	char purpose;
+
+	//Feedback that receivers can use TCP to pass to transmitters
 	struct feedbackStruct feed;
+
+	//The number increases by one when a message is sent to insure that a program doesn't read a message twice
 	int number;
+
+	//Signals when a new message can be read
 	int msgreceived;
+
+	//Tells the receiving program where the message came from
 	int client;
 };
 
@@ -194,21 +231,6 @@ struct feedbackStruct feedbackadder(struct feedbackStruct fb1, struct feedbackSt
 	return resultfb;
 }
 
-//Finds the position of an integer in an array of ints
-int finder(int * int_ptr, int * length, int value){
-	int iterator;
-	int len = *length;
-	for(iterator=0; iterator<len; ++iterator){
-		if(int_ptr[iterator] == value){
-			return iterator;
-		}
-	}
-	int_ptr[len] = value;
-	*length = len + 1;
-	return len;
-}
-
-
 struct serverThreadStruct {
     unsigned int serverPort;
     struct feedbackStruct * fb_ptr;
@@ -224,6 +246,7 @@ struct serveClientStruct {
 	struct message * m_ptr;
 };
 
+//Struct passed to thread that interprets receiver feedback for broadcasting transmitters
 struct broadcastfeedbackinfo{
 	struct message * m_ptr;
 	int client;
@@ -1383,9 +1406,11 @@ void * serveTCPDSAclient(void * _sc_ptr){
 	struct message read_buffer;
 	struct message *m_ptr = sc_ptr->m_ptr;
 	while(1){
+		//The main thread sets this to 0 after it has finished dealing with the last message
 		if(m_ptr->msgreceived == 0){
 		    bzero(&read_buffer, sizeof(read_buffer));
 		    read(client, &read_buffer, sizeof(read_buffer));
+			//Checks that the message received is a new messsage and that it has a proper type
 			if(read_buffer.number > number and (read_buffer.type == 'p' or read_buffer.type == 's' or read_buffer.type == 'P' or read_buffer.type == 'S')){
 				*m_ptr = read_buffer;
 				m_ptr->msgreceived = 1;
@@ -1397,6 +1422,7 @@ void * serveTCPDSAclient(void * _sc_ptr){
     return NULL;
 }
 
+//Thread that a broadcasting primary transmitter runs to interpret receiver feedback
 void * feedbackThread(void * v_ptr){
 	struct broadcastfeedbackinfo * bfi_ptr = (struct broadcastfeedbackinfo*) v_ptr;
 	struct message * m_ptr = bfi_ptr->m_ptr;
@@ -1417,29 +1443,19 @@ void * feedbackThread(void * v_ptr){
 
 	//Zeroes out the feedback structures so they can be added to when
 	//new feedback is received
-	for(int o; o<fblistlength; ++o){
-		/*fblist[o].header_valid = 0;
-		fblist[o].payload_valid = 0;
-	   	fblist[o].payload_len = 0;
-		fblist[o].payloadByteErrors = 0;
-	   	fblist[o].payloadBitErrors = 0;
-		fblist[o].iteration = 0;
-	   	fblist[o].evm = 0.0;
-		fblist[o]. rssi = 0.0;
-		fblist[o].cfo = 0.0;
-		fblist[o].block_flag = 0;*/
-		basicfb.header_valid = 0;
-		basicfb.payload_valid = 0;
-	   	basicfb.payload_len = 0;
-		basicfb.payloadByteErrors = 0;
-	   	basicfb.payloadBitErrors = 0;
-		basicfb.iteration = 0;
-	   	basicfb.evm = 0.0;
-		basicfb. rssi = 0.0;
-		basicfb.cfo = 0.0;
-		basicfb.block_flag = 0;
-		//feedbacknum[o] = 0;
-	}
+	
+	basicfb.header_valid = 0;
+	basicfb.payload_valid = 0;
+   	basicfb.payload_len = 0;
+	basicfb.payloadByteErrors = 0;
+   	basicfb.payloadBitErrors = 0;
+	basicfb.iteration = 0;
+   	basicfb.evm = 0.0;
+	basicfb. rssi = 0.0;
+	basicfb.cfo = 0.0;
+	basicfb.block_flag = 0;
+		
+	
 	int primary = 0;
 	int secondary = 0;
 	std::clock_t time = std::clock();
@@ -1448,30 +1464,43 @@ void * feedbackThread(void * v_ptr){
 	
 	while(loop){
 		//printf("%d\n", *bfi_ptr->msgnumber);
+		//When a new message is received
 		if(m_ptr->msgreceived == 1){
+			//If the message is from a primary receiver
 			if(m_ptr->type == 'p'){
 				//index = finder(clientlist, &clientlistlength, msg.client); 
+				//Receiver saying that it received a primary transmission
 				if(m_ptr->purpose == 'P'){
 					//fblist[index] = feedbackadder(fblist[index], msg.feed);
 					time = std::clock();
 					printf("Primary receiver received primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					primary++;
 				}
-				if(m_ptr->purpose == 'S'){;
+				//receiver saying it received secondary transmission
+				if(m_ptr->purpose == 'S'){
 					time = std::clock();
 					printf("Primary receiver received secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					secondary++;
 				}
+				//Feedback from primary transmission
 				if(m_ptr->purpose == 'f'){;
 					time = std::clock();
 					//printf("Received feedback from primary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					primary++;
+					//Checks if the message's client is in the client list
+					//If it isn't then the transmitter hasn't received feedback from that node for that
+					//transmission so it adds it to the list and adds its feedback to basicfb
+					//If it is in the clientlist then the program assumes that the feedback received
+					//is from a new transmission and that all feedback gathered before was from an older
+					//one. The collected feedback is averaged and sent to the controller. Then basicfb
+					//is zeroed out and the client list is emptied. The client is added to thel is and
+					//its feedback is the first added to basicfb
 					for(h = 0; h<clientlistlength; h++){
 						if(clientlist[h] == m_ptr->client){
 							break;
 						}
 					}
-					//index = std::find(clientlist, clientlistlength, m_ptr->client);
+					
 					if(h == clientlistlength){
 						fbnum++;
 						basicfb = feedbackadder(basicfb, m_ptr->feed);
@@ -1513,6 +1542,7 @@ void * feedbackThread(void * v_ptr){
 					}
 						
 				}
+				//Receiver giving feedback from secondary transmission
 				if(m_ptr->purpose == 'F'){;
 					time = std::clock();
 					printf("Received feedback from primary receiver with secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
@@ -2181,7 +2211,7 @@ struct SU{
 	int time;
 };
 
-
+//Callback function that determines if the frame was received from a primary or secondary user using headers
 int dsaCallback(unsigned char *  _header,
                int              _header_valid,
                unsigned char *  _payload,
@@ -2191,6 +2221,7 @@ int dsaCallback(unsigned char *  _header,
                void *           _userdata)
 {
     struct rxCBstruct * rxCBS_ptr = (struct rxCBstruct *) _userdata;
+	//If the secondary transmitter is using energy detection then the callback is unnecessary and it is skipped
 	if(rxCBS_ptr->usrptype == 'S' and rxCBS_ptr->detectiontype == 'e')
 	return 1;
     int verbose = rxCBS_ptr->verbose;
@@ -2286,6 +2317,7 @@ int dsaCallback(unsigned char *  _header,
 
     // Receiver sends data to server*/
 	//struct feedbackStruct fb = {};
+	//If the usrp is a receiver then it will put the feedback into a message and send it to its transmitter
 	if(rxCBS_ptr->usrptype == 'p' or rxCBS_ptr->usrptype == 's'){
 		struct message mess;
 		mess.type = rxCBS_ptr->usrptype;
@@ -2320,7 +2352,8 @@ std::vector<float> Moving_Avg(std::vector<std::complex<float> > fft_data, unsign
 return ret_vect;
 }
 
-int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
+//Uses FFT to scan the spectrum to sense for a primary user
+int fftscan2(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
     //uhd::set_thread_priority_safe();
  	//printf("1\n");
     //variables to be set by po
@@ -2546,7 +2579,211 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
 	return cantransmit;
 }
 
+int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float noisefloor){
+	int cantransmit;
+	int t;
+    std::string args, file, ant, subdev, ref;
+	ref = "internal";
+    size_t total_num_samps = 0;
+    size_t num_bins = 10;
+    unsigned int Moving_Avg_size = 4;
+	unsigned int navrg = 5;
+    double rate = 195312;
+	double freq = ce.frequency;
+	double gain = ce.uhd_txgain_dB;
+	double bw = 100;//ce.bandwidth;
+	double chbw = bw/10;
+    std::string addr, port, mode;
+	ant = "RX2";
+	
+    //printf("2\n");
+    // This for "chnsts" mode, for test purposes we will use this threshold value and can be adjusted as required.
+    // More work is needed to compute threshold based on USRP noise figure, gain and even center freq
+    // because noise figure changes with freq
+    double thresh=0.00015;
+	//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
+	usrp->set_clock_source(ref);
+	usrp->set_rx_rate(rate);
+	usrp->set_rx_freq(freq);
+	usrp->set_rx_gain(gain);
+	usrp->set_rx_bandwidth(bw);
+	usrp->set_rx_antenna(ant);
+	//printf("3\n");
+    std::vector<std::string> sensor_names;
+    sensor_names = usrp->get_rx_sensor_names(0);
+    uhd::stream_args_t stream_args("fc32"); //complex floats
+    uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
+ 	//printf("4\n");
+    // rm// setup streaming ... 0 means continues
+     uhd::stream_cmd_t stream_cmd((total_num_samps == 0)?
+     uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS:
+     uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE
+    );
+    stream_cmd.num_samps = total_num_samps;// total_num_samps=0 means coninuous mode 
+    stream_cmd.stream_now = true;
+    stream_cmd.time_spec = uhd::time_spec_t();
+    usrp->issue_stream_cmd(stream_cmd);
+	size_t num_acc_samps = 0; //number of accumulated samples
+    size_t  nAvrgCount = 0;
+    uhd::rx_metadata_t md;
+    //printf("5\n");
+    std::vector<std::complex<float> > buff(num_bins);
+    std::vector<std::complex<float> > out_buff(num_bins);
+    std::vector<float> out_buff_norm(num_bins);
+     
+    //std::vector<float> send_avmfft(num_bins-Moving_Avg_size);
+     std::vector<float> send_avmfft(num_bins);
+    // there is actually no need for the two below vectors since send_cmpfft equals the output of fft buff
+    // and send_tmsmps equals to buff from USRP, I will leave it like this for clarity and in case we need
+    // extra calculations before sending the buff
+    std::vector<std::complex<float> > send_cmpfft(num_bins);
+    std::vector<std::complex<float> > send_tmsmps;
+    //initializing sum of channels matrix
+    // calculating number of channels in chnsts mode
+    unsigned int nChs,nSlize;
+    nChs=static_cast <int> (std::floor((rate/2)/chbw));
+    nSlize=static_cast <int> (std::floor((num_bins/2)/nChs));
+     
+    //printf("6\n");
+    std::vector<float> vChCusum(nChs,0);
+    // create chnsts buffer to send this could be boolean vector also
+    std::vector<unsigned short> send_chnsts(nChs,0);
+     
+    //initialize fft plan
+    fftwf_complex *in = (fftwf_complex*)&buff.front();
+    fftwf_complex *out = (fftwf_complex*)&out_buff.front();
+    fftwf_plan p;
+    p = fftwf_plan_dft_1d(num_bins, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+    int y;
+	float totalpower = 0;
+	float maxpower;
+	for(y=0; y<1000; ++y){    
+	//while((num_acc_samps < total_num_samps or total_num_samps == 0)){
+        size_t num_rx_samps = rx_stream->recv(
+            &buff.front(), buff.size(), md, 3.0
+        );        
+        fftwf_execute(p);
+		int x;
+        for (unsigned int i=0; i<out_buff.size();i++)
+             out_buff_norm[i]=sqrt(pow(abs(out_buff[i]),2));
+		if(y==0){
+			maxpower = out_buff_norm[0];
+		}
+		if(out_buff_norm[0] > maxpower){
+			maxpower = out_buff_norm[0];
+		}
+	} 
+	fftwf_destroy_plan(p);
+	if(maxpower > noisefloor){
+		cantransmit = 0;
+	}
+	else{
+		cantransmit = 1;
+	}
+	printf("%d %f %f\n", cantransmit, maxpower, noisefloor);
+	//printf("%d %f %f\n", cantransmit, centeraverage, noisefloor);
 
+	return cantransmit;
+}
+
+
+
+float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
+
+
+	int t;
+    std::string args, file, ant, subdev, ref;
+	ref = "internal";
+    size_t total_num_samps = 0;
+    size_t num_bins = 10;
+    double rate = 195312;
+	double freq = ce.frequency;
+	double gain = ce.uhd_txgain_dB;
+	double bw = 100;//ce.bandwidth;
+	double chbw = bw/10;
+    std::string addr, port, mode;
+	ant = "RX2";
+	
+    //printf("2\n");
+    // This for "chnsts" mode, for test purposes we will use this threshold value and can be adjusted as required.
+    // More work is needed to compute threshold based on USRP noise figure, gain and even center freq
+    // because noise figure changes with freq
+    double thresh=0.00015;
+	//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
+	usrp->set_clock_source(ref);
+	usrp->set_rx_rate(rate);
+	usrp->set_rx_freq(freq);
+	usrp->set_rx_gain(gain);
+	usrp->set_rx_bandwidth(bw);
+	usrp->set_rx_antenna(ant);
+	//printf("3\n");
+    std::vector<std::string> sensor_names;
+    sensor_names = usrp->get_rx_sensor_names(0);
+    uhd::stream_args_t stream_args("fc32"); //complex floats
+    uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
+ 	//printf("4\n");
+    // rm// setup streaming ... 0 means continues
+     uhd::stream_cmd_t stream_cmd((total_num_samps == 0)?
+     uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS:
+     uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE
+    );
+    stream_cmd.num_samps = total_num_samps;// total_num_samps=0 means coninuous mode 
+    stream_cmd.stream_now = true;
+    stream_cmd.time_spec = uhd::time_spec_t();
+    usrp->issue_stream_cmd(stream_cmd);
+	size_t num_acc_samps = 0; //number of accumulated samples
+    size_t  nAvrgCount = 0;
+    uhd::rx_metadata_t md;
+
+    std::vector<std::complex<float> > buff(num_bins);
+    std::vector<std::complex<float> > out_buff(num_bins);
+    std::vector<float> out_buff_norm(num_bins);
+     
+    //std::vector<float> send_avmfft(num_bins-Moving_Avg_size);
+     std::vector<float> send_avmfft(num_bins);
+    // there is actually no need for the two below vectors since send_cmpfft equals the output of fft buff
+    // and send_tmsmps equals to buff from USRP, I will leave it like this for clarity and in case we need
+    // extra calculations before sending the buff
+    std::vector<std::complex<float> > send_cmpfft(num_bins);
+    std::vector<std::complex<float> > send_tmsmps;
+    //initializing sum of channels matrix
+    // calculating number of channels in chnsts mode
+    unsigned int nChs,nSlize;
+    nChs=static_cast <int> (std::floor((rate/2)/chbw));
+    nSlize=static_cast <int> (std::floor((num_bins/2)/nChs));
+     
+   
+    std::vector<float> vChCusum(nChs,0);
+    // create chnsts buffer to send this could be boolean vector also
+    std::vector<unsigned short> send_chnsts(nChs,0);
+     
+    //initialize fft plan
+    fftwf_complex *in = (fftwf_complex*)&buff.front();
+    fftwf_complex *out = (fftwf_complex*)&out_buff.front();
+    fftwf_plan p;
+    p = fftwf_plan_dft_1d(num_bins, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+    int y;
+	float totalpower = 0;
+	float maxpower;
+	for(y=0; y<1000; ++y){    
+	//while((num_acc_samps < total_num_samps or total_num_samps == 0)){
+        size_t num_rx_samps = rx_stream->recv(
+            &buff.front(), buff.size(), md, 3.0
+        );        
+        fftwf_execute(p);
+		int x;
+        for (unsigned int i=0; i<out_buff.size();i++)
+             out_buff_norm[i]=sqrt(pow(abs(out_buff[i]),2));
+		if(y==0){
+			maxpower = out_buff_norm[0];
+		}
+		if(out_buff_norm[0] > maxpower){
+			maxpower = out_buff_norm[0];
+		}
+	} 
+	fftwf_destroy_plan(p);
+	return maxpower;
+}
 
 
 
@@ -3969,6 +4206,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		double primarybaseresttime = primaryresttime;
 		for(int o = 0; o<totaltime; ++o){
 			//printf("%d\n", primarymsgnumber);
+			//Randomizes primary burst and rest times
 			primarybursttime = primarybasebursttime + rand() % primaryburstrandom;
 			primaryresttime = primarybaseresttime + rand() % primaryrestrandom;
 			int on = 1;
@@ -4004,6 +4242,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				usleep(100);
 		   		txcvr.end_transmit_frame();
 				usleep(100);
+				//The radio adapts if it can
 				if(adapt==1)
 				postTxTasks(&puce, &msg.feed, verbose);
 				current = std::clock();
@@ -4026,6 +4265,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				time = (current-start)/CLOCKS_PER_SEC;
 			}
 		}
+		//After it has completed its cycles the primary transmitter sends a finished message to the controller
 		mess.purpose = 'F';
 		mess.number = primarymsgnumber;
 		write(rxCBs.client, (const void*)&mess, sizeof(mess));
@@ -4163,9 +4403,17 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				}
 			}
 		}
+
+	//If the secondary transmitter is using energy detection it will call the fftscan function to check for
+	//spectrum holes
 	if(secondary == 1 && rxCBs.detectiontype == 'e'){
 		std::string args = "internal";
+		//Creates usrp pointer that will be passed to fftscan function
 		uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
+		float noisefloor = noise_floor(suce, usrp);
+	
+		printf("\nNoise floor found! Press any key to start secondary user\n");
+		getchar();
 		int cantransmit = 0;
 		int primaryoncounter;
 		int primaryoffcounter;
@@ -4264,7 +4512,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 						//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
 						primaryoncounter = 0;
 						primaryoffcounter = 0;
-						cantransmit = fftscan(suce, usrp);
+						cantransmit = fftscan(suce, usrp, noisefloor);
 						if(cantransmit==1){
 							primaryoffcounter++;
 						}
@@ -4312,7 +4560,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 					{
 					primaryoncounter = 0;
 					primaryoffcounter = 0;
-					cantransmit = fftscan(suce, usrp);
+					cantransmit = fftscan(suce, usrp, noisefloor);
 					if(cantransmit==1){
 						primaryoffcounter++;
 					}
@@ -4695,7 +4943,7 @@ if(tester==1){
 	struct CognitiveEngine ce = CreateCognitiveEngine();
 	readCEConfigFile(&ce, (char*) "ce1.txt", 0);
 	uhd::usrp::multi_usrp::sptr usrp;
-	fftscan(ce, usrp);
+	//fftscan(ce, usrp);
 	return 1;
 }
 
