@@ -2657,7 +2657,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
     int y;
 	float totalpower = 0;
 	float maxpower;
-	for(y=0; y<1000; ++y){    
+	for(y=0; y<100; ++y){    
 	//while((num_acc_samps < total_num_samps or total_num_samps == 0)){
         size_t num_rx_samps = rx_stream->recv(
             &buff.front(), buff.size(), md, 3.0
@@ -4517,7 +4517,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 					//primary users appear
 					cantransmit = 0;
 					
-					while(0.1 > (float)time) //&& rxCBs.primaryon == 0)
+					while(0.3 > (float)time) //&& rxCBs.primaryon == 0)
 						{
 						//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
 						primaryoncounter = 0;
@@ -4566,7 +4566,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				//finishes without a new primary transmission switching it to 1 then
 				//the secondary user will assume it has stopped and resume transmitting
 				//This while loop below will run for secondaryscantime seconds
-				while(0.1 > (float)time) //&& rxCBs.primaryon == 0)
+				while(0.3 > (float)time) //&& rxCBs.primaryon == 0)
 					{
 					primaryoncounter = 0;
 					primaryoffcounter = 0;
