@@ -4684,9 +4684,9 @@ if(dsa && isController){
 	probofdetection = success/totalcycles;
 	printf("Probability of Detection: %f\n", probofdetection);
 	averageevacuationtime = totalevacuationtime/evaccounter;
-	printf("Average Evacuation Time: %f seconds\n", averageevacuationtime/CLOCKS_PER_SEC);
+	printf("Average Evacuation Time: %f seconds\n", ((float)averageevacuationtime)/CLOCKS_PER_SEC);
 	averagerendevoustime = totalrendevoustime/rendcounter;
-	printf("Average Rendezvous Time: %f seconds\n", averagerendevoustime/CLOCKS_PER_SEC);
+	printf("Average Rendezvous Time: %f seconds\n", ((float)averagerendevoustime)/CLOCKS_PER_SEC);
 	
 	return 1;
 }
