@@ -4464,6 +4464,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		start = std::clock();
 		while(true)
 			{
+			noisefloor = noise_floor(suce, usrp);
 			int on = 1;
 			time = 0;
 			start = std::clock();
