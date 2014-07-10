@@ -4606,6 +4606,7 @@ if(dsa && isController){
 							rendcounter++;
 							printf("Rendezvous time = %f seconds\n", ((float)rendevoustime/CLOCKS_PER_SEC));
 							success++;
+							rendcounter++;
 							totalrendevoustime += rendevoustime;
 						}
 						if(primary == 1){
@@ -4679,12 +4680,12 @@ if(dsa && isController){
 	};
 	printf("Testing Complete\n");
 	falsealarmprob = totalfalsealarm/totalcycles;
-	printf("Probability of False Alarm: % %f\n", falsealarmprob);
+	printf("Probability of False Alarm: %f\n", falsealarmprob);
 	probofdetection = success/totalcycles;
-	printf("Probability of Detection: % %f\n", probofdetection);
-	averageevacuationtime = totalevacuationtime/totalcycles;
+	printf("Probability of Detection: %f\n", probofdetection);
+	averageevacuationtime = totalevacuationtime/evaccounter;
 	printf("Average Evacuation Time: %f seconds\n", averageevacuationtime/CLOCKS_PER_SEC);
-	averagerendevoustime = totalrendevoustime/totalcycles;
+	averagerendevoustime = totalrendevoustime/rendcounter;
 	printf("Average Rendezvous Time: %f seconds\n", averagerendevoustime/CLOCKS_PER_SEC);
 	
 	return 1;
