@@ -2451,7 +2451,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
             goto done_loop;
         }
 
-        if (nAvrgCount<navrg)
+        /*if (nAvrgCount<navrg)
                 {
                 fftwf_execute(p);
                 for (unsigned int i=0; i<out_buff.size();i++)
@@ -2488,9 +2488,9 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
                  // constructing text frame for ncurses display
                  vChCusum[ch_j]=0;
                 }
-		}
+		}*/
 		//printf("8\n");
-        /*fftwf_execute(p);
+        fftwf_execute(p);
 		int x;
         for (unsigned int i=0; i<out_buff.size();i++)
              out_buff_norm[i]=sqrt(pow(abs(out_buff[i]),2));
@@ -2533,12 +2533,14 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
 	fftwf_destroy_plan(p);
 	noisefloor = averagenoisefloor/noiseflooriterator;
 	centeraverage = centeraverage/iterator;
+	noisefloor = 200;
 	if(centeraverage > noisefloor){
 		cantransmit = 0;
 	}
 	else{
 		cantransmit = 1;
 	}
+	printf("%d %d %d\n", cantransmit, totalpower, noisefloor);
 	printf("%d %f %f\n", cantransmit, centeraverage, noisefloor);
 
 	return cantransmit;
