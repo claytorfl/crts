@@ -4506,62 +4506,64 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 						enactScenarioBaseband(txcvr.fgbuffer, suce, sc);
 						txcvr.transmit_symbol();
 						}
-				   		txcvr.end_transmit_frame();
-						usleep(100);
-						if(adapt==1)
-						postTxTasks(&puce, &msg.feed, verbose);
-					}
-					time = 0.0;
-					//txcvr.start_rx();
-					start = std::clock();
+			   		txcvr.end_transmit_frame();
+					usleep(100);
+					if(adapt==1)
+					postTxTasks(&puce, &msg.feed, verbose);
+				}
+				time = 0.0;
+				//txcvr.start_rx();
+				start = std::clock();
 
-					//The secondary user will wait in this while loop and wait and see if any
-					//primary users appear
-					cantransmit = 0;
-					primaryoncounter = 0;
-					primaryoffcounter = 0;
+				//The secondary user will wait in this while loop and wait and see if any
+				//primary users appear
+				cantransmit = 0;
+				primaryoncounter = 0;
+				primaryoffcounter = 0;
+			
 					
-					for(int h=0; h<10; h++) //&& rxCBs.primaryon == 0)
-						{
-						//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
+				for(int h=0; h<10; h++) //&& rxCBs.primaryon == 0)
+					{
+					//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
 
-						cantransmit = fftscan(suce, usrp, noisefloor);
-						if(cantransmit==1){
-							primaryoffcounter++;
-						}
-						else{
-							primaryoncounter++;
-						}
-						current = std::clock();
-						time = ((float)(current-start))/CLOCKS_PER_SEC;
-						}
-					}
-					//delete usrp;
-					if(primaryoffcounter > primaryoncounter){
-						cantransmit = 1;
-
+					cantransmit = fftscan(suce, usrp, noisefloor);
+					if(cantransmit==1){
+						primaryoffcounter++;
 					}
 					else{
-						cantransmit = 0;
+						primaryoncounter++;
 					}
-				time = 0;
-				start = std::clock();
-				std::clock_t current;
-				printf("SU sensing\n");
+					current = std::clock();
+					time = ((float)(current-start))/CLOCKS_PER_SEC;
+					}
+				}
+				//delete usrp;
+				if(primaryoffcounter > primaryoncounter){
+					cantransmit = 1;
 
-				//Once the primary user is detected the secondary user stops transmitting
-				//and switches to sensing in a new while loop
-				mess.number = secondarymsgnumber;
-				mess.purpose = 'r';
-				write(rxCBs.client, (const void*)&mess, sizeof(mess));
-				secondarymsgnumber++;
+				}
+				else{
+					cantransmit = 0;
+				}
+			}
+			time = 0;
+			start = std::clock();
+			//std::clock_t current;
+			printf("SU sensing\n");
+
+			//Once the primary user is detected the secondary user stops transmitting
+			//and switches to sensing in a new while loop
+			mess.number = secondarymsgnumber;
+			mess.purpose = 'r';
+			write(rxCBs.client, (const void*)&mess, sizeof(mess));
+			secondarymsgnumber++;
 				//printf("%d\n", mess.number);
 			//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
 			while(cantransmit==0)
 				{
 				//printf("%d\n", rxCBs.primaryon);
 				time = 0;
-			
+		
 				start = std::clock();
 				std::clock_t current;
 				primaryoncounter = 0;
@@ -4582,19 +4584,19 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 					}
 					current = std::clock();
 					time = ((float)(current-start))/CLOCKS_PER_SEC;
-					}
 				}
+				
 				if(primaryoffcounter > primaryoncounter){
 					cantransmit = 1;
 					//delete usrp;
 				}
 				else{
 					cantransmit = 0;
-				
+			
 				}
 			}
 		};
-	return 0;
+		return 0;
 	
 }
 
