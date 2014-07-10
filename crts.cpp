@@ -2784,7 +2784,7 @@ float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
 		}
 	} 
 	fftwf_destroy_plan(p);
-	return maxpower + 0.5;
+	return maxpower + 0.1;
 }
 
 
