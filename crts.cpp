@@ -2326,6 +2326,12 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
     //variables to be set by po
 	//uhd::usrp::multi_usrp::sptr usrp;
 	int cantransmit;
+	int t;
+	float centeraverage = 0.0;
+	int noiseiterator = 0;
+	int iterator = 0;
+	float averagenoisefloor = 0.0;
+	int noiseflooriterator = 0;
     std::string args, file, ant, subdev, ref;
 	ref = "internal";
     size_t total_num_samps = 0;
@@ -2451,12 +2457,19 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
 		int x;
         for (unsigned int i=0; i<out_buff.size();i++)
              out_buff_norm[i]=sqrt(pow(abs(out_buff[i]),2));
-		for(unsigned int i=1; i<out_buff.size();i++){
-			noisefloor += out_buff_norm[i];// * out_buff_norm[i];
+		noiseiterator = 0;
+		noisefloor = 0;
+		for(t=1; t<out_buff.size();t++){
+			noisefloor += out_buff_norm[t];// * out_buff_norm[i];
+			noiseiterator++;
 		}
-		noisefloor /= 9.0;
+		noisefloor /= noiseiterator;
 		noisefloor = sqrt(noisefloor);
-		printf("%f\n", noisefloor);
+		averagenoisefloor += noisefloor;
+		noiseflooriterator++;
+		centeraverage += out_buff_norm[0];
+		iterator++;
+		//printf("%f\n", noisefloor);
 		for(x=0; x<bw/chbw; x++){
 			//printf("%d %f\n", x+1, out_buff_norm[x]);
 			totalpower += out_buff_norm[x];
@@ -2479,13 +2492,15 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
 	} done_loop:
 	//printf("%f\n", totalpower);
 	fftwf_destroy_plan(p);
-	if(totalpower > noisefloor){
+	noisefloor = averagenoisefloor/noiseflooriterator;
+	centeraverage = centeraverage/iterator;
+	if(centeraverage > noisefloor){
 		cantransmit = 0;
 	}
 	else{
 		cantransmit = 1;
 	}
-	printf("%d %f\n", cantransmit, totalpower);
+	printf("%d %f %f\n", cantransmit, centeraverage, noisefloor);
 
 	return cantransmit;
 }
