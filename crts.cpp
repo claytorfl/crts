@@ -4479,7 +4479,8 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			//If it does not sense the primary user then the secondary user will transmit
 			while(cantransmit==1)
 				{
-				for(z=0; z<uninterruptedframes; z++){
+				for(z=0; z<uninterruptedframes; z++)
+					{
 					//printf("%d\n", rxCBs.primaryon);
 					//if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
 					modulation_scheme ms = convertModScheme(suce.modScheme, &suce.bitsPerSym);
@@ -4505,7 +4506,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 						if(usescenario)
 						enactScenarioBaseband(txcvr.fgbuffer, suce, sc);
 						txcvr.transmit_symbol();
-						}
+					}
 			   		txcvr.end_transmit_frame();
 					usleep(100);
 					if(adapt==1)
@@ -4535,14 +4536,16 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 					}
 					current = std::clock();
 					time = ((float)(current-start))/CLOCKS_PER_SEC;
-					}
+					
 				}
 				//delete usrp;
-				if(primaryoffcounter > primaryoncounter){
+				if(primaryoffcounter > primaryoncounter)
+					{
 					cantransmit = 1;
 
 				}
-				else{
+				else
+					{
 					cantransmit = 0;
 				}
 			}
@@ -4597,6 +4600,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			}
 		};
 		return 0;
+	}
 	
 }
 
