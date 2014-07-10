@@ -2426,7 +2426,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
    //main loop
     int y;
 	float totalpower = 0;
-	for(y=0; y<navrg+1; ++y){    
+	for(y=0; y<100; ++y){    
 	//while((num_acc_samps < total_num_samps or total_num_samps == 0)){
         size_t num_rx_samps = rx_stream->recv(
             &buff.front(), buff.size(), md, 3.0
