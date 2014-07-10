@@ -2505,7 +2505,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
 		averagenoisefloor += noisefloor;
 		noiseflooriterator++;
 		centeraverage += out_buff_norm[0];
-		printf("%f\n", out_buff_norm[0]);
+		//printf("%f\n", out_buff_norm[0]);
 		//printf("%f %f\n", out_buff[0], out_buff_norm[0]);
 		iterator++;
 		//printf("%f\n", noisefloor);
@@ -2533,15 +2533,15 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
 	fftwf_destroy_plan(p);
 	noisefloor = averagenoisefloor/noiseflooriterator;
 	centeraverage = centeraverage/iterator;
-	noisefloor = 200;
+	noisefloor = 450;
 	if(totalpower > noisefloor){
 		cantransmit = 0;
 	}
 	else{
 		cantransmit = 1;
 	}
-	printf("%d %f %f\n", cantransmit, totalpower, noisefloor);
-	printf("%d %f %f\n", cantransmit, centeraverage, noisefloor);
+	//printf("%d %f %f\n", cantransmit, totalpower, noisefloor);
+	//printf("%d %f %f\n", cantransmit, centeraverage, noisefloor);
 
 	return cantransmit;
 }
