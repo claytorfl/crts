@@ -2681,7 +2681,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
 	else{
 		cantransmit = 1;
 	}
-	//printf("%d %f %f\n", cantransmit, maxpower, noisefloor);
+	printf("%d %f %f\n", cantransmit, maxpower, noisefloor);
 	//printf("%d %f %f\n", cantransmit, centeraverage, noisefloor);
 
 	return cantransmit;
@@ -2784,7 +2784,7 @@ float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
 		}
 	} 
 	fftwf_destroy_plan(p);
-	return maxpower + 2;
+	return maxpower + 0.5;
 }
 
 
