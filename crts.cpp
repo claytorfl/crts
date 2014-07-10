@@ -2335,8 +2335,8 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
     double rate = 195312;
 	double freq = ce.frequency;
 	double gain = ce.uhd_txgain_dB;
-	double bw = 1000;//ce.bandwidth;
-	double chbw = bw/100;
+	double bw = 10000;//ce.bandwidth;
+	double chbw = bw/1000;
     std::string addr, port, mode;
 	ant = "RX2";
 	float noisefloor = 200.0;
