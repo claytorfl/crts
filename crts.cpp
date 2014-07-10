@@ -4412,10 +4412,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		std::string args = "internal";
 		//Creates usrp pointer that will be passed to fftscan function
 		uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
-		float noisefloor = noise_floor(suce, usrp);
-	
-		printf("\nNoise floor found! Press any key to start secondary user\n");
-		getchar();
+
 		int cantransmit = 0;
 		int primaryoncounter;
 		int primaryoffcounter;
@@ -4449,6 +4446,10 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
    		txcvr.set_rx_rate(bandwidth);
     	txcvr.set_rx_gain_uhd(uhd_rxgain);
 		//txcvr.start_rx();
+		float noisefloor = noise_floor(suce, usrp);
+	
+		printf("\nNoise floor found! Press any key to start secondary user %f\n", noisefloor);
+		getchar();
 	
 		int on = 1;
 		float time = 0;	
