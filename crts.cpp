@@ -2329,14 +2329,14 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
     std::string args, file, ant, subdev, ref;
 	ref = "internal";
     size_t total_num_samps = 0;
-    size_t num_bins = 1024;
+    size_t num_bins = 10;
     unsigned int Moving_Avg_size = 4;
 	unsigned int navrg = 5;
     double rate = 195312;
 	double freq = ce.frequency;
 	double gain = ce.uhd_txgain_dB;
-	double bw = 10000;//ce.bandwidth;
-	double chbw = bw/1000;
+	double bw = 100;//ce.bandwidth;
+	double chbw = bw/10;
     std::string addr, port, mode;
 	ant = "RX2";
 	float noisefloor = 200.0;
