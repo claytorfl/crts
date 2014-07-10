@@ -2676,6 +2676,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
 		totalpower+=out_buff_norm[0];
 	} 
 	fftwf_destroy_plan(p);
+	totalpower = totalpower/1000.0;
 	if(totalpower > noisefloor){
 		cantransmit = 0;
 	}
