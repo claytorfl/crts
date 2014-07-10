@@ -4520,7 +4520,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 					primaryoncounter = 0;
 					primaryoffcounter = 0;
 					
-					while(0.3 > (float)time) //&& rxCBs.primaryon == 0)
+					while(0.2 > (float)time) //&& rxCBs.primaryon == 0)
 						{
 						//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
 
@@ -4563,15 +4563,15 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			
 				start = std::clock();
 				std::clock_t current;
-
+				primaryoncounter = 0;
+				primaryoffcounter = 0;
 				//The while loop sets primaryon to 0 in the beginning. If the loop
 				//finishes without a new primary transmission switching it to 1 then
 				//the secondary user will assume it has stopped and resume transmitting
 				//This while loop below will run for secondaryscantime seconds
 				while(0.3 > (float)time) //&& rxCBs.primaryon == 0)
 					{
-					primaryoncounter = 0;
-					primaryoffcounter = 0;
+
 					cantransmit = fftscan(suce, usrp, noisefloor);
 					if(cantransmit==1){
 						primaryoffcounter++;
