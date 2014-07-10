@@ -2468,6 +2468,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
 		averagenoisefloor += noisefloor;
 		noiseflooriterator++;
 		centeraverage += out_buff_norm[0];
+		printf("%f\n", out_buff_norm[0]);
 		//printf("%f %f\n", out_buff[0], out_buff_norm[0]);
 		iterator++;
 		//printf("%f\n", noisefloor);
