@@ -4521,7 +4521,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 					primaryoncounter = 0;
 					primaryoffcounter = 0;
 					
-					for(int h=0; h<5; h++) //&& rxCBs.primaryon == 0)
+					for(int h=0; h<10; h++) //&& rxCBs.primaryon == 0)
 						{
 						//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
 
@@ -4570,7 +4570,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				//finishes without a new primary transmission switching it to 1 then
 				//the secondary user will assume it has stopped and resume transmitting
 				//This while loop below will run for secondaryscantime seconds
-				for(int h=0; h<5; h++) //&& rxCBs.primaryon == 0)
+				for(int h=0; h<10; h++) //&& rxCBs.primaryon == 0)
 					{
 
 					cantransmit = fftscan(suce, usrp, noisefloor);
