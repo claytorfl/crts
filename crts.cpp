@@ -2657,7 +2657,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
     int y;
 	float totalpower = 0;
 	float maxpower;
-	for(y=0; y<1000; ++y){    
+	for(y=0; y<100; ++y){    
 	//while((num_acc_samps < total_num_samps or total_num_samps == 0)){
         size_t num_rx_samps = rx_stream->recv(
             &buff.front(), buff.size(), md, 3.0
@@ -2678,14 +2678,14 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
 		}
 	} 
 	fftwf_destroy_plan(p);
-	totalpower = totalpower/10000.0;
+	totalpower = totalpower/100.0;
 	if(totalpower > noisefloor){
 		cantransmit = 0;
 	}
 	else{
 		cantransmit = 1;
 	}
-	//printf("%d %f %f\n", cantransmit, totalpower, noisefloor);
+	printf("%d %f %f\n", cantransmit, totalpower, noisefloor);
 	//printf("%d %f %f\n", cantransmit, centeraverage, noisefloor);
 
 	return cantransmit;
@@ -2770,7 +2770,7 @@ float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
     int y;
 	float totalpower = 0;
 	float maxpower;
-	for(y=0; y<1000; ++y){    
+	for(y=0; y<100; ++y){    
 	//while((num_acc_samps < total_num_samps or total_num_samps == 0)){
         size_t num_rx_samps = rx_stream->recv(
             &buff.front(), buff.size(), md, 3.0
@@ -2791,7 +2791,7 @@ float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
 		}
 	} 
 	fftwf_destroy_plan(p);
-	return totalpower/10000.0 + 0.1;
+	return totalpower/100.0 + 10;
 }
 
 
