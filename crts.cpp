@@ -2666,6 +2666,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
 		int x;
         for (unsigned int i=0; i<out_buff.size();i++)
              out_buff_norm[i]=sqrt(pow(abs(out_buff[i]),2));
+		printf("%f\n", out_buff_norm[0]);
 		if(y==0){
 			maxpower = out_buff_norm[0];
 		}
@@ -2774,6 +2775,7 @@ float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
 		int x;
         for (unsigned int i=0; i<out_buff.size();i++)
              out_buff_norm[i]=sqrt(pow(abs(out_buff[i]),2));
+		printf("%f\n", out_buff_norm[0]);
 		if(y==0){
 			maxpower = out_buff_norm[0];
 		}
