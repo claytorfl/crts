@@ -2791,7 +2791,7 @@ float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
 		}
 	} 
 	fftwf_destroy_plan(p);
-	return totalpower/10000.0 + 0.1;
+	return totalpower/10000.0;
 }
 
 
