@@ -4517,12 +4517,13 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 					//The secondary user will wait in this while loop and wait and see if any
 					//primary users appear
 					cantransmit = 0;
+					primaryoncounter = 0;
+					primaryoffcounter = 0;
 					
 					while(0.3 > (float)time) //&& rxCBs.primaryon == 0)
 						{
 						//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
-						primaryoncounter = 0;
-						primaryoffcounter = 0;
+
 						cantransmit = fftscan(suce, usrp, noisefloor);
 						if(cantransmit==1){
 							primaryoffcounter++;
