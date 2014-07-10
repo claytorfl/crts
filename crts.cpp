@@ -2673,10 +2673,12 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
 		if(out_buff_norm[0] > maxpower){
 			maxpower = out_buff_norm[0];
 		}
-		totalpower+=out_buff_norm[0];
+		for(x=0; x<10; x++){
+			totalpower+=out_buff_norm[x];
+		}
 	} 
 	fftwf_destroy_plan(p);
-	totalpower = totalpower/1000.0;
+	totalpower = totalpower/10000.0;
 	if(totalpower > noisefloor){
 		cantransmit = 0;
 	}
@@ -2784,10 +2786,12 @@ float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
 		if(out_buff_norm[0] > maxpower){
 			maxpower = out_buff_norm[0];
 		}
-		totalpower+= out_buff_norm[0];
+		for(x=0; x<10; x++){
+		totalpower+= out_buff_norm[x];
+		}
 	} 
 	fftwf_destroy_plan(p);
-	return totalpower/1000.0 + 0.5;
+	return totalpower/10000.0 + 0.1;
 }
 
 
