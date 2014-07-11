@@ -2730,14 +2730,14 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
     std::vector<std::complex<float> > send_tmsmps;
     //initializing sum of channels matrix
     // calculating number of channels in chnsts mode
-    unsigned int nChs,nSlize;
-    nChs=static_cast <int> (std::floor((rate/2)/chbw));
-    nSlize=static_cast <int> (std::floor((num_bins/2)/nChs));
+    //unsigned int nChs,nSlize;
+    //nChs=static_cast <int> (std::floor((rate/2)/chbw));
+    //nSlize=static_cast <int> (std::floor((num_bins/2)/nChs));
      
     //printf("6\n");
-    std::vector<float> vChCusum(nChs,0);
+    //std::vector<float> vChCusum(nChs,0);
     // create chnsts buffer to send this could be boolean vector also
-    std::vector<unsigned short> send_chnsts(nChs,0);
+    //std::vector<unsigned short> send_chnsts(nChs,0);
      
     //initialize fft plan
     fftwf_complex *in = (fftwf_complex*)&buff.front();
@@ -2843,14 +2843,14 @@ float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
     std::vector<std::complex<float> > send_tmsmps;
     //initializing sum of channels matrix
     // calculating number of channels in chnsts mode
-    unsigned int nChs,nSlize;
-    nChs=static_cast <int> (std::floor((rate/2)/chbw));
-    nSlize=static_cast <int> (std::floor((num_bins/2)/nChs));
+    //unsigned int nChs,nSlize;
+    //nChs=static_cast <int> (std::floor((rate/2)/chbw));
+    //nSlize=static_cast <int> (std::floor((num_bins/2)/nChs));
      
    
-    std::vector<float> vChCusum(nChs,0);
+    //std::vector<float> vChCusum(nChs,0);
     // create chnsts buffer to send this could be boolean vector also
-    std::vector<unsigned short> send_chnsts(nChs,0);
+    //std::vector<unsigned short> send_chnsts(nChs,0);
      
     //initialize fft plan
     fftwf_complex *in = (fftwf_complex*)&buff.front();
