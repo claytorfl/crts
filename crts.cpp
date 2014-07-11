@@ -2663,7 +2663,7 @@ int fftscan2(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
 	else{
 		cantransmit = 1;
 	}
-	//printf("%d %f %f\n", cantransmit, totalpower, noisefloor);
+	printf("%d %f %f\n", cantransmit, totalpower, noisefloor);
 	//printf("%d %f %f\n", cantransmit, centeraverage, noisefloor);
 
 	return cantransmit;
@@ -2768,14 +2768,14 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
 		}
 	} 
 	fftwf_destroy_plan(p);
-	totalpower = totalpower/100.0;
+	totalpower = totalpower/10.0;
 	if(totalpower > noisefloor){
 		cantransmit = 0;
 	}
 	else{
 		cantransmit = 1;
 	}
-	//printf("%d %f %f\n", cantransmit, totalpower, noisefloor);
+	printf("%d %f %f\n", cantransmit, totalpower, noisefloor);
 	//printf("%d %f %f\n", cantransmit, centeraverage, noisefloor);
 
 	return cantransmit;
@@ -2881,7 +2881,7 @@ float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
 		}
 	} 
 	fftwf_destroy_plan(p);
-	return totalpower/100.0 + 1;
+	return totalpower/10.0 + 10;
 }
 
 
@@ -4503,9 +4503,6 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				//This while loop below will run for secondaryscantime seconds
 				while(secondaryscantime > time)
 					{
-					//printf("scanning\n");
-					//printf("%ju\n", (uintmax_t)time);
-					//printf("%d\n", rxCBs.primaryon);
 					current = std::clock();
 					time = (current-start)/CLOCKS_PER_SEC;
 					}			
@@ -5116,4 +5113,3 @@ if(tester==1){
 
 return 0;
 }
-
