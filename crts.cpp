@@ -1481,13 +1481,13 @@ void * feedbackThread(void * v_ptr){
 				if(m_ptr->purpose == 'P'){
 					//fblist[index] = feedbackadder(fblist[index], msg.feed);
 					time = std::clock();
-					printf("Primary receiver received primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+					//printf("Primary receiver received primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					primary++;
 				}
 				//receiver saying it received secondary transmission
 				if(m_ptr->purpose == 'S'){
 					time = std::clock();
-					printf("Primary receiver received secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+					//printf("Primary receiver received secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					secondary++;
 				}
 				//Feedback from primary transmission
@@ -1553,7 +1553,7 @@ void * feedbackThread(void * v_ptr){
 				//Receiver giving feedback from secondary transmission
 				if(m_ptr->purpose == 'F'){;
 					time = std::clock();
-					printf("Received feedback from primary receiver with secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+					//printf("Received feedback from primary receiver with secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					secondary++;
 				}
 			}
@@ -1563,13 +1563,13 @@ void * feedbackThread(void * v_ptr){
 				if(m_ptr->purpose == 'P'){
 					//fblist[index] = feedbackadder(fblist[index], msg.feed);
 					time = std::clock();
-					printf("Secondary receiver received primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+					//printf("Secondary receiver received primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					primary++;
 				}
 				//receiver saying it received secondary transmission
 				if(m_ptr->purpose == 'S'){
 					time = std::clock();
-					printf("Secondary receiver received secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+					//printf("Secondary receiver received secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					secondary++;
 				}
 				//Feedback from secondary transmission
@@ -1635,7 +1635,7 @@ void * feedbackThread(void * v_ptr){
 				//Receiver giving feedback from primary transmission
 				if(m_ptr->purpose == 'f'){;
 					time = std::clock();
-					printf("Received feedback from secondary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+					//printf("Received feedback from secondary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					secondary++;
 				}
 			}
@@ -5040,7 +5040,7 @@ if(dsa && isController){
 						
 						latestprimary = msg.number;
 						
-						printf("Primary feedback!!!\n");
+						//printf("Primary feedback!!!\n");
 						//feedbackStruct_print(&msg.feed);
 						totalfb = feedbackadder(totalfb, msg.feed);
 						tfb++;
@@ -5097,7 +5097,7 @@ if(dsa && isController){
 						
 						latestprimary = msg.number;
 						
-						printf("Secondary feedback!!!\n");
+						//printf("Secondary feedback!!!\n");
 						//feedbackStruct_print(&msg.feed);
 						totalfb = feedbackadder(totalfb, msg.feed);
 						tfb++;
