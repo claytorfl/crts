@@ -2763,7 +2763,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
 		if(out_buff_norm[0] > maxpower){
 			maxpower = out_buff_norm[0];
 		}
-		for(x=0; x<10; x++){
+		for(x=0; x<20; x++){
 			totalpower+=out_buff_norm[x];
 		}
 	} 
@@ -2876,7 +2876,7 @@ float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
 		if(out_buff_norm[0] > maxpower){
 			maxpower = out_buff_norm[0];
 		}
-		for(x=0; x<10; x++){
+		for(x=0; x<20; x++){
 		totalpower+= out_buff_norm[x];
 		}
 	} 
