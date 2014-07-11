@@ -5178,15 +5178,15 @@ if(dsa && isController){
 	secondaryfb. rssi /= sfb;
 	secondaryfb.cfo /= sfb;
 	secondaryfb.block_flag /= sfb;}
-	printf("\n%d Total Frames\n Average Total Frame Feedback\n\n", tfb);
+	printf("\n%d Total Frames\nAverage Total Frame Feedback\n\n", tfb);
 	feedbackStruct_print(&totalfb);
-	printf("\n%d Primary Frames\n Average Primary Frame Feedback\n\n", pfb);
+	printf("\n%d Primary Frames\nAverage Primary Frame Feedback\n\n", pfb);
 	feedbackStruct_print(&primaryfb);
-	printf("\n%d Primary Collision Frames\n Average Primary Collision Frame Feedback\n\n", pcfb);
+	printf("\n%d Primary Collision Frames\nAverage Primary Collision Frame Feedback\n\n", pcfb);
 	feedbackStruct_print(&primarycollisionfb);
-	printf("\n%d Secondary Frames\n Average Secondary Frame Feedback\n\n", sfb);
+	printf("\n%d Secondary Frames\nAverage Secondary Frame Feedback\n\n", sfb);
 	feedbackStruct_print(&secondaryfb);
-	printf("\n%d Secondary Collision Frames\n Average Secondary Collision Frame Feedback\n\n", scfb);
+	printf("\n%d Secondary Collision Frames\nAverage Secondary Collision Frame Feedback\n\n", scfb);
 	feedbackStruct_print(&secondarycollisionfb);
 	return 1;
 }
