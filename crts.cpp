@@ -2775,7 +2775,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
 	else{
 		cantransmit = 1;
 	}
-	printf("%d %f %f\n", cantransmit, totalpower, noisefloor);
+	//printf("%d %f %f\n", cantransmit, totalpower, noisefloor);
 	//printf("%d %f %f\n", cantransmit, centeraverage, noisefloor);
 
 	return cantransmit;
