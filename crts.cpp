@@ -4558,6 +4558,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
     	txcvr.set_rx_freq(frequency);
    		txcvr.set_rx_rate(bandwidth);
     	txcvr.set_rx_gain_uhd(uhd_rxgain);
+		printf("\nMake sure no transmitters are transmitting before finding the noise floor\n");
 		//txcvr.start_rx();
 		float noisefloor = noise_floor(suce, usrp);
 	
@@ -4911,8 +4912,16 @@ if(dsa== 1 && receiver == 1 && secondary==1){
 }
 
 if(dsa && isController){
-	//int * clientlist;
-	//int clientlistlength = 0;
+	struct feedbackStruct totalfb;
+	struct feedbackStruct primaryfb;
+	struct feedbackStruct primarycollisionfb;
+	struct feedbackStruct secondarycollisionfb;
+	struct feedbackStruct secondaryfb;
+	int tfb = 0;
+	int pfb = 0;
+	int pcfb = 0;
+	int sfb = 0;
+	int scfb = 0;
 	int latestprimary = 0;
 	int latestsecondary = 0;
 	float rendcounter = 0.0;
@@ -4936,19 +4945,57 @@ if(dsa && isController){
 	//std::string strings = "A:0";
 	//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
 	//usrp->set_rx_subdev_spec(strings, 0);
-	for(int o; o<fblistlength; ++o){
-		fblist[o].header_valid = 0;
-		fblist[o].payload_valid = 0;
-	   	fblist[o].payload_len = 0;
-		fblist[o].payloadByteErrors = 0;
-	   	fblist[o].payloadBitErrors = 0;
-		fblist[o].iteration = 0;
-	   	fblist[o].evm = 0.0;
-		fblist[o]. rssi = 0.0;
-		fblist[o].cfo = 0.0;
-		fblist[o].block_flag = 0;
-		feedbacknum[o] = 0;
-	}
+
+	totalfb.header_valid = 0;
+	totalfb.payload_valid = 0;
+   	totalfb.payload_len = 0;
+	totalfb.payloadByteErrors = 0;
+   	totalfb.payloadBitErrors = 0;
+	totalfb.iteration = 0;
+   	totalfb.evm = 0.0;
+	totalfb. rssi = 0.0;
+	totalfb.cfo = 0.0;
+	totalfb.block_flag = 0;
+	secondarycollisionfb.header_valid = 0;
+	secondarycollisionfb.payload_valid = 0;
+   	secondarycollisionfb.payload_len = 0;
+	secondarycollisionfb.payloadByteErrors = 0;
+   	secondarycollisionfb.payloadBitErrors = 0;
+	secondarycollisionfb.iteration = 0;
+   	secondarycollisionfb.evm = 0.0;
+	secondarycollisionfb. rssi = 0.0;
+	secondarycollisionfb.cfo = 0.0;
+	secondarycollisionfb.block_flag = 0;
+	primaryfb.header_valid = 0;
+	primaryfb.payload_valid = 0;
+   	primaryfb.payload_len = 0;
+	primaryfb.payloadByteErrors = 0;
+   	primaryfb.payloadBitErrors = 0;
+	primaryfb.iteration = 0;
+   	primaryfb.evm = 0.0;
+	primaryfb. rssi = 0.0;
+	primaryfb.cfo = 0.0;
+	primaryfb.block_flag = 0;
+	primarycollisionfb.header_valid = 0;
+	primarycollisionfb.payload_valid = 0;
+   	primarycollisionfb.payload_len = 0;
+	primarycollisionfb.payloadByteErrors = 0;
+   	primarycollisionfb.payloadBitErrors = 0;
+	primarycollisionfb.iteration = 0;
+   	primarycollisionfb.evm = 0.0;
+	primarycollisionfb. rssi = 0.0;
+	primarycollisionfb.cfo = 0.0;
+	primarycollisionfb.block_flag = 0;
+	secondaryfb.header_valid = 0;
+	secondaryfb.payload_valid = 0;
+   	secondaryfb.payload_len = 0;
+	secondaryfb.payloadByteErrors = 0;
+   	secondaryfb.payloadBitErrors = 0;
+	secondaryfb.iteration = 0;
+   	secondaryfb.evm = 0.0;
+	secondaryfb. rssi = 0.0;
+	secondaryfb.cfo = 0.0;
+	secondaryfb.block_flag = 0;
 		
 	std::clock_t primaryofftime = 0;
 	std::clock_t primaryontime = 0;
@@ -4986,7 +5033,7 @@ if(dsa && isController){
 						primary = 0;
 						latestprimary = msg.number;
 						loop = 0;
-						printf("Testing Over!!!\n");
+						//printf("Testing Over!!!\n");
 						break;
 					}
 					if(msg.purpose == 'f'){
@@ -4994,7 +5041,15 @@ if(dsa && isController){
 						latestprimary = msg.number;
 						
 						printf("Primary feedback!!!\n");
-						feedbackStruct_print(&msg.feed);
+						//feedbackStruct_print(&msg.feed);
+						totalfb = feedbackadder(totalfb, msg.feed);
+						tfb++;
+						primaryfb = feedbackadder(primaryfb, msg.feed);
+						pfb++;
+						if(secondary==1){
+							primarycollisionfb = feedbackadder(primarycollisionfb, msg.feed);
+							pcfb++;
+						}
 					}
 				}
 			}
@@ -5043,50 +5098,18 @@ if(dsa && isController){
 						latestprimary = msg.number;
 						
 						printf("Secondary feedback!!!\n");
-						feedbackStruct_print(&msg.feed);
+						//feedbackStruct_print(&msg.feed);
+						totalfb = feedbackadder(totalfb, msg.feed);
+						tfb++;
+						secondaryfb = feedbackadder(secondaryfb, msg.feed);
+						sfb++;
+						if(primary==1){
+							secondarycollisionfb = feedbackadder(secondarycollisionfb, msg.feed);
+							scfb++;
+						}
 					}
 				}
 			}
-			/*if(msg.type == 'p'){
-				index = finder(clientlist, &clientlistlength, msg.client); 
-				if(msg.purpose == 'P'){
-					fblist[index] = feedbackadder(fblist[index], msg.feed);
-					time = std::clock();
-					printf("Primary receiver received primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
-				}
-				if(msg.purpose == 'S'){;
-					time = std::clock();
-					printf("Primary receiver received secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
-				}
-				if(msg.purpose == 'f'){;
-					time = std::clock();
-					printf("Received feedback from primary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
-				}
-				if(msg.purpose == 'F'){;
-					time = std::clock();
-					printf("Received feedback from primary receiver with secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
-				}
-			}
-			if(msg.type == 's'){
-				if(msg.purpose == 'P'){
-					time = std::clock();
-					printf("Secondary receiver received primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
-				}
-				if(msg.purpose == 'S'){;
-					time = std::clock();
-					printf("Secondary receiver received secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
-				}
-				if(msg.purpose == 'f'){;
-					time = std::clock();
-					printf("Received feedback from secondary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
-				}
-				if(msg.purpose == 'F'){;
-					time = std::clock();
-					printf("Received feedback from secondary receiver with secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
-				}
-			}*/
-			
-
 		msg.msgreceived = 0;
 		}
 	};
@@ -5094,12 +5117,72 @@ if(dsa && isController){
 	falsealarmprob = totalfalsealarm/totalcycles;
 	printf("Probability of False Alarm: %f\n", falsealarmprob);
 	probofdetection = success/totalcycles;
+	if(probofdetection > 1){probofdetection==1.0;}
 	printf("Probability of Detection: %f\n", probofdetection);
 	averageevacuationtime = totalevacuationtime/evaccounter;
 	printf("Average Evacuation Time: %f seconds\n", ((float)averageevacuationtime)/CLOCKS_PER_SEC);
 	averagerendevoustime = totalrendevoustime/rendcounter;
 	printf("Average Rendezvous Time: %f seconds\n", ((float)averagerendevoustime)/CLOCKS_PER_SEC);
-	
+	totalfb.header_valid /= tfb;
+	totalfb.payload_valid /= tfb;
+   	totalfb.payload_len /= tfb;
+	totalfb.payloadByteErrors /= tfb;
+   	totalfb.payloadBitErrors /= tfb;
+	totalfb.iteration /= tfb;
+   	totalfb.evm /= tfb;
+	totalfb. rssi /= tfb;
+	totalfb.cfo /= tfb;
+	totalfb.block_flag /= tfb;
+	secondarycollisionfb.header_valid /= scfb;
+	secondarycollisionfb.payload_valid /= scfb;
+   	secondarycollisionfb.payload_len /= scfb;
+	secondarycollisionfb.payloadByteErrors /= scfb;
+   	secondarycollisionfb.payloadBitErrors /= scfb;
+	secondarycollisionfb.iteration /= scfb;
+   	secondarycollisionfb.evm /= scfb;
+	secondarycollisionfb. rssi /= scfb;
+	secondarycollisionfb.cfo /= scfb;
+	secondarycollisionfb.block_flag /= scfb;
+	primaryfb.header_valid /= pfb;
+	primaryfb.payload_valid /= pfb;
+   	primaryfb.payload_len /= pfb;
+	primaryfb.payloadByteErrors /= pfb;
+   	primaryfb.payloadBitErrors /= pfb;
+	primaryfb.iteration /= pfb;
+   	primaryfb.evm /= pfb;
+	primaryfb. rssi /= pfb;
+	primaryfb.cfo /= pfb;
+	primaryfb.block_flag /= pfb;
+	primarycollisionfb.header_valid /= pcfb;
+	primarycollisionfb.payload_valid /= pcfb;
+   	primarycollisionfb.payload_len /= pcfb;
+	primarycollisionfb.payloadByteErrors /= pcfb;
+   	primarycollisionfb.payloadBitErrors /= pcfb;
+	primarycollisionfb.iteration /= pcfb;
+   	primarycollisionfb.evm /= pcfb;
+	primarycollisionfb. rssi /= pcfb;
+	primarycollisionfb.cfo /= pcfb;
+	primarycollisionfb.block_flag /= pcfb;
+	secondaryfb.header_valid /= sfb;
+	secondaryfb.payload_valid /= sfb;
+   	secondaryfb.payload_len /= sfb;
+	secondaryfb.payloadByteErrors /= sfb;
+   	secondaryfb.payloadBitErrors /= sfb;
+	secondaryfb.iteration /= sfb;
+   	secondaryfb.evm /= sfb;
+	secondaryfb. rssi /= sfb;
+	secondaryfb.cfo /= sfb;
+	secondaryfb.block_flag /= sfb;
+	printf("\n%d Total Frames\n Average Total Frame Feedback\n\n", tfb);
+	feedbackStruct_print(&totalfb);
+	printf("\n%d Primary Frames\n Average Primary Frame Feedback\n\n", pfb);
+	feedbackStruct_print(&primaryfb);
+	printf("\n%d Primary Collision Frames\n Average Primary Collision Frame Feedback\n\n", pcfb);
+	feedbackStruct_print(&primarycollisionfb);
+	printf("\n%d Secondary Frames\n Average Secondary Frame Feedback\n\n", sfb);
+	feedbackStruct_print(&secondaryfb);
+	printf("\n%d Secondary Collision Frames\n Average Secondary Collision Frame Feedback\n\n", scfb);
+	feedbackStruct_print(&secondarycollisionfb);
 	return 1;
 }
 
