@@ -251,6 +251,14 @@ struct broadcastfeedbackinfo{
 	struct message * m_ptr;
 	int client;
 	int * msgnumber;
+	char user;
+};
+
+struct fftStruct {
+	int rate;
+	int repeat;
+	int bw;
+	int chbw;
 };
 
 struct scenarioSummaryInfo{
@@ -1429,7 +1437,7 @@ void * feedbackThread(void * v_ptr){
 	int client = bfi_ptr->client;
 	//printf("%d\n", client);
 	struct message msg;
-	msg.type = 'P';
+	msg.type = bfi_ptr->user;
 	int clientlist[10];
 	clientlist[0] = 0;
 	int clientlistlength = 1;
@@ -1546,6 +1554,88 @@ void * feedbackThread(void * v_ptr){
 				if(m_ptr->purpose == 'F'){;
 					time = std::clock();
 					printf("Received feedback from primary receiver with secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+					secondary++;
+				}
+			}
+			if(m_ptr->type == 's'){
+				//index = finder(clientlist, &clientlistlength, msg.client); 
+				//Receiver saying that it received a primary transmission
+				if(m_ptr->purpose == 'P'){
+					//fblist[index] = feedbackadder(fblist[index], msg.feed);
+					time = std::clock();
+					printf("Secondary receiver received primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+					primary++;
+				}
+				//receiver saying it received secondary transmission
+				if(m_ptr->purpose == 'S'){
+					time = std::clock();
+					printf("Secondary receiver received secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+					secondary++;
+				}
+				//Feedback from secondary transmission
+				if(m_ptr->purpose == 'F'){;
+					time = std::clock();
+					//printf("Received feedback from primary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+					primary++;
+					//Checks if the message's client is in the client list
+					//If it isn't then the transmitter hasn't received feedback from that node for that
+					//transmission so it adds it to the list and adds its feedback to basicfb
+					//If it is in the clientlist then the program assumes that the feedback received
+					//is from a new transmission and that all feedback gathered before was from an older
+					//one. The collected feedback is averaged and sent to the controller. Then basicfb
+					//is zeroed out and the client list is emptied. The client is added to thel is and
+					//its feedback is the first added to basicfb
+					for(h = 0; h<clientlistlength; h++){
+						if(clientlist[h] == m_ptr->client){
+							break;
+						}
+					}
+					
+					if(h == clientlistlength){
+						fbnum++;
+						basicfb = feedbackadder(basicfb, m_ptr->feed);
+						clientlist[clientlistlength] = m_ptr->client;
+						clientlistlength++;
+						}
+					else{
+						//printf("%d\n", client);
+						basicfb.header_valid /= fbnum;
+						basicfb.payload_valid /= fbnum;
+					   	basicfb.payload_len /= fbnum;
+						basicfb.payloadByteErrors /= fbnum;
+					   	basicfb.payloadBitErrors /= fbnum;
+						basicfb.iteration /= fbnum;
+					   	basicfb.evm /= fbnum;
+						basicfb. rssi /= fbnum;
+						basicfb.cfo /= fbnum;
+						basicfb.block_flag /= fbnum;
+						msg.feed = basicfb;
+						msg.purpose = 'f';
+						msg.number = *bfi_ptr->msgnumber;
+						//printf("%d\n", msg.number);
+						write(client, (const void *)&msg, sizeof(msg));
+						(*bfi_ptr->msgnumber)++;
+						basicfb.header_valid = 0;
+						basicfb.payload_valid = 0;
+					   	basicfb.payload_len = 0;
+						basicfb.payloadByteErrors = 0;
+					   	basicfb.payloadBitErrors = 0;
+						basicfb.iteration = 0;
+					   	basicfb.evm = 0.0;
+						basicfb. rssi = 0.0;
+						basicfb.cfo = 0.0;
+						basicfb.block_flag = 0;	
+						basicfb = feedbackadder(basicfb, m_ptr->feed);			
+						fbnum = 1;
+						clientlist[0] = m_ptr->client;
+						clientlistlength = 1;
+					}
+						
+				}
+				//Receiver giving feedback from primary transmission
+				if(m_ptr->purpose == 'f'){;
+					time = std::clock();
+					printf("Received feedback from secondary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					secondary++;
 				}
 			}
@@ -2579,7 +2669,7 @@ int fftscan2(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
 	return cantransmit;
 }
 
-int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float noisefloor){
+int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float noisefloor, struct fftStruct fftinfo){
 	int cantransmit;
 	int t;
     std::string args, file, ant, subdev, ref;
@@ -4010,6 +4100,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 
 	pthread_t receiverfeedbackThread;
 	struct message mess;
+	struct fftStruct fftinfo;
 	int primarymsgnumber = 1;
 	int secondarymsgnumber = 1;
 	double primarybursttime;
@@ -4164,6 +4255,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		float timedivisor = 5.0;
 		if(broadcasting==1){
 		timedivisor = 1.0;
+		bfi.user = 'P';
 		bfi.client = rxCBs.client;
 		bfi.m_ptr = &msg;
 		bfi.msgnumber = &primarymsgnumber;
@@ -4283,10 +4375,18 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 	//If it is a secondary user then the node acts as a secondary transmitter
 	//Either sensing for the primary user or transmitting with small pauses for sening
 	if(secondary == 1 && rxCBs.detectiontype == 'm'){
+		struct broadcastfeedbackinfo bfi;
 		mess.type = 'S';
 		rxCBs.usrptype = 'S';
 		mess.msgreceived = 1;
 		verbose = 0;
+		if(broadcasting==1){
+		bfi.user = 'S';
+		bfi.client = rxCBs.client;
+		bfi.m_ptr = &msg;
+		bfi.msgnumber = &secondarymsgnumber;
+		pthread_create( &receiverfeedbackThread, NULL, feedbackThread, (void*) &bfi);
+		}
 		printf("secondary\n");
 
 		//The secondary user has a payload of all zeroes
@@ -4416,6 +4516,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 	//If the secondary transmitter is using energy detection it will call the fftscan function to check for
 	//spectrum holes
 	if(secondary == 1 && rxCBs.detectiontype == 'e'){
+		struct broadcastfeedbackinfo bfi;
 		std::string args = "internal";
 		int e;
 		//Creates usrp pointer that will be passed to fftscan function
@@ -4428,6 +4529,13 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		rxCBs.usrptype = 'S';
 		mess.msgreceived = 1;
 		verbose = 0;
+		if(broadcasting==1){
+		bfi.user = 'S';
+		bfi.client = rxCBs.client;
+		bfi.m_ptr = &msg;
+		bfi.msgnumber = &secondarymsgnumber;
+		pthread_create( &receiverfeedbackThread, NULL, feedbackThread, (void*) &bfi);
+		}
 		printf("secondary\n");
 
 		//The secondary user has a payload of all zeroes
@@ -4527,7 +4635,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 					{
 					//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
 
-					cantransmit = fftscan(suce, usrp, noisefloor);
+					cantransmit = fftscan(suce, usrp, noisefloor, fftinfo);
 					if(cantransmit==1){
 						primaryoffcounter++;
 					}
@@ -4578,7 +4686,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				for(int h=0; h<20; h++) //&& rxCBs.primaryon == 0)
 					{
 
-					cantransmit = fftscan(suce, usrp, noisefloor);
+					cantransmit = fftscan(suce, usrp, noisefloor, fftinfo);
 					if(cantransmit==1){
 						primaryoffcounter++;
 					}
@@ -4642,6 +4750,39 @@ if(receiver == 1 && dsa == 1 && primary == 1){
 	struct message mess;
 	mess.type = 'p';
 	rxCBs.usrptype = 'p';
+	ce = CreateCognitiveEngine();
+	readCEConfigFile(&ce, "ce1.txt", verbose);
+	printf("receiver\n");
+	int u;
+	unsigned char * p = NULL;   // default subcarrier allocation
+	if (verbose) 
+	printf("Using ofdmtxrx\n");
+
+	//Basic transceiver setup
+	printf("%d %d %d\n", ce.numSubcarriers, ce.CPLen, ce.taperLen);
+	ofdmtxrx txcvr(ce.numSubcarriers, ce.CPLen, ce.taperLen, p, dsaCallback, (void*) &rxCBs);
+	txcvr.set_tx_freq(ce.frequency);
+	txcvr.set_tx_rate(ce.bandwidth);
+	txcvr.set_tx_gain_soft(ce.txgain_dB);
+	txcvr.set_tx_gain_uhd(ce.uhd_txgain_dB);
+    txcvr.set_rx_freq(frequency);
+    txcvr.set_rx_rate(bandwidth);
+    txcvr.set_rx_gain_uhd(uhd_rxgain);
+	txcvr.start_rx();
+
+	//The receiver sits in this infinite while loop and does nothing but wait to receive
+	//liquid frames that it will interpret with dsaCallback
+	while(true){
+		u=1;
+	}
+	return 0;
+
+}
+
+if(receiver == 1 && dsa == 1 && secondary == 1){
+	struct message mess;
+	mess.type = 's';
+	rxCBs.usrptype = 's';
 	ce = CreateCognitiveEngine();
 	readCEConfigFile(&ce, "ce1.txt", verbose);
 	printf("receiver\n");
@@ -4899,6 +5040,13 @@ if(dsa && isController){
 							printf("Wasted Spectrum Hole\n");
 							++totalmissedhole;
 						}
+					}
+					if(msg.purpose == 'f'){
+						
+						latestprimary = msg.number;
+						
+						printf("Secondary feedback!!!\n");
+						feedbackStruct_print(&msg.feed);
 					}
 				}
 			}
