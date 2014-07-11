@@ -2675,7 +2675,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
     std::string args, file, ant, subdev, ref;
 	ref = "internal";
     size_t total_num_samps = 0;
-    size_t num_bins = 10;
+    size_t num_bins = 20;
     unsigned int Moving_Avg_size = 4;
 	unsigned int navrg = 5;
     double rate = 195312;
@@ -2747,7 +2747,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
     int y;
 	float totalpower = 0;
 	float maxpower;
-	for(y=0; y<100; ++y){    
+	for(y=0; y<10; ++y){    
 	//while((num_acc_samps < total_num_samps or total_num_samps == 0)){
         size_t num_rx_samps = rx_stream->recv(
             &buff.front(), buff.size(), md, 3.0
@@ -2790,7 +2790,7 @@ float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
     std::string args, file, ant, subdev, ref;
 	ref = "internal";
     size_t total_num_samps = 0;
-    size_t num_bins = 10;
+    size_t num_bins = 20;
     double rate = 195312;
 	double freq = ce.frequency;
 	double gain = ce.uhd_txgain_dB;
