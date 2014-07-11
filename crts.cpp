@@ -5123,6 +5123,7 @@ if(dsa && isController){
 	printf("Average Evacuation Time: %f seconds\n", ((float)averageevacuationtime)/CLOCKS_PER_SEC);
 	averagerendevoustime = totalrendevoustime/rendcounter;
 	printf("Average Rendezvous Time: %f seconds\n", ((float)averagerendevoustime)/CLOCKS_PER_SEC);
+	if(tfb>0){
 	totalfb.header_valid /= tfb;
 	totalfb.payload_valid /= tfb;
    	totalfb.payload_len /= tfb;
@@ -5132,7 +5133,8 @@ if(dsa && isController){
    	totalfb.evm /= tfb;
 	totalfb. rssi /= tfb;
 	totalfb.cfo /= tfb;
-	totalfb.block_flag /= tfb;
+	totalfb.block_flag /= tfb;}
+	if(scfb>0){
 	secondarycollisionfb.header_valid /= scfb;
 	secondarycollisionfb.payload_valid /= scfb;
    	secondarycollisionfb.payload_len /= scfb;
@@ -5142,7 +5144,8 @@ if(dsa && isController){
    	secondarycollisionfb.evm /= scfb;
 	secondarycollisionfb. rssi /= scfb;
 	secondarycollisionfb.cfo /= scfb;
-	secondarycollisionfb.block_flag /= scfb;
+	secondarycollisionfb.block_flag /= scfb;}
+	if(pfb>0){
 	primaryfb.header_valid /= pfb;
 	primaryfb.payload_valid /= pfb;
    	primaryfb.payload_len /= pfb;
@@ -5152,7 +5155,8 @@ if(dsa && isController){
    	primaryfb.evm /= pfb;
 	primaryfb. rssi /= pfb;
 	primaryfb.cfo /= pfb;
-	primaryfb.block_flag /= pfb;
+	primaryfb.block_flag /= pfb;}
+	if(pcfb>0){
 	primarycollisionfb.header_valid /= pcfb;
 	primarycollisionfb.payload_valid /= pcfb;
    	primarycollisionfb.payload_len /= pcfb;
@@ -5162,7 +5166,8 @@ if(dsa && isController){
    	primarycollisionfb.evm /= pcfb;
 	primarycollisionfb. rssi /= pcfb;
 	primarycollisionfb.cfo /= pcfb;
-	primarycollisionfb.block_flag /= pcfb;
+	primarycollisionfb.block_flag /= pcfb;}
+	if(sfb>0){
 	secondaryfb.header_valid /= sfb;
 	secondaryfb.payload_valid /= sfb;
    	secondaryfb.payload_len /= sfb;
@@ -5172,7 +5177,7 @@ if(dsa && isController){
    	secondaryfb.evm /= sfb;
 	secondaryfb. rssi /= sfb;
 	secondaryfb.cfo /= sfb;
-	secondaryfb.block_flag /= sfb;
+	secondaryfb.block_flag /= sfb;}
 	printf("\n%d Total Frames\n Average Total Frame Feedback\n\n", tfb);
 	feedbackStruct_print(&totalfb);
 	printf("\n%d Primary Frames\n Average Primary Frame Feedback\n\n", pfb);
