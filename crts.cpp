@@ -1578,7 +1578,7 @@ void * feedbackThread(void * v_ptr){
 				if(m_ptr->purpose == 'F'){;
 					time = std::clock();
 					bfi_ptr->primaryon = 1;
-					printf("Received feedback from secondary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+					//printf("Received feedback from secondary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					primary++;
 					//Checks if the message's client is in the client list
 					//If it isn't then the transmitter hasn't received feedback from that node for that
@@ -4492,7 +4492,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			write(rxCBs.client, (const void*)&mess, sizeof(mess));
 			secondarymsgnumber++;
 			//printf("%d\n", mess.number);
-			while(rxCBs.primaryon==1)
+			while(bfi.primaryon==1)
 				{
 				//printf("%d\n", rxCBs.primaryon);
 				time = 0;
