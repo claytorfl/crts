@@ -2673,7 +2673,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
 	int cantransmit;
 	int t;
     std::string args, file, ant, subdev, ref;
-	ref = "internal";
+	ref = "mimo";
     size_t total_num_samps = 0;
     size_t num_bins = 1024;
     unsigned int Moving_Avg_size = 4;
@@ -2684,7 +2684,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
 	double bw = 1000000;//ce.bandwidth;
 	double chbw = bw/10;
     std::string addr, port, mode;
-	ant = "TX/RX";
+	ant = "RX2";
 	
     //printf("2\n");
     // This for "chnsts" mode, for test purposes we will use this threshold value and can be adjusted as required.
@@ -2788,7 +2788,7 @@ float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
 
 	int t;
     std::string args, file, ant, subdev, ref;
-	ref = "internal";
+	ref = "mimo";
     size_t total_num_samps = 0;
     size_t num_bins = 1024;
     double rate = 195312;
