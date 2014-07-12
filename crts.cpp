@@ -2684,7 +2684,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
 	double bw = 1000000;//ce.bandwidth;
 	double chbw = bw/10;
     std::string addr, port, mode;
-	ant = "RX2";
+	ant = "TX/RX";
 	
     //printf("2\n");
     // This for "chnsts" mode, for test purposes we will use this threshold value and can be adjusted as required.
