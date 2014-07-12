@@ -4559,7 +4559,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
    		txcvr.set_rx_rate(bandwidth);
     	txcvr.set_rx_gain_uhd(uhd_rxgain);
 		printf("\nMake sure no transmitters are transmitting before finding the noise floor\n");
-		//txcvr.start_rx();
+		txcvr.start_rx();
 		float noisefloor = noise_floor(suce, usrp);
 	
 		printf("\nNoise floor found! Press any key to start secondary user");
