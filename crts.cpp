@@ -2344,7 +2344,8 @@ int dsaCallback(unsigned char *  _header,
 	//and the rxCBs struct changes its variables to show this information
 	if(ones>zeroes || twos>zeroes){
 		//primary = 1;
-		rxCBS_ptr->primaryon = 1;
+		if(rxCBS_ptr->usrptype == 'S'){
+		rxCBS_ptr->primaryon = 1;}
 		received = 'f';
 		//printf("\n\nPrimary transmission\n\n");
 	}
@@ -2420,7 +2421,12 @@ int dsaCallback(unsigned char *  _header,
 		mess.number = rxCBS_ptr->number;
 		mess.client = rxCBS_ptr->client;
 		++rxCBS_ptr->number;
-	
+		if(rxCBS_ptr->usrptype == 's' and rxCBS_ptr->primaryon == 1 and mess.purpose == 'F'){
+			return 1;
+		}
+		if(mess.purpose== 'F' and rxCBS_ptr->usrptype == 's'){
+			rxCBS_ptr->primaryon = 1;
+		}
 		write(rxCBS_ptr->client, (void*)&mess, sizeof(mess));
 	}
 
@@ -4940,11 +4946,21 @@ if(receiver == 1 && dsa == 1 && secondary == 1){
     txcvr.set_rx_rate(bandwidth);
     txcvr.set_rx_gain_uhd(uhd_rxgain);
 	txcvr.start_rx();
+	float primarywarningdelay = 0.5;
+	std::clock_t start;
+	std::clock_t current;
 
 	//The receiver sits in this infinite while loop and does nothing but wait to receive
 	//liquid frames that it will interpret with dsaCallback
 	while(true){
-		u=1;
+		if(rxCBs.primaryon==1){
+			start = std::clock();
+			current = std::clock();
+			while(primarywarningdelay > (float)(current-start)/CLOCKS_PER_SEC){
+				current = std::clock();
+			}
+		}
+		rxCBs.primaryon==0;
 	}
 	return 0;
 
