@@ -252,6 +252,7 @@ struct broadcastfeedbackinfo{
 	int client;
 	int * msgnumber;
 	char user;
+	int primaryon;
 };
 
 struct fftStruct {
@@ -1561,6 +1562,7 @@ void * feedbackThread(void * v_ptr){
 				//index = finder(clientlist, &clientlistlength, msg.client); 
 				//Receiver saying that it received a primary transmission
 				if(m_ptr->purpose == 'P'){
+					bfi_ptr->primaryon = 1;
 					//fblist[index] = feedbackadder(fblist[index], msg.feed);
 					time = std::clock();
 					//printf("Secondary receiver received primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
@@ -1575,6 +1577,7 @@ void * feedbackThread(void * v_ptr){
 				//Feedback from secondary transmission
 				if(m_ptr->purpose == 'F'){;
 					time = std::clock();
+					bfi_ptr->primaryon = 1;
 					//printf("Received feedback from primary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					primary++;
 					//Checks if the message's client is in the client list
@@ -2673,7 +2676,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
 	int cantransmit;
 	int t;
     std::string args, file, ant, subdev, ref;
-	ref = "mimo";
+	ref = "internal";
     size_t total_num_samps = 0;
     size_t num_bins = 1024;
     unsigned int Moving_Avg_size = 4;
@@ -2788,7 +2791,7 @@ float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
 
 	int t;
     std::string args, file, ant, subdev, ref;
-	ref = "mimo";
+	ref = "internal";
     size_t total_num_samps = 0;
     size_t num_bins = 1024;
     double rate = 195312;
@@ -4509,6 +4512,142 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				}
 			}
 		}
+	if(secondary == 1 && rxCBs.detectiontype == 'r'){
+		struct broadcastfeedbackinfo bfi;
+		mess.type = 'S';
+		rxCBs.usrptype = 'S';
+		mess.msgreceived = 1;
+		verbose = 0;
+		if(broadcasting==1){
+		bfi.primaryon = 0;
+		bfi.user = 'S';
+		bfi.client = rxCBs.client;
+		bfi.m_ptr = &msg;
+		bfi.msgnumber = &secondarymsgnumber;
+		pthread_create( &receiverfeedbackThread, NULL, feedbackThread, (void*) &bfi);
+		}
+		printf("secondary\n");
+
+		//The secondary user has a payload of all zeroes
+		for(int h = 0; h<8; h++){
+			header[h] = 0;
+		};
+		for(int h = 0; h<suce.payloadLen; h++){
+			payload[h] = 0;
+		};
+		std::clock_t start;
+		std::clock_t current;
+		unsigned char * p = NULL;   // default subcarrier allocation
+		if (verbose) 
+		printf("Using ofdmtxrx\n");
+		printf("%d %d %d\n", suce.numSubcarriers, suce.CPLen, suce.taperLen);
+
+		//Sets up transceiver object
+		ofdmtxrx txcvr(suce.numSubcarriers, suce.CPLen, suce.taperLen, p, dsaCallback, (void*) &rxCBs);
+		txcvr.set_tx_freq(suce.frequency);
+		txcvr.set_tx_rate(suce.bandwidth);
+		txcvr.set_tx_gain_soft(suce.txgain_dB);
+		txcvr.set_tx_gain_uhd(suce.uhd_txgain_dB);
+    	txcvr.set_rx_freq(frequency);
+   		txcvr.set_rx_rate(bandwidth);
+    	txcvr.set_rx_gain_uhd(uhd_rxgain);
+		txcvr.start_rx();
+	
+		int on = 1;
+		float time = 0;	
+		int cantransmit = 0;
+		start = std::clock();
+		while(true)
+			{
+			int on = 1;
+			time = 0;
+			start = std::clock();
+			printf("SU transmitting\n");
+			mess.number = secondarymsgnumber;
+			mess.purpose = 't';
+			write(rxCBs.client, (const void*)&mess, sizeof(mess));
+			//printf("%d\n", mess.number);
+			secondarymsgnumber++;
+			int z;
+			//If it does not sense the primary user then the secondary user will transmit
+			while(bfi.primaryon==0)
+				{
+				for(z=0; z<uninterruptedframes; z++){
+					//printf("%d\n", rxCBs.primaryon);
+					//if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
+					modulation_scheme ms = convertModScheme(suce.modScheme, &suce.bitsPerSym);
+
+					// Set Cyclic Redundency Check Scheme
+					//crc_scheme check = convertCRCScheme(ce.crcScheme);
+
+					// Set inner forward error correction scheme
+					//if (verbose) printf("Inner FEC: ");
+					fec_scheme fec0 = convertFECScheme(suce.innerFEC, verbose);
+
+					// Set outer forward error correction scheme
+					//if (verbose) printf("Outer FEC: ");
+					fec_scheme fec1 = convertFECScheme(suce.outerFEC, verbose);
+					usleep(1);
+					txcvr.assemble_frame(header, payload, suce.payloadLen, ms, fec0, fec1);
+					int isLastSymbol = 0;
+					while(!isLastSymbol) //&& rxCBs.primaryon==0)
+						{
+						usleep(1);
+						//printf("%d\n", rxCBs.primaryon);
+						isLastSymbol = txcvr.write_symbol();
+						if(usescenario)
+						enactScenarioBaseband(txcvr.fgbuffer, suce, sc);
+						txcvr.transmit_symbol();
+						}
+			   		txcvr.end_transmit_frame();
+					usleep(100);
+					if(adapt==1)
+					postTxTasks(&suce, &msg.feed, verbose);
+				}
+				/*time = 0.0;
+				txcvr.start_rx();
+				start = std::clock();
+
+				//The secondary user will wait in this while loop and wait and see if any
+				//primary users appear
+				while(0.5 > (float)time) //&& rxCBs.primaryon == 0)
+					{
+					current = std::clock();
+					time = ((float)(current-start))/CLOCKS_PER_SEC;
+					}*/
+				}
+			time = 0;
+			start = std::clock();
+			std::clock_t current;
+			printf("SU sensing\n");
+
+			//Once the primary user is detected the secondary user stops transmitting
+			//and switches to sensing in a new while loop
+			mess.number = secondarymsgnumber;
+			mess.purpose = 'r';
+			write(rxCBs.client, (const void*)&mess, sizeof(mess));
+			secondarymsgnumber++;
+			//printf("%d\n", mess.number);
+			while(bfi.primaryon==1)
+				{
+				//printf("%d\n", rxCBs.primaryon);
+				time = 0;
+				bfi.primaryon = 0;
+				start = std::clock();
+				std::clock_t current;
+
+				//The while loop sets primaryon to 0 in the beginning. If the loop
+				//finishes without a new primary transmission switching it to 1 then
+				//the secondary user will assume it has stopped and resume transmitting
+				//This while loop below will run for secondaryscantime seconds
+				while(secondaryscantime > time)
+					{
+					current = std::clock();
+					time = (current-start)/CLOCKS_PER_SEC;
+					}			
+				}
+			}
+		}
 
 	//If the secondary transmitter is using energy detection it will call the fftscan function to check for
 	//spectrum holes
@@ -4559,7 +4698,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
    		txcvr.set_rx_rate(bandwidth);
     	txcvr.set_rx_gain_uhd(uhd_rxgain);
 		printf("\nMake sure no transmitters are transmitting before finding the noise floor\n");
-		txcvr.start_rx();
+		//txcvr.start_rx();
 		float noisefloor = noise_floor(suce, usrp);
 	
 		printf("\nNoise floor found! Press any key to start secondary user");
