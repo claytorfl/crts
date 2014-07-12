@@ -1472,6 +1472,7 @@ void * feedbackThread(void * v_ptr){
 	int h;
 	
 	while(loop){
+		printf("%d\n", bfi_ptr->primaryon);
 		//printf("%d\n", *bfi_ptr->msgnumber);
 		//When a new message is received
 		if(m_ptr->msgreceived == 1){
@@ -4492,7 +4493,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			write(rxCBs.client, (const void*)&mess, sizeof(mess));
 			secondarymsgnumber++;
 			//printf("%d\n", mess.number);
-			while(bfi.primaryon==1)
+			while(rxCBs.primaryon==1)
 				{
 				//printf("%d\n", rxCBs.primaryon);
 				time = 0;
