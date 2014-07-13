@@ -1572,13 +1572,14 @@ void * feedbackThread(void * v_ptr){
 				//receiver saying it received secondary transmission
 				if(m_ptr->purpose == 'S'){
 					time = std::clock();
+					
 					//printf("Secondary receiver received secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					secondary++;
 				}
 				//Feedback from secondary transmission
 				if(m_ptr->purpose == 'F'){;
 					time = std::clock();
-					bfi_ptr->primaryon = 1;
+					;
 					//printf("Received feedback from secondary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					primary++;
 					//Checks if the message's client is in the client list
@@ -1639,6 +1640,7 @@ void * feedbackThread(void * v_ptr){
 				//Receiver giving feedback from primary transmission
 				if(m_ptr->purpose == 'f'){;
 					time = std::clock();
+					bfi_ptr->primaryon = 1;
 					//printf("Received feedback from secondary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					secondary++;
 				}
@@ -2421,10 +2423,10 @@ int dsaCallback(unsigned char *  _header,
 		mess.number = rxCBS_ptr->number;
 		mess.client = rxCBS_ptr->client;
 		++rxCBS_ptr->number;
-		if(rxCBS_ptr->usrptype == 's' and rxCBS_ptr->primaryon == 1 and mess.purpose == 'F'){
+		if(rxCBS_ptr->usrptype == 's' and rxCBS_ptr->primaryon == 1 and mess.purpose == 'f'){
 			return 1;
 		}
-		if(mess.purpose== 'F' and rxCBS_ptr->usrptype == 's'){
+		if(mess.purpose== 'f' and rxCBS_ptr->usrptype == 's'){
 			rxCBS_ptr->primaryon = 1;
 			printf("Primary message detected\n");
 		}
