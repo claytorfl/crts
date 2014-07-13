@@ -5171,7 +5171,7 @@ if(dsa && isController){
 	std::clock_t time = std::clock();
 	int loop = 1;
 	while(loop){
-		printf("%d\n", latestprimary);
+		//printf("%d\n", latestprimary);
 		//rssi = usrp->uhd::usrp::multi_usrp::read_rssi(0);
 		//printf("%f\n", rssi);
 		if(msg.msgreceived == 1){
