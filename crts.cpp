@@ -2423,13 +2423,13 @@ int dsaCallback(unsigned char *  _header,
 		mess.number = rxCBS_ptr->number;
 		mess.client = rxCBS_ptr->client;
 		++rxCBS_ptr->number;
-		if(rxCBS_ptr->usrptype == 's' and rxCBS_ptr->primaryon == 1 and mess.purpose == 'f'){
+		/*if(rxCBS_ptr->usrptype == 's' and rxCBS_ptr->primaryon == 1 and mess.purpose == 'f'){
 			return 1;
 		}
 		if(mess.purpose== 'f' and rxCBS_ptr->usrptype == 's'){
 			rxCBS_ptr->primaryon = 1;
 			printf("Primary message detected\n");
-		}
+		}*/
 		write(rxCBS_ptr->client, (void*)&mess, sizeof(mess));
 	}
 
@@ -4956,14 +4956,15 @@ if(receiver == 1 && dsa == 1 && secondary == 1){
 	//The receiver sits in this infinite while loop and does nothing but wait to receive
 	//liquid frames that it will interpret with dsaCallback
 	while(true){
-		if(rxCBs.primaryon==1){
+		/*if(rxCBs.primaryon==1){
 			start = std::clock();
 			current = std::clock();
 			while(primarywarningdelay > (float)(current-start)/CLOCKS_PER_SEC){
 				current = std::clock();
 			}
 		}
-		rxCBs.primaryon==0;
+		rxCBs.primaryon==0;*/
+		u=1;
 	}
 	return 0;
 
