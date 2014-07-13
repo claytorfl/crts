@@ -2426,6 +2426,7 @@ int dsaCallback(unsigned char *  _header,
 		}
 		if(mess.purpose== 'F' and rxCBS_ptr->usrptype == 's'){
 			rxCBS_ptr->primaryon = 1;
+			printf("Primary message detected\n");
 		}
 		write(rxCBS_ptr->client, (void*)&mess, sizeof(mess));
 	}
