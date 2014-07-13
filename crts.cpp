@@ -5170,12 +5170,13 @@ if(dsa && isController){
 	std::clock_t time = std::clock();
 	int loop = 1;
 	while(loop){
+		printf("%d\n", latestprimary);
 		//rssi = usrp->uhd::usrp::multi_usrp::read_rssi(0);
 		//printf("%f\n", rssi);
 		if(msg.msgreceived == 1){
 			if(msg.type == 'P'){
 				if(latestprimary<msg.number){
-					printf("Primary message\n");
+					
 					if(msg.purpose == 't'){
 						primary = 1;
 						latestprimary = msg.number;
