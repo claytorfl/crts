@@ -4,7 +4,7 @@ params=
 {
 totalcycles = 10;
 dsatype = "s";
-detectiontype = "r";
+detectiontype = "e";
 fftbandwidth = 1.0e6;
 fftchannelbandwidth = 5.0e4
 };
