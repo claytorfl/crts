@@ -4523,7 +4523,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			}
 		}
 	if(secondary == 1 && rxCBs.detectiontype == 'r'){
-		printf("receiver");
+		//printf("receiver\n");
 		struct broadcastfeedbackinfo bfi;
 		mess.type = 'S';
 		rxCBs.usrptype = 'S';
@@ -5175,6 +5175,7 @@ if(dsa && isController){
 		if(msg.msgreceived == 1){
 			if(msg.type == 'P'){
 				if(latestprimary<msg.number){
+					printf("Primary message\n");
 					if(msg.purpose == 't'){
 						primary = 1;
 						latestprimary = msg.number;
