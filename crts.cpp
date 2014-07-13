@@ -1439,6 +1439,7 @@ void * feedbackThread(void * v_ptr){
 	//printf("%d\n", client);
 	struct message msg;
 	msg.type = bfi_ptr->user;
+	printf("%c\n", msg.type);
 	int clientlist[10];
 	clientlist[0] = 0;
 	int clientlistlength = 1;
