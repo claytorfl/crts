@@ -1472,7 +1472,7 @@ void * feedbackThread(void * v_ptr){
 	int h;
 	
 	while(loop){
-		printf("%d\n", bfi_ptr->primaryon);
+		//printf("%d\n", bfi_ptr->primaryon);
 		//printf("%d\n", *bfi_ptr->msgnumber);
 		//When a new message is received
 		if(m_ptr->msgreceived == 1){
@@ -4523,6 +4523,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			}
 		}
 	if(secondary == 1 && rxCBs.detectiontype == 'r'){
+		printf("receiver");
 		struct broadcastfeedbackinfo bfi;
 		mess.type = 'S';
 		rxCBs.usrptype = 'S';
@@ -4625,7 +4626,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 					current = std::clock();
 					time = ((float)(current-start))/CLOCKS_PER_SEC;
 					}*/
-				}
+			}
 			time = 0;
 			start = std::clock();
 			std::clock_t current;
@@ -4658,6 +4659,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				}
 			}
 		}
+	
 
 	//If the secondary transmitter is using energy detection it will call the fftscan function to check for
 	//spectrum holes
