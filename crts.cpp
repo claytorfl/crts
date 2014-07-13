@@ -1641,7 +1641,7 @@ void * feedbackThread(void * v_ptr){
 				if(m_ptr->purpose == 'f'){;
 					time = std::clock();
 					bfi_ptr->primaryon = 1;
-					//printf("Received feedback from secondary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+					printf("Received feedback from secondary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					secondary++;
 				}
 			}
