@@ -5,8 +5,20 @@ params=
 totalcycles = 10;
 dsatype = "s";
 detectiontype = "e";
-fftbandwidth = 1.0e6;
-fftchannelbandwidth = 5.0e4
+};
+
+fft=
+{
+bandwidth = 1000000;
+channelbandwidth = 500000;
+rate = 195312;
+numbins = 1024;
+antennae = "RX2";
+noiseadder = 1.0;
+numavrg = 10;
+measuredbins = 20;
+testnumber = 7;
+repeat = 10;
 };
 
 PU=

@@ -2890,9 +2890,6 @@ float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, s
 		if(y==0){
 			maxpower = out_buff_norm[0];
 		}
-		if(out_buff_norm[0] > maxpower){
-			maxpower = out_buff_norm[0];
-		}
 		for(x=0; x<fftinfo.measuredbins; x++){
 			totalpower+=out_buff_norm[x];
 		}
