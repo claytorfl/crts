@@ -165,6 +165,35 @@ struct rxCBstruct {
 	char detectiontype;
 };
 
+struct dsarxCBstruct {
+    unsigned int serverPort;
+    int verbose;
+    float bandwidth;
+    char * serverAddr;
+	msequence * rx_ms_ptr;
+    int ce_num;
+    int sc_num;
+    int frameNum;
+	int client;
+
+	//Tells program whether the primary user is on or not
+	int primaryon;
+
+	//Tells program if secondary transmissions have been received
+	int secondarysending;
+
+	//Char that indicates whether the node is primary or secondary and if it is a transmitter or receiver
+	char usrptype;
+
+	int number;
+
+	//Records the dsa type being used
+	char dsatype;
+
+	//The detection type being used, either match filter or energy detection
+	char detectiontype;
+};
+
 struct feedbackStruct {
     int             header_valid;
     int             payload_valid;
@@ -2775,9 +2804,9 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
 		if(y==0){
 			maxpower = out_buff_norm[0];
 		}
-		if(out_buff_norm[0] > maxpower){
+		/*if(out_buff_norm[0] > maxpower){
 			maxpower = out_buff_norm[0];
-		}
+		}*/
 		for(x=0; x<fftinfo.measuredbins; x++){
 			totalpower+=out_buff_norm[x];
 		}
@@ -2790,7 +2819,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
 	else{
 		cantransmit = 1;
 	}
-	//printf("%d %f %f\n", cantransmit, totalpower, noisefloor);
+	printf("%d %f %f\n", cantransmit, totalpower, noisefloor);
 	//printf("%d %f %f\n", cantransmit, centeraverage, noisefloor);
 
 	return cantransmit;
@@ -5121,7 +5150,9 @@ if(dsa== 1 && receiver == 1 && secondary==1){
 }
 
 if(dsa && isController){
-	fprintf(dataFile, "Cognitive Engine %d\nScenario %d\n", 1, 1);
+	fprintf(dataFile, "DSA CRTS\n");
+    fprintf(dataFile, "%-10s %-10s %-10s %-10s %-8s %-12s %-12s %-20s %-19s\n", "linetype","frameNum","evm (dB)","rssi (dB)","payload Byte Errors","payload Bit Errors", "Throughput", "Spectral Efficiency", "Average Goal Value");
+    fflush(dataFile);
 	struct feedbackStruct totalfb;
 	struct feedbackStruct primaryfb;
 	struct feedbackStruct primarycollisionfb;
@@ -5231,7 +5262,7 @@ if(dsa && isController){
 						time = std::clock();
 						primaryontime = time;
 						printf("Primary user started transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
-						//printf("Primary number: %d Secondar number %d\n", latestprimary, latestsecondary);
+						fprintf(dataFile, "Primary user started transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					}
 					if(msg.purpose == 'r'){
 						primary = 0;
@@ -5240,6 +5271,7 @@ if(dsa && isController){
 						primaryofftime = time;
 						++totalcycles;
 						printf("Primary user stopped transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+						fprintf(dataFile, "Primary user stopped transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					}
 					if(msg.purpose == 'F'){
 						primary = 0;
@@ -5254,6 +5286,9 @@ if(dsa && isController){
 						
 						//printf("Primary feedback!!!\n");
 						//feedbackStruct_print(&msg.feed);
+						fprintf(dataFile, "%-10s %-10i %-10.2f %-10.2f %-8.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
+							"primarydata:", msg.feed.iteration,  msg.feed.evm, msg.feed.rssi, msg.feed.payloadByteErrors,
+							msg.feed.payloadBitErrors, 1, 1.0, 1.0);
 						totalfb = feedbackadder(totalfb, msg.feed);
 						tfb++;
 						primaryfb = feedbackadder(primaryfb, msg.feed);
@@ -5272,17 +5307,20 @@ if(dsa && isController){
 						latestsecondary = msg.number;
 						time = std::clock();
 						secondaryontime = time;
-						printf("Secondary user started transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));;
+						printf("Secondary user started transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+						fprintf(dataFile, "Secondary user started transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 						if(primary == 0){
 							rendevoustime = secondaryontime - primaryofftime;
 							rendcounter++;
 							printf("Rendezvous time = %f seconds\n", ((float)rendevoustime/CLOCKS_PER_SEC));
+							fprintf(dataFile, "Rendezvous time = %f seconds\n", ((float)rendevoustime/CLOCKS_PER_SEC));
 							success++;
 							rendcounter++;
 							totalrendevoustime += rendevoustime;
 						}
 						if(primary == 1){
 							printf("False Alarm\n");
+							fprintf(dataFile, "False Alarm\n");
 							++totalfalsealarm;
 						}
 							
@@ -5293,15 +5331,18 @@ if(dsa && isController){
 						time = std::clock();
 						secondaryofftime = time;
 						printf("Secondary user stopped transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+						fprintf(dataFile, "Secondary user stopped transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 						//printf("Primary number: %d Secondar number %d\n", latestprimary, latestsecondary);
 						if(primary==1){
 							evacuationtime = secondaryofftime - primaryontime;
 							printf("Evacuation time = %f seconds\n", ((float)evacuationtime/CLOCKS_PER_SEC));
+							fprintf(dataFile, "Evacuation time = %f seconds\n", ((float)evacuationtime/CLOCKS_PER_SEC));
 							evaccounter++;
 							totalevacuationtime += evacuationtime;
 						}
 						if(primary == 0){
 							printf("Wasted Spectrum Hole\n");
+							fprintf(dataFile, "Wasted Spectrum Hole\n");
 							++totalmissedhole;
 						}
 					}
@@ -5311,6 +5352,10 @@ if(dsa && isController){
 						
 						//printf("Secondary feedback!!!\n");
 						//feedbackStruct_print(&msg.feed);
+						fprintf(dataFile, "%-10s %-10i %-10.2f %-10.2f %-8.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
+							"secondarydata:", msg.feed.iteration,  msg.feed.evm, msg.feed.rssi, msg.feed.payloadByteErrors,
+							msg.feed.payloadBitErrors, 1, 1.0, 1.0);
+						totalfb = feedbackadder(totalfb, msg.feed);
 						totalfb = feedbackadder(totalfb, msg.feed);
 						tfb++;
 						secondaryfb = feedbackadder(secondaryfb, msg.feed);
@@ -5328,13 +5373,17 @@ if(dsa && isController){
 	printf("Testing Complete\n");
 	falsealarmprob = totalfalsealarm/totalcycles;
 	printf("Probability of False Alarm: %f\n", falsealarmprob);
+	fprintf(dataFile, "Probability of False Alarm: %f\n", falsealarmprob);
 	probofdetection = success/totalcycles;
-	if(probofdetection > 1){probofdetection==1.0;}
+	if(probofdetection > 1){probofdetection=1.0;}
 	printf("Probability of Detection: %f\n", probofdetection);
+	fprintf(dataFile, "Probability of Detection: %f\n", probofdetection);
 	averageevacuationtime = totalevacuationtime/evaccounter;
 	printf("Average Evacuation Time: %f seconds\n", ((float)averageevacuationtime)/CLOCKS_PER_SEC);
+	fprintf(dataFile, "Average Evacuation Time: %f seconds\n", ((float)averageevacuationtime)/CLOCKS_PER_SEC);
 	averagerendevoustime = totalrendevoustime/rendcounter;
 	printf("Average Rendezvous Time: %f seconds\n", ((float)averagerendevoustime)/CLOCKS_PER_SEC);
+	fprintf(dataFile, "Average Rendezvous Time: %f seconds\n", ((float)averagerendevoustime)/CLOCKS_PER_SEC);
 	if(tfb>0){
 	totalfb.header_valid /= tfb;
 	totalfb.payload_valid /= tfb;
@@ -5391,14 +5440,34 @@ if(dsa && isController){
 	secondaryfb.cfo /= sfb;
 	secondaryfb.block_flag /= sfb;}
 	printf("\n%d Total Frames\nAverage Total Frame Feedback\n\n", tfb);
+	fprintf(dataFile, "\n%d Total Frames\nAverage Total Frame Feedback\n\n", tfb);
+	fprintf(dataFile, "%-10s %-10i %-10.2f %-10.2f %-8.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
+		"totalframes:", totalfb.iteration,  totalfb.evm, totalfb.rssi, totalfb.payloadByteErrors,
+		totalfb.payloadBitErrors, 1, 1.0, 1.0);
 	feedbackStruct_print(&totalfb);
 	printf("\n%d Primary Frames\nAverage Primary Frame Feedback\n\n", pfb);
+	fprintf(dataFile, "\n%d Primary Frames\nAverage Primary Frame Feedback\n\n", pfb);
+	fprintf(dataFile, "%-10s %-10i %-10.2f %-10.2f %-8.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
+		"totalframes:", primaryfb.iteration,  primaryfb.evm, primaryfb.rssi, primaryfb.payloadByteErrors,
+		primaryfb.payloadBitErrors, 1, 1.0, 1.0);
 	feedbackStruct_print(&primaryfb);
 	printf("\n%d Primary Collision Frames\nAverage Primary Collision Frame Feedback\n\n", pcfb);
+	fprintf(dataFile, "\n%d Primary Collision Frames\nAverage Primary Collision Frame Feedback\n\n", pcfb);
+	fprintf(dataFile, "%-10s %-10i %-10.2f %-10.2f %-8.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
+		"totalframes:", primarycollisionfb.iteration,  primarycollisionfb.evm, primarycollisionfb.rssi, primarycollisionfb.payloadByteErrors,
+		primarycollisionfb.payloadBitErrors, 1, 1.0, 1.0);
 	feedbackStruct_print(&primarycollisionfb);
 	printf("\n%d Secondary Frames\nAverage Secondary Frame Feedback\n\n", sfb);
+	fprintf(dataFile, "\n%d Secondary Frames\nAverage Secondary Frame Feedback\n\n", sfb);
+	fprintf(dataFile, "%-10s %-10i %-10.2f %-10.2f %-8.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
+		"totalframes:", secondaryfb.iteration,  secondaryfb.evm, secondaryfb.rssi, secondaryfb.payloadByteErrors,
+		secondaryfb.payloadBitErrors, 1, 1.0, 1.0);
 	feedbackStruct_print(&secondaryfb);
 	printf("\n%d Secondary Collision Frames\nAverage Secondary Collision Frame Feedback\n\n", scfb);
+	fprintf(dataFile, "\n%d Secondary Collision Frames\nAverage Secondary Collision Frame Feedback\n\n", scfb);
+	fprintf(dataFile, "%-10s %-10i %-10.2f %-10.2f %-8.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
+		"totalframes:", secondarycollisionfb.iteration,  secondarycollisionfb.evm, secondarycollisionfb.rssi, secondarycollisionfb.payloadByteErrors,
+		secondarycollisionfb.payloadBitErrors, 1, 1.0, 1.0);
 	feedbackStruct_print(&secondarycollisionfb);
 	return 1;
 }
