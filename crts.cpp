@@ -5288,7 +5288,7 @@ if(dsa && isController){
 						//printf("Primary feedback!!!\n");
 						//feedbackStruct_print(&msg.feed);
 						fprintf(dataFile, "%-13s %-10i %-10.2f %-13.2f %-13.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
-							"primarydata:", msg.feed.iteration,  msg.feed.evm, msg.feed.rssi, msg.feed.payloadByteErrors,
+							"pudata:", msg.feed.iteration,  msg.feed.evm, msg.feed.rssi, msg.feed.payloadByteErrors,
 							msg.feed.payloadBitErrors, 1, 1.0, 1.0);
 						totalfb = feedbackadder(totalfb, msg.feed);
 						tfb++;
@@ -5354,7 +5354,7 @@ if(dsa && isController){
 						//printf("Secondary feedback!!!\n");
 						//feedbackStruct_print(&msg.feed);
 						fprintf(dataFile, "%-13s %-10i %-10.2f %-13.2f %-13.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
-							"secondarydata:", msg.feed.iteration,  msg.feed.evm, msg.feed.rssi, msg.feed.payloadByteErrors,
+							"sudata:", msg.feed.iteration,  msg.feed.evm, msg.feed.rssi, msg.feed.payloadByteErrors,
 							msg.feed.payloadBitErrors, 1, 1.0, 1.0);
 						totalfb = feedbackadder(totalfb, msg.feed);
 						totalfb = feedbackadder(totalfb, msg.feed);
