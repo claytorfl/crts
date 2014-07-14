@@ -3161,7 +3161,7 @@ int main(int argc, char ** argv){
 	}
 
     // Get current date and time
-
+	
     char dataFilename[50];
     time_t now = time(NULL);
     struct tm *t  = localtime(&now);
@@ -3170,6 +3170,7 @@ int main(int argc, char ** argv){
     
     // Initialize Data File
     FILE * dataFile;
+	if(isController){
     if (dataToStdout)
     {
         dataFile = stdout;
@@ -3177,7 +3178,7 @@ int main(int argc, char ** argv){
     else
     {
         dataFile = fopen(dataFilename, "w");
-    }
+    }}
 
     // Begin running tests
 
