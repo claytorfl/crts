@@ -5121,6 +5121,7 @@ if(dsa== 1 && receiver == 1 && secondary==1){
 }
 
 if(dsa && isController){
+	fprintf(dataFile, "Cognitive Engine %d\nScenario %d\n", 1, 1);
 	struct feedbackStruct totalfb;
 	struct feedbackStruct primaryfb;
 	struct feedbackStruct primarycollisionfb;
