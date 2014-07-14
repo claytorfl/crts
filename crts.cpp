@@ -255,11 +255,18 @@ struct broadcastfeedbackinfo{
 	int primaryon;
 };
 
+//Struct for passing variables to fftscan function
 struct fftStruct {
-	int rate;
+	int bandwidth;
 	int repeat;
-	int bw;
-	int chbw;
+	int channelbandwidth;
+	int rate;
+	int numbins;
+	char * antennae;
+	float noiseadder;
+	int numavrg;
+	int measuredbins;
+	int testnumber;
 };
 
 struct scenarioSummaryInfo{
@@ -1409,7 +1416,7 @@ void * serveTCPDSAclient(void * _sc_ptr){
 	//int latestprimary = 0;
 	//int latestsecondary = 0;
 	int number = 0;
-	int primarytest = 0;
+	//int primarytest = 0;
 	struct serveClientStruct * sc_ptr = (struct serveClientStruct*) _sc_ptr;
 	int client = sc_ptr->client;
 	struct message read_buffer;
@@ -1443,9 +1450,9 @@ void * feedbackThread(void * v_ptr){
 	int clientlist[10];
 	clientlist[0] = 0;
 	int clientlistlength = 1;
-	int totalcycles = 0;
-	int index = 0;
-	int fblistlength = 10;
+	//int totalcycles = 0;
+	//int index = 0;
+	//int fblistlength = 10;
 	//struct feedbackStruct fblist[fblistlength];
 	//int feedbacknum[fblistlength];
 	struct feedbackStruct basicfb;
@@ -1468,7 +1475,7 @@ void * feedbackThread(void * v_ptr){
 	
 	int primary = 0;
 	int secondary = 0;
-	std::clock_t time = std::clock();
+	//std::clock_t time = std::clock();
 	int loop = 1;
 	int h;
 	
@@ -1483,19 +1490,19 @@ void * feedbackThread(void * v_ptr){
 				//Receiver saying that it received a primary transmission
 				if(m_ptr->purpose == 'P'){
 					//fblist[index] = feedbackadder(fblist[index], msg.feed);
-					time = std::clock();
+					//time = std::clock();
 					//printf("Primary receiver received primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					primary++;
 				}
 				//receiver saying it received secondary transmission
 				if(m_ptr->purpose == 'S'){
-					time = std::clock();
+					//time = std::clock();
 					//printf("Primary receiver received secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					secondary++;
 				}
 				//Feedback from primary transmission
 				if(m_ptr->purpose == 'f'){;
-					time = std::clock();
+					//time = std::clock();
 					//printf("Received feedback from primary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					primary++;
 					//Checks if the message's client is in the client list
@@ -1555,7 +1562,7 @@ void * feedbackThread(void * v_ptr){
 				}
 				//Receiver giving feedback from secondary transmission
 				if(m_ptr->purpose == 'F'){;
-					time = std::clock();
+					//time = std::clock();
 					//printf("Received feedback from primary receiver with secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					secondary++;
 				}
@@ -1566,20 +1573,20 @@ void * feedbackThread(void * v_ptr){
 				if(m_ptr->purpose == 'P'){
 					bfi_ptr->primaryon = 1;
 					//fblist[index] = feedbackadder(fblist[index], msg.feed);
-					time = std::clock();
+					//time = std::clock();
 					//printf("Secondary receiver received primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					primary++;
 				}
 				//receiver saying it received secondary transmission
 				if(m_ptr->purpose == 'S'){
-					time = std::clock();
+					//time = std::clock();
 					
 					//printf("Secondary receiver received secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					secondary++;
 				}
 				//Feedback from secondary transmission
 				if(m_ptr->purpose == 'F'){;
-					time = std::clock();
+					//time = std::clock();
 					;
 					//printf("Received feedback from secondary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					primary++;
@@ -1640,7 +1647,7 @@ void * feedbackThread(void * v_ptr){
 				}
 				//Receiver giving feedback from primary transmission
 				if(m_ptr->purpose == 'f'){;
-					time = std::clock();
+					//time = std::clock();
 					bfi_ptr->primaryon = 1;
 					//printf("Received feedback from secondary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					secondary++;
@@ -2321,9 +2328,9 @@ int dsaCallback(unsigned char *  _header,
 	//If the secondary transmitter is using energy detection then the callback is unnecessary and it is skipped
 	if(rxCBS_ptr->usrptype == 'S' and rxCBS_ptr->detectiontype == 'e')
 	return 1;
-    int verbose = rxCBS_ptr->verbose;
-	msequence rx_ms = *rxCBS_ptr->rx_ms_ptr; 
-	int primary;
+    //int verbose = rxCBS_ptr->verbose;
+	//msequence rx_ms = *rxCBS_ptr->rx_ms_ptr; 
+	//int primary;
 	int ones = 0;
 	int zeroes = 0;
 	int twos = 0;
@@ -2439,7 +2446,7 @@ int dsaCallback(unsigned char *  _header,
 } // end rxCallback()
 
 // Moving average function for avmfft mode, centered moving window same final vector length
-std::vector<float> Moving_Avg(std::vector<std::complex<float> > fft_data, unsigned int nWindow_size) {
+/*std::vector<float> Moving_Avg(std::vector<std::complex<float> > fft_data, unsigned int nWindow_size) {
      std::vector<float> ret_vect(fft_data.size());
       for (unsigned int i=0; i<fft_data.size();i++)
       {
@@ -2510,7 +2517,7 @@ int fftscan2(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
     if ((ref == "external") and (std::find(sensor_names.begin(), sensor_names.end(), "ref_locked") != sensor_names.end())) {
         uhd::sensor_value_t ref_locked = usrp->get_mboard_sensor("ref_locked",0);
         UHD_ASSERT_THROW(ref_locked.to_bool());
-    }*/
+    }
     uhd::stream_args_t stream_args("fc32"); //complex floats
     uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
  	//printf("4\n");
@@ -2625,7 +2632,7 @@ int fftscan2(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
                  // constructing text frame for ncurses display
                  vChCusum[ch_j]=0;
                 }
-		}*/
+		}
 		//printf("8\n");
         fftwf_execute(p);
 		int x;
@@ -2662,7 +2669,7 @@ int fftscan2(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
 		printf("7 %f\n", send_avmfft[6]);
 		printf("8 %f\n", send_avmfft[7]);
 		printf("9 %f\n", send_avmfft[8]);
-		printf("10 %f\n", send_avmfft[9]);*/
+		printf("10 %f\n", send_avmfft[9]);
 
         num_acc_samps += num_rx_samps;
 	} done_loop:
@@ -2681,30 +2688,24 @@ int fftscan2(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
 	//printf("%d %f %f\n", cantransmit, centeraverage, noisefloor);
 
 	return cantransmit;
-}
+}*/
 
 int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float noisefloor, struct fftStruct fftinfo){
 	int cantransmit;
-	int t;
+	//int t;
     std::string args, file, ant, subdev, ref;
 	ref = "internal";
     size_t total_num_samps = 0;
-    size_t num_bins = 1024;
-    unsigned int Moving_Avg_size = 4;
-	unsigned int navrg = 5;
-    double rate = 195312;
+    size_t num_bins = fftinfo.numbins;
+    //unsigned int Moving_Avg_size = 4;
+	//unsigned int navrg = fftinfo.numavrg;
+    double rate = fftinfo.rate;
 	double freq = ce.frequency;
 	double gain = ce.uhd_txgain_dB;
-	double bw = 1000000;//ce.bandwidth;
-	double chbw = bw/10;
+	double bw = fftinfo.bandwidth;//ce.bandwidth;
+	double chbw = fftinfo.channelbandwidth;
     std::string addr, port, mode;
-	ant = "RX2";
-	
-    //printf("2\n");
-    // This for "chnsts" mode, for test purposes we will use this threshold value and can be adjusted as required.
-    // More work is needed to compute threshold based on USRP noise figure, gain and even center freq
-    // because noise figure changes with freq
-    double thresh=0.00015;
+	ant = fftinfo.antennae;
 	//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
 	usrp->set_clock_source(ref);
 	usrp->set_rx_rate(rate);
@@ -2727,8 +2728,8 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
     stream_cmd.stream_now = true;
     stream_cmd.time_spec = uhd::time_spec_t();
     usrp->issue_stream_cmd(stream_cmd);
-	size_t num_acc_samps = 0; //number of accumulated samples
-    size_t  nAvrgCount = 0;
+	//size_t num_acc_samps = 0; //number of accumulated samples
+    //size_t  nAvrgCount = 0;
     uhd::rx_metadata_t md;
     //printf("5\n");
     std::vector<std::complex<float> > buff(num_bins);
@@ -2761,7 +2762,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
     int y;
 	float totalpower = 0;
 	float maxpower;
-	for(y=0; y<10; ++y){    
+	for(y=0; y<fftinfo.repeat; ++y){    
 	//while((num_acc_samps < total_num_samps or total_num_samps == 0)){
         size_t num_rx_samps = rx_stream->recv(
             &buff.front(), buff.size(), md, 3.0
@@ -2777,12 +2778,12 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
 		if(out_buff_norm[0] > maxpower){
 			maxpower = out_buff_norm[0];
 		}
-		for(x=0; x<20; x++){
+		for(x=0; x<fftinfo.measuredbins; x++){
 			totalpower+=out_buff_norm[x];
 		}
 	} 
 	fftwf_destroy_plan(p);
-	totalpower = totalpower/10.0;
+	totalpower = totalpower/fftinfo.repeat;
 	if(totalpower > noisefloor){
 		cantransmit = 0;
 	}
@@ -2797,27 +2798,29 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
 
 
 
-float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
+float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, struct fftStruct fftinfo){
 
 
-	int t;
+	//int t;
     std::string args, file, ant, subdev, ref;
 	ref = "internal";
     size_t total_num_samps = 0;
-    size_t num_bins = 1024;
-    double rate = 195312;
+    size_t num_bins = fftinfo.numbins;
+    //unsigned int Moving_Avg_size = 4;
+	//unsigned int navrg = fftinfo.numavrg;
+    double rate = fftinfo.rate;
 	double freq = ce.frequency;
 	double gain = ce.uhd_txgain_dB;
-	double bw = 1000000;//ce.bandwidth;
-	double chbw = bw/10;
+	double bw = fftinfo.bandwidth;//ce.bandwidth;
+	double chbw = fftinfo.channelbandwidth;
     std::string addr, port, mode;
-	ant = "RX2";
+	ant = fftinfo.antennae;
 	
     //printf("2\n");
     // This for "chnsts" mode, for test purposes we will use this threshold value and can be adjusted as required.
     // More work is needed to compute threshold based on USRP noise figure, gain and even center freq
     // because noise figure changes with freq
-    double thresh=0.00015;
+    //double thresh=0.00015;
 	//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
 	usrp->set_clock_source(ref);
 	usrp->set_rx_rate(rate);
@@ -2840,8 +2843,8 @@ float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
     stream_cmd.stream_now = true;
     stream_cmd.time_spec = uhd::time_spec_t();
     usrp->issue_stream_cmd(stream_cmd);
-	size_t num_acc_samps = 0; //number of accumulated samples
-    size_t  nAvrgCount = 0;
+	//size_t num_acc_samps = 0; //number of accumulated samples
+    //size_t  nAvrgCount = 0;
     uhd::rx_metadata_t md;
 
     std::vector<std::complex<float> > buff(num_bins);
@@ -2874,7 +2877,7 @@ float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
     int y;
 	float totalpower = 0;
 	float maxpower;
-	for(y=0; y<10; ++y){    
+	for(y=0; y<fftinfo.repeat; ++y){    
 	//while((num_acc_samps < total_num_samps or total_num_samps == 0)){
         size_t num_rx_samps = rx_stream->recv(
             &buff.front(), buff.size(), md, 3.0
@@ -2890,12 +2893,12 @@ float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
 		if(out_buff_norm[0] > maxpower){
 			maxpower = out_buff_norm[0];
 		}
-		for(x=0; x<20; x++){
+		for(x=0; x<fftinfo.measuredbins; x++){
 			totalpower+=out_buff_norm[x];
 		}
 	} 
 	fftwf_destroy_plan(p);
-	return totalpower/10.0 + 10;
+	return totalpower/fftinfo.repeat + fftinfo.noiseadder;
 }
 
 
@@ -3126,7 +3129,7 @@ int main(int argc, char ** argv){
         if (verbose)
             printf("Connected to Server.\n");
 	}
-	if(usingUSRPs && isController or (broadcasting == 1 and usingUSRPs == 1)){
+	if((usingUSRPs and isController) or (broadcasting == 1 and usingUSRPs == 1)){
 		printf("\nPress any key once all nodes have connected to the TCP server\n");
 		getchar();
 	}
@@ -3493,14 +3496,14 @@ if(usingUSRPs && !isController){
 	//configuration variables set up to read broadcast file to form broadcast structure
 	config_t cfg; // Returns all parameters in this structure
     config_setting_t *setting;
-	config_setting_t *iterator;
+	//config_setting_t *iterator;
     const char * str; // Stores the value of the String Parameters in Config file
     int tmpI; // Stores the value of Integer Parameters from Config file
-    double tmpD;
+    //double tmpD;
 	char * str2;
     int numberOfRadios;
 	struct Scenario scList[50];
-	struct CognitiveEngine ceList[50];
+	//struct CognitiveEngine ceList[50];
 	
     ce.frameNumber = 1;
     //fs = CreateFS(ce, sc, &rxCBs);
@@ -3723,7 +3726,7 @@ if(usingUSRPs && !isController){
 		    if (verbose) ofdmflexframegen_print(fg);
 
 		    // Iterator
-		    int i = 0;
+		    //int i = 0;
 
 			// Called just to update bits per symbol field
 			convertModScheme(ce.modScheme, &ce.bitsPerSym);
@@ -3833,7 +3836,7 @@ if(networking==1 && !usingUSRPs){
 	config_setting_t *iterator;
     const char * str; // Stores the value of the String Parameters in Config file
     int tmpI; // Stores the value of Integer Parameters from Config file
-    double tmpD;
+    //double tmpD;
 	char * str2;
     int numberOfRadios;
 	char radioname[10];
@@ -4177,6 +4180,52 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		rxCBs.detectiontype = str[0];
 		}
 	}
+	setting = config_lookup(&cfg, "fft");
+	if (setting != NULL)
+	{
+		// Read the strings
+		if (config_setting_lookup_int(setting, "bandwidth", &tmpI))
+		{
+		fftinfo.bandwidth = tmpI;
+		}
+		if (config_setting_lookup_int(setting, "channelbandwidth", &tmpI))
+		{
+		fftinfo.channelbandwidth = tmpI;
+		}
+		if (config_setting_lookup_int(setting, "rate", &tmpI))
+		{
+		fftinfo.rate = tmpI;
+		}
+		if (config_setting_lookup_int(setting, "numbins", &tmpI))
+		{
+		fftinfo.numbins = tmpI;
+		}
+		if (config_setting_lookup_int(setting, "repeat", &tmpI))
+		{
+		fftinfo.repeat = tmpI;
+		}
+		if (config_setting_lookup_int(setting, "numavrg", &tmpI))
+		{
+		fftinfo.numavrg = tmpI;
+		}
+		if (config_setting_lookup_int(setting, "measuredbins", &tmpI))
+		{
+		fftinfo.measuredbins = tmpI;
+		}
+		if (config_setting_lookup_int(setting, "testnumber", &tmpI))
+		{
+		fftinfo.testnumber = tmpI;
+		}
+		if (config_setting_lookup_string(setting, "antennae", &str))
+		{
+		str2 = (char *)str;
+		fftinfo.antennae = str2;
+		}
+		if (config_setting_lookup_float(setting, "noiseadder", &tmpD))
+		{
+		fftinfo.noiseadder = tmpD;
+		}
+	}
 	setting = config_lookup(&cfg, "PU");
 	if (setting != NULL && primary == 1)
 	{
@@ -4278,7 +4327,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		mess.type = 'P';
 		rxCBs.usrptype = 'P';
 		verbose = 0;
-		float a;
+		//float a;
 		printf("primary\n");
 		int h;
 
@@ -4313,7 +4362,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
         // Set outer forward error correction scheme
         if (verbose) printf("Outer FEC: ");
         fec_scheme fec1 = convertFECScheme(puce.outerFEC, verbose);
-		int on = 1;
+		//int on = 1;
 		std::clock_t time = 0;
 		start = std::clock();
 		//srand(std::clock());
@@ -4324,10 +4373,10 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			//Randomizes primary burst and rest times
 			primarybursttime = primarybasebursttime + rand() % primaryburstrandom;
 			primaryresttime = primarybaseresttime + rand() % primaryrestrandom;
-			int on = 1;
+			//int on = 1;
 			time = 0;
 			start = std::clock();
-			a=1.0;
+			//a=1.0;
 			printf("Cycle %d\n", o+1);
 			printf("PU transmitting\n");
 			mess.number = primarymsgnumber;
@@ -4363,11 +4412,11 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				current = std::clock();
 				time = ((float)(current-start))/CLOCKS_PER_SEC;
 			}
-			on = 0;
+			//on = 0;
 			time = 0;
 			start = std::clock();
 			printf("PU resting\n");
-			a=2.0;
+			//a=2.0;
 			mess.number = primarymsgnumber;
 			mess.purpose = 'r';
 			write(rxCBs.client, (const void*)&mess, sizeof(mess));
@@ -4428,9 +4477,9 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
     	txcvr.set_rx_gain_uhd(uhd_rxgain);
 		txcvr.start_rx();
 	
-		int on = 1;
+		//int on = 1;
 		float time = 0;	
-		int cantransmit = 0;
+		//int cantransmit = 0;
 		start = std::clock();
 		while(true)
 			{
@@ -4548,7 +4597,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			payload[h] = 0;
 		};
 		std::clock_t start;
-		std::clock_t current;
+		//std::clock_t current;
 		unsigned char * p = NULL;   // default subcarrier allocation
 		if (verbose) 
 		printf("Using ofdmtxrx\n");
@@ -4565,9 +4614,9 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
     	txcvr.set_rx_gain_uhd(uhd_rxgain);
 		txcvr.start_rx();
 	
-		int on = 1;
+		//int on = 1;
 		float time = 0;	
-		int cantransmit = 0;
+		//int cantransmit = 0;
 		start = std::clock();
 		while(true)
 			{
@@ -4712,20 +4761,20 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
     	txcvr.set_rx_gain_uhd(uhd_rxgain);
 		printf("\nMake sure no transmitters are transmitting before finding the noise floor\n");
 		//txcvr.start_rx();
-		float noisefloor = noise_floor(suce, usrp);
+		float noisefloor = noise_floor(suce, usrp, fftinfo);
 	
 		printf("\nNoise floor found! Press any key to start secondary user");
 		getchar();
 	
-		int on = 1;
-		float time = 0;	
+		//int on = 1;
+		//float time = 0;	
 		cantransmit = 0;
 		start = std::clock();
 		while(true)
 			{
 			//noisefloor = noise_floor(suce, usrp);
-			int on = 1;
-			time = 0;
+			//int on = 1;
+			//time = 0;
 			start = std::clock();
 			printf("SU transmitting\n");
 			mess.number = secondarymsgnumber;
@@ -4770,7 +4819,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 					if(adapt==1)
 					postTxTasks(&puce, &msg.feed, verbose);
 				}
-				time = 0.0;
+				//time = 0.0;
 				//txcvr.start_rx();
 				start = std::clock();
 
@@ -4792,8 +4841,8 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 					else{
 						primaryoncounter++;
 					}
-					current = std::clock();
-					time = ((float)(current-start))/CLOCKS_PER_SEC;
+					//current = std::clock();
+					//time = ((float)(current-start))/CLOCKS_PER_SEC;
 					
 				}
 				//delete usrp;
@@ -4807,8 +4856,8 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 					cantransmit = 0;
 				}
 			}
-			time = 0;
-			start = std::clock();
+			//time = 0;
+			//start = std::clock();
 			//std::clock_t current;
 			printf("SU sensing\n");
 
@@ -4823,10 +4872,10 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			while(cantransmit==0)
 				{
 				//printf("%d\n", rxCBs.primaryon);
-				time = 0;
+				//time = 0;
 		
-				start = std::clock();
-				std::clock_t current;
+				//start = std::clock();
+				//std::clock_t current;
 				primaryoncounter = 0;
 				primaryoffcounter = 0;
 				//The while loop sets primaryon to 0 in the beginning. If the loop
@@ -4843,8 +4892,8 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 					else{
 						primaryoncounter++;
 					}
-					current = std::clock();
-					time = ((float)(current-start))/CLOCKS_PER_SEC;
+					//current = std::clock();
+					//time = ((float)(current-start))/CLOCKS_PER_SEC;
 				}
 				
 				if(primaryoffcounter > primaryoncounter){
