@@ -2728,7 +2728,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
     size_t num_bins = fftinfo.numbins;
     //unsigned int Moving_Avg_size = 4;
 	//unsigned int navrg = fftinfo.numavrg;
-    double rate = ce.bandwidth;
+    double rate = fftinfo.rate;
 	double freq = ce.frequency;
 	double gain = ce.uhd_txgain_dB;
 	double bw = fftinfo.bandwidth;//ce.bandwidth;
@@ -2837,7 +2837,8 @@ float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, s
     size_t num_bins = fftinfo.numbins;
     //unsigned int Moving_Avg_size = 4;
 	//unsigned int navrg = fftinfo.numavrg;
-    double rate = ce.bandwidth;
+    double rate = fftinfo.rate;
+	printf("%f\n", rate);
 	double freq = ce.frequency;
 	double gain = ce.uhd_txgain_dB;
 	double bw = fftinfo.bandwidth;//ce.bandwidth;
