@@ -4785,7 +4785,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		txcvr.set_tx_gain_soft(suce.txgain_dB);
 		txcvr.set_tx_gain_uhd(suce.uhd_txgain_dB);
     	txcvr.set_rx_freq(frequency);
-   		txcvr.set_rx_rate(fftinfo.rate);
+   		txcvr.set_rx_rate(fftinfo.rate*2);
     	txcvr.set_rx_gain_uhd(uhd_rxgain);
 		printf("\nMake sure no transmitters are transmitting before finding the noise floor\n");
 		txcvr.start_rx();
