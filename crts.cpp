@@ -4962,8 +4962,9 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		printf("\nMake sure the secondary transmitter is transmitting before finding the noise floor\n");
 		printf("This insures that detection of the SU's energy won't cause a false detection\n");
 		noisefloor = noise_floor(suce, usrp, fftinfo);
-		printf("\nNoise floor found! Press any key to start energy detector");
+		printf("\nNoise floor found! Press any key to start energy detector\n");
 		getchar();
+		printf("%d\n", fftinfo.testnumber);
 		while(true){
 			for(int h=0; h<fftinfo.testnumber; h++) //&& rxCBs.primaryon == 0)
 				{
