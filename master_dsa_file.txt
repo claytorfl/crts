@@ -37,7 +37,7 @@ scenario = "AWGN.txt"
 SU=
 {
 bursttime = 1.0;
-scantime = 0.5;
+scantime = 1.0;
 waittime = 0;
 ce = "secondary.txt";
 uninterruptedframes = 60;
