@@ -4,7 +4,7 @@ params=
 {
 totalcycles = 10;
 dsatype = "s";
-detectiontype = "e";
+detectiontype = "r";
 };
 
 fft=
