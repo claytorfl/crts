@@ -146,26 +146,9 @@ struct rxCBstruct {
     int sc_num;
     int frameNum;
 	int client;
-
-	//Tells program whether the primary user is on or not
-	int primaryon;
-
-	//Tells program if secondary transmissions have been received
-	int secondarysending;
-
-	//Char that indicates whether the node is primary or secondary and if it is a transmitter or receiver
-	char usrptype;
-
-	int number;
-
-	//Records the dsa type being used
-	char dsatype;
-
-	//The detection type being used, either match filter or energy detection
-	char detectiontype;
 };
 
-struct dsarxCBstruct {
+struct dsaCBstruct {
     unsigned int serverPort;
     int verbose;
     float bandwidth;
@@ -263,15 +246,13 @@ struct feedbackStruct feedbackadder(struct feedbackStruct fb1, struct feedbackSt
 struct serverThreadStruct {
     unsigned int serverPort;
     struct feedbackStruct * fb_ptr;
-	char type;
-	float * floatnumber;
 	struct message * m_ptr;
+	char type;
 };
 
 struct serveClientStruct {
 	int client;
 	struct feedbackStruct * fb_ptr;
-	float *floatnumber;
 	struct message * m_ptr;
 };
 
@@ -296,6 +277,7 @@ struct fftStruct {
 	int numavrg;
 	int measuredbins;
 	int testnumber;
+	int debug;
 };
 
 struct scenarioSummaryInfo{
@@ -401,7 +383,6 @@ struct rxCBstruct CreaterxCBStruct() {
     rxCB.bandwidth = 1.0e6;
     rxCB.serverAddr = (char*) "127.0.0.1";
     rxCB.verbose = 1;
-	rxCB.number = 1;
     return rxCB;
 } // End CreaterxCBStruct()
 
@@ -1765,7 +1746,6 @@ void * startTCPServer(void * _ss_ptr)
 			struct serveClientStruct sc = CreateServeClientStruct();
 			sc.client = socket_to_client;
 			sc.fb_ptr = ss_ptr->fb_ptr;
-			sc.floatnumber = ss_ptr->floatnumber;
 			sc.m_ptr = ss_ptr->m_ptr;
 			if(ss_ptr->type == 'd'){
 			pthread_create( &TCPServeClientThread[client], NULL, serveTCPDSAclient, (void*) &sc);
@@ -2353,12 +2333,12 @@ int dsaCallback(unsigned char *  _header,
                framesyncstats_s _stats,
                void *           _userdata)
 {
-    struct rxCBstruct * rxCBS_ptr = (struct rxCBstruct *) _userdata;
+    struct dsaCBstruct * dsaCBs_ptr = (struct dsaCBstruct *) _userdata;
 	//If the secondary transmitter is using energy detection then the callback is unnecessary and it is skipped
-	if(rxCBS_ptr->usrptype == 'S' and rxCBS_ptr->detectiontype == 'e')
+	if(dsaCBs_ptr->usrptype == 'S' and dsaCBs_ptr->detectiontype == 'e')
 	return 1;
-    //int verbose = rxCBS_ptr->verbose;
-	//msequence rx_ms = *rxCBS_ptr->rx_ms_ptr; 
+    //int verbose = dsaCBs_ptr->verbose;
+	//msequence rx_ms = *dsaCBs_ptr->rx_ms_ptr; 
 	//int primary;
 	int ones = 0;
 	int zeroes = 0;
@@ -2380,11 +2360,11 @@ int dsaCallback(unsigned char *  _header,
 	}
 
 	//If the message has all 1's or all 2's then a primary transmission was received
-	//and the rxCBs struct changes its variables to show this information
+	//and the dsaCBs struct changes its variables to show this information
 	if(ones>zeroes || twos>zeroes){
 		//primary = 1;
-		if(rxCBS_ptr->usrptype == 'S'){
-		rxCBS_ptr->primaryon = 1;}
+		if(dsaCBs_ptr->usrptype == 'S'){
+		dsaCBs_ptr->primaryon = 1;}
 		received = 'f';
 		//printf("\n\nPrimary transmission\n\n");
 	}
@@ -2392,8 +2372,8 @@ int dsaCallback(unsigned char *  _header,
 	//If the message has all zeroes then it is a secondary transmission
 	if(zeroes>ones && zeroes>twos){
 		//primary = 0;
-		//rxCBS_ptr->primaryon = 0;
-		rxCBS_ptr->secondarysending = 1;
+		//dsaCBs_ptr->primaryon = 0;
+		dsaCBs_ptr->secondarysending = 1;
 		received = 'F';
 		//printf("\n\nSecondary transmission\n\n");
 	}
@@ -2452,272 +2432,27 @@ int dsaCallback(unsigned char *  _header,
     // Receiver sends data to server*/
 	//struct feedbackStruct fb = {};
 	//If the usrp is a receiver then it will put the feedback into a message and send it to its transmitter
-	if(rxCBS_ptr->usrptype == 'p' or rxCBS_ptr->usrptype == 's'){
+	if(dsaCBs_ptr->usrptype == 'p' or dsaCBs_ptr->usrptype == 's'){
 		struct message mess;
-		mess.type = rxCBS_ptr->usrptype;
+		mess.type = dsaCBs_ptr->usrptype;
 		mess.feed = fb;
 		mess.purpose = received;
-		mess.number = rxCBS_ptr->number;
-		mess.client = rxCBS_ptr->client;
-		++rxCBS_ptr->number;
-		/*if(rxCBS_ptr->usrptype == 's' and rxCBS_ptr->primaryon == 1 and mess.purpose == 'f'){
+		mess.number = dsaCBs_ptr->number;
+		mess.client = dsaCBs_ptr->client;
+		++dsaCBs_ptr->number;
+		/*if(dsaCBs_ptr->usrptype == 's' and dsaCBs_ptr->primaryon == 1 and mess.purpose == 'f'){
 			return 1;
 		}
-		if(mess.purpose== 'f' and rxCBS_ptr->usrptype == 's'){
-			rxCBS_ptr->primaryon = 1;
+		if(mess.purpose== 'f' and dsaCBs_ptr->usrptype == 's'){
+			dsaCBs_ptr->primaryon = 1;
 			printf("Primary message detected\n");
 		}*/
-		write(rxCBS_ptr->client, (void*)&mess, sizeof(mess));
+		write(dsaCBs_ptr->client, (void*)&mess, sizeof(mess));
 	}
 
     return 0;
 
 } // end rxCallback()
-
-// Moving average function for avmfft mode, centered moving window same final vector length
-/*std::vector<float> Moving_Avg(std::vector<std::complex<float> > fft_data, unsigned int nWindow_size) {
-     std::vector<float> ret_vect(fft_data.size());
-      for (unsigned int i=0; i<fft_data.size();i++)
-      {
-          float p1=i-std::floor(nWindow_size/2);
-          float p2=i+std::floor(nWindow_size/2);
-          if (p1<std::floor(nWindow_size/2)) p1=0;
-          if (p2>fft_data.size()-1+std::floor(nWindow_size/2)) p2=fft_data.size()-1;
-          float cusum=0;
-    for (unsigned int j=p1;j<=p2;++j)
-        cusum+=abs(fft_data[j]);
-        ret_vect[i]=cusum/(p2-p1+1);
-      }
-        //std::cout<<std::endl;
-return ret_vect;
-}
-
-//Uses FFT to scan the spectrum to sense for a primary user
-int fftscan2(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp){
-    //uhd::set_thread_priority_safe();
- 	//printf("1\n");
-    //variables to be set by po
-	//uhd::usrp::multi_usrp::sptr usrp;
-	int cantransmit;
-	int t;
-	float centeraverage = 0.0;
-	int noiseiterator = 0;
-	int iterator = 0;
-	float averagenoisefloor = 0.0;
-	int noiseflooriterator = 0;
-    std::string args, file, ant, subdev, ref;
-	ref = "internal";
-    size_t total_num_samps = 0;
-    size_t num_bins = 10;
-    unsigned int Moving_Avg_size = 4;
-	unsigned int navrg = 5;
-    double rate = 195312;
-	double freq = ce.frequency;
-	double gain = ce.uhd_txgain_dB;
-	double bw = 100;//ce.bandwidth;
-	double chbw = bw/10;
-    std::string addr, port, mode;
-	ant = "RX2";
-	float noisefloor = 200.0;
-    //printf("2\n");
-    // This for "chnsts" mode, for test purposes we will use this threshold value and can be adjusted as required.
-    // More work is needed to compute threshold based on USRP noise figure, gain and even center freq
-    // because noise figure changes with freq
-    double thresh=0.00015;
-	//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
-	usrp->set_clock_source(ref);
-	usrp->set_rx_rate(rate);
-	usrp->set_rx_freq(freq);
-	usrp->set_rx_gain(gain);
-	usrp->set_rx_bandwidth(bw);
-	usrp->set_rx_antenna(ant);
-	//printf("3\n");
-    std::vector<std::string> sensor_names;
-    sensor_names = usrp->get_rx_sensor_names(0);
-    /*if (std::find(sensor_names.begin(), sensor_names.end(), "lo_locked") != sensor_names.end()) {
-        uhd::sensor_value_t lo_locked = usrp->get_rx_sensor("lo_locked",0);
-        UHD_ASSERT_THROW(lo_locked.to_bool());
-    }
-    sensor_names = usrp->get_mboard_sensor_names(0);
-    if ((ref == "mimo") and (std::find(sensor_names.begin(), sensor_names.end(), "mimo_locked") != sensor_names.end())) {
-        uhd::sensor_value_t mimo_locked = usrp->get_mboard_sensor("mimo_locked",0);
-        UHD_ASSERT_THROW(mimo_locked.to_bool());
-    }
-    if ((ref == "external") and (std::find(sensor_names.begin(), sensor_names.end(), "ref_locked") != sensor_names.end())) {
-        uhd::sensor_value_t ref_locked = usrp->get_mboard_sensor("ref_locked",0);
-        UHD_ASSERT_THROW(ref_locked.to_bool());
-    }
-    uhd::stream_args_t stream_args("fc32"); //complex floats
-    uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
- 	//printf("4\n");
-    // rm// setup streaming ... 0 means continues
-     uhd::stream_cmd_t stream_cmd((total_num_samps == 0)?
-     uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS:
-     uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE
-    );
-    stream_cmd.num_samps = total_num_samps;// total_num_samps=0 means coninuous mode 
-    stream_cmd.stream_now = true;
-    stream_cmd.time_spec = uhd::time_spec_t();
-    usrp->issue_stream_cmd(stream_cmd);
-	size_t num_acc_samps = 0; //number of accumulated samples
-    size_t  nAvrgCount = 0;
-    uhd::rx_metadata_t md;
-    //printf("5\n");
-    std::vector<std::complex<float> > buff(num_bins);
-    std::vector<std::complex<float> > out_buff(num_bins);
-    std::vector<float> out_buff_norm(num_bins);
-     
-    //std::vector<float> send_avmfft(num_bins-Moving_Avg_size);
-     std::vector<float> send_avmfft(num_bins);
-    // there is actually no need for the two below vectors since send_cmpfft equals the output of fft buff
-    // and send_tmsmps equals to buff from USRP, I will leave it like this for clarity and in case we need
-    // extra calculations before sending the buff
-    std::vector<std::complex<float> > send_cmpfft(num_bins);
-    std::vector<std::complex<float> > send_tmsmps;
-    //initializing sum of channels matrix
-    // calculating number of channels in chnsts mode
-    unsigned int nChs,nSlize;
-    nChs=static_cast <int> (std::floor((rate/2)/chbw));
-    nSlize=static_cast <int> (std::floor((num_bins/2)/nChs));
-     
-    //printf("6\n");
-    std::vector<float> vChCusum(nChs,0);
-    // create chnsts buffer to send this could be boolean vector also
-    std::vector<unsigned short> send_chnsts(nChs,0);
-     
-    //initialize fft plan
-    fftwf_complex *in = (fftwf_complex*)&buff.front();
-    fftwf_complex *out = (fftwf_complex*)&out_buff.front();
-    fftwf_plan p;
-    p = fftwf_plan_dft_1d(num_bins, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
-     
-
-     
-     
-
-   //printf("7\n");
-   //main loop
-    int y;
-	float totalpower = 0;
-	for(y=0; y<100; ++y){    
-	//while((num_acc_samps < total_num_samps or total_num_samps == 0)){
-        size_t num_rx_samps = rx_stream->recv(
-            &buff.front(), buff.size(), md, 3.0
-        );
-         
-        //handle the error codes
-        switch(md.error_code){
-        case uhd::rx_metadata_t::ERROR_CODE_NONE:
-            break;
- 
-        case uhd::rx_metadata_t::ERROR_CODE_TIMEOUT:
-            if (num_acc_samps == 0) continue;
-            std::cout << boost::format(
-                "Got timeout before all samples received, possible packet loss, exiting loop..."
-            ) << std::endl;
-            goto done_loop;
- 
-        default:
-            std::cout << boost::format(
-                "Got error code 0x%x, exiting loop..."
-            ) % md.error_code << std::endl;
-            goto done_loop;
-        }
-
-        /*if (nAvrgCount<navrg)
-                {
-                fftwf_execute(p);
-                for (unsigned int i=0; i<out_buff.size();i++)
-                     out_buff_norm[i]=pow(abs(out_buff[i]),2);
-                     //out_buff_norm[i]=std::norm(out_buff[i]);
-                std::vector<float>::iterator it1;//=out_buff_norm.begin();
-                std::vector<float>::iterator it2;//=out_buff_norm.begin();
-             
-                for( unsigned int ch_i=0;ch_i<nChs;ch_i++)
-                {
-                    it1=out_buff_norm.begin()+ ch_i*nSlize;
-                    it2=out_buff_norm.begin()+ (ch_i+1)*nSlize-1;
-                    while ( it1!=it2 ) {vChCusum[ch_i] = vChCusum[ch_i] + 2*(*it1++)/nSlize;}
-                }
-                nAvrgCount++;
-                }
-          // after number of averages is finished--> calculate channel status   
-           else
-               {
-                //std::cout<<nChs<<std::endl;
-                for( unsigned int ch_j=0;ch_j<nChs;ch_j++)
-                {
-                  if ((vChCusum[ch_j]/nAvrgCount) >thresh) //threshold
-                    {
-                    send_chnsts[ch_j]=1;
-					printf("1\n");
-                    //std::cout<<"Ch"<<ch_i<<" "<<send_chnsts[ch_i]<<"\t";
-                    }
-                  else
-                    {
-                    send_chnsts[ch_j]=0;   
-					printf("0\n");
-                    }
-                 // constructing text frame for ncurses display
-                 vChCusum[ch_j]=0;
-                }
-		}
-		//printf("8\n");
-        fftwf_execute(p);
-		int x;
-        for (unsigned int i=0; i<out_buff.size();i++)
-             out_buff_norm[i]=sqrt(pow(abs(out_buff[i]),2));
-		noiseiterator = 0;
-		noisefloor = 0;
-		for(t=1; t<out_buff.size();t++){
-			noisefloor += pow(abs(out_buff[t]),2);
-			noiseiterator++;
-		}
-		noisefloor /= noiseiterator;
-		noisefloor = sqrt(noisefloor);
-		averagenoisefloor += noisefloor;
-		noiseflooriterator++;
-		centeraverage += out_buff_norm[0];
-		//printf("%f\n", out_buff_norm[0]);
-		//printf("%f %f\n", out_buff[0], out_buff_norm[0]);
-		iterator++;
-		//printf("%f\n", noisefloor);
-		for(x=0; x<bw/chbw; x++){
-			//printf("%d %f\n", x+1, out_buff_norm[x]);
-			totalpower += out_buff_norm[x];
-		}
-        //calculate avmfft from moving average function
-        send_avmfft=Moving_Avg(out_buff,Moving_Avg_size);
-		//printf("9\n");
-		/*printf("1 %f\n", send_avmfft[0]);
-		printf("2 %f\n", send_avmfft[1]);
-		printf("3 %f\n", send_avmfft[2]);
-		printf("4 %f\n", send_avmfft[3]);
-		printf("5 %f\n", send_avmfft[4]);
-		printf("6 %f\n", send_avmfft[5]);
-		printf("7 %f\n", send_avmfft[6]);
-		printf("8 %f\n", send_avmfft[7]);
-		printf("9 %f\n", send_avmfft[8]);
-		printf("10 %f\n", send_avmfft[9]);
-
-        num_acc_samps += num_rx_samps;
-	} done_loop:
-	//printf("%f\n", totalpower);
-	fftwf_destroy_plan(p);
-	noisefloor = averagenoisefloor/noiseflooriterator;
-	centeraverage = centeraverage/iterator;
-	noisefloor = 450;
-	if(totalpower > noisefloor){
-		cantransmit = 0;
-	}
-	else{
-		cantransmit = 1;
-	}
-	printf("%d %f %f\n", cantransmit, totalpower, noisefloor);
-	//printf("%d %f %f\n", cantransmit, centeraverage, noisefloor);
-
-	return cantransmit;
-}*/
 
 int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float noisefloor, struct fftStruct fftinfo){
 	int cantransmit;
@@ -2820,7 +2555,8 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
 	else{
 		cantransmit = 1;
 	}
-	//printf("%d %f %f\n", cantransmit, totalpower, noisefloor);
+	if(fftinfo.debug==1){
+	printf("%d %f %f\n", cantransmit, totalpower, noisefloor);}
 	//printf("%d %f %f\n", cantransmit, centeraverage, noisefloor);
 
 	return cantransmit;
@@ -2926,6 +2662,8 @@ float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, s
 		}
 	} 
 	fftwf_destroy_plan(p);
+	if(fftinfo.debug==1){
+	printf("%f\n", (float)(totalpower/fftinfo.repeat + fftinfo.noiseadder));}
 	return totalpower/fftinfo.repeat + fftinfo.noiseadder;
 }
 
@@ -3097,11 +2835,9 @@ int main(int argc, char ** argv){
 
     // Begin TCP Server Thread
     //serverThreadReturn = pthread_create( &TCPServerThread, NULL, startTCPServer, (void*) feedback);
-	floatnumber = 0.0;
     struct serverThreadStruct ss = CreateServerStruct();
     ss.serverPort = serverPort;
     ss.fb_ptr = &fb;
-	ss.floatnumber = &floatnumber;
 	ss.m_ptr = &msg;
 	if(dsa==1){
 		printf("dsa\n");
@@ -3119,12 +2855,6 @@ int main(int argc, char ** argv){
     rxCBs.serverAddr = serverAddr;
     rxCBs.verbose = verbose;
 	rxCBs.rx_ms_ptr = &rx_ms;
-
-	//Becomes a one if a primary transmission has been detected
-	rxCBs.primaryon = 0;
-
-	//Becomes a one if a secondary transmission has been received
-	rxCBs.secondarysending = 0;
 
     // Allow server time to finish initialization
     usleep(0.1e6);
@@ -4147,8 +3877,13 @@ if(dsa==1 && !usingUSRPs){
 
 //If DSA is used with USRPs and not a receiver either a primary transmitter is made or a
 //secondary transmitter with sensing capabilities
-if(dsa==1 && usingUSRPs && !receiver && !isController){
-
+if(dsa==1 && usingUSRPs && !isController){
+	struct dsaCBstruct dsaCBs;
+	dsaCBs.bandwidth = rxCBs.bandwidth;
+    dsaCBs.serverPort = rxCBs.serverPort;
+    dsaCBs.serverAddr = rxCBs.serverAddr;
+    dsaCBs.verbose = rxCBs.verbose;
+	dsaCBs.rx_ms_ptr = &rx_ms;
 	pthread_t receiverfeedbackThread;
 	struct message mess;
 	struct fftStruct fftinfo;
@@ -4178,7 +3913,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 	double tmpd;
 	char * str2;
 	//struct serveClientStruct * sc_ptr = (struct serveClientStruct*) _sc_ptr;
-	int cl = rxCBs.client;
+	int cl = dsaCBs.client;
 
 
 	if (verbose)
@@ -4206,12 +3941,12 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		if (config_setting_lookup_string(setting, "dsatype", &str))
 		{
 		str2 = (char *)str;
-		rxCBs.dsatype = str[0];
+		dsaCBs.dsatype = str[0];
 		}
 		if (config_setting_lookup_string(setting, "detectiontype", &str))
 		{
 		str2 = (char *)str;
-		rxCBs.detectiontype = str[0];
+		dsaCBs.detectiontype = str[0];
 		}
 	}
 	setting = config_lookup(&cfg, "fft");
@@ -4258,6 +3993,10 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		if (config_setting_lookup_float(setting, "noiseadder", &tmpD))
 		{
 		fftinfo.noiseadder = tmpD;
+		}
+		if (config_setting_lookup_int (setting, "debug", &tmpI))
+		{
+		fftinfo.debug = tmpI;
 		}
 	}
 	setting = config_lookup(&cfg, "PU");
@@ -4344,22 +4083,22 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		}
 
 	}
-	//rxCBs.detectiontype = 'e';
+	//dsaCBs.detectiontype = 'e';
 	//If it is a primary transmitter then the USRP ofdmtxrx object tranmists for its burst
 	//time then rest for its rest time
-	if(primary == 1){
+	if(primary == 1 and !receiver){
 		struct broadcastfeedbackinfo bfi;
 		float timedivisor = 5.0;
 		if(broadcasting==1){
 		timedivisor = 1.0;
 		bfi.user = 'P';
-		bfi.client = rxCBs.client;
+		bfi.client = dsaCBs.client;
 		bfi.m_ptr = &msg;
 		bfi.msgnumber = &primarymsgnumber;
 		pthread_create( &receiverfeedbackThread, NULL, feedbackThread, (void*) &bfi);
 		}
 		mess.type = 'P';
-		rxCBs.usrptype = 'P';
+		dsaCBs.usrptype = 'P';
 		verbose = 0;
 		//float a;
 		printf("primary\n");
@@ -4378,7 +4117,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		if (verbose) 
 		printf("Using ofdmtxrx\n");
 		printf("%d %d %d\n", puce.numSubcarriers, puce.CPLen, puce.taperLen);
-		ofdmtxrx txcvr(puce.numSubcarriers, puce.CPLen, puce.taperLen, p, rxCallback, (void*) &rxCBs);
+		ofdmtxrx txcvr(puce.numSubcarriers, puce.CPLen, puce.taperLen, p, rxCallback, (void*) &dsaCBs);
 		txcvr.set_tx_freq(puce.frequency);
 		txcvr.set_tx_rate(puce.bandwidth);
 		txcvr.set_tx_gain_soft(puce.txgain_dB);
@@ -4415,8 +4154,8 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			printf("PU transmitting\n");
 			mess.number = primarymsgnumber;
 			mess.purpose = 't';
-			//printf("%d %d\n", rxCBs.client, bfi.client);
-			write(rxCBs.client, (const void*)&mess, sizeof(mess));
+			//printf("%d %d\n", dsaCBs.client, bfi.client);
+			write(dsaCBs.client, (const void*)&mess, sizeof(mess));
 			primarymsgnumber++;
 			//printf("%d\n", mess.number);
 			//For some reason time is about 5 times slower in this while loop
@@ -4453,7 +4192,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			//a=2.0;
 			mess.number = primarymsgnumber;
 			mess.purpose = 'r';
-			write(rxCBs.client, (const void*)&mess, sizeof(mess));
+			write(dsaCBs.client, (const void*)&mess, sizeof(mess));
 			primarymsgnumber++;
 			//printf("%d\n", mess.number);
 			while(primaryresttime>time){
@@ -4466,20 +4205,20 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		//After it has completed its cycles the primary transmitter sends a finished message to the controller
 		mess.purpose = 'F';
 		mess.number = primarymsgnumber;
-		write(rxCBs.client, (const void*)&mess, sizeof(mess));
+		write(dsaCBs.client, (const void*)&mess, sizeof(mess));
 	}
 
 	//If it is a secondary user then the node acts as a secondary transmitter
 	//Either sensing for the primary user or transmitting with small pauses for sening
-	if(secondary == 1 && rxCBs.detectiontype == 'm'){
+	if(secondary == 1 && dsaCBs.detectiontype == 'm' && !receiver){
 		struct broadcastfeedbackinfo bfi;
 		mess.type = 'S';
-		rxCBs.usrptype = 'S';
+		dsaCBs.usrptype = 'S';
 		mess.msgreceived = 1;
 		verbose = 0;
 		if(broadcasting==1){
 		bfi.user = 'S';
-		bfi.client = rxCBs.client;
+		bfi.client = dsaCBs.client;
 		bfi.m_ptr = &msg;
 		bfi.msgnumber = &secondarymsgnumber;
 		pthread_create( &receiverfeedbackThread, NULL, feedbackThread, (void*) &bfi);
@@ -4501,7 +4240,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		printf("%d %d %d\n", suce.numSubcarriers, suce.CPLen, suce.taperLen);
 
 		//Sets up transceiver object
-		ofdmtxrx txcvr(suce.numSubcarriers, suce.CPLen, suce.taperLen, p, dsaCallback, (void*) &rxCBs);
+		ofdmtxrx txcvr(suce.numSubcarriers, suce.CPLen, suce.taperLen, p, dsaCallback, (void*) &dsaCBs);
 		txcvr.set_tx_freq(suce.frequency);
 		txcvr.set_tx_rate(suce.bandwidth);
 		txcvr.set_tx_gain_soft(suce.txgain_dB);
@@ -4523,15 +4262,15 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			printf("SU transmitting\n");
 			mess.number = secondarymsgnumber;
 			mess.purpose = 't';
-			write(rxCBs.client, (const void*)&mess, sizeof(mess));
+			write(dsaCBs.client, (const void*)&mess, sizeof(mess));
 			//printf("%d\n", mess.number);
 			secondarymsgnumber++;
 			int z;
 			//If it does not sense the primary user then the secondary user will transmit
-			while(rxCBs.primaryon==0)
+			while(dsaCBs.primaryon==0)
 				{
 				for(z=0; z<uninterruptedframes; z++){
-					//printf("%d\n", rxCBs.primaryon);
+					//printf("%d\n", dsaCBs.primaryon);
 					//if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
 					modulation_scheme ms = convertModScheme(suce.modScheme, &suce.bitsPerSym);
 
@@ -4548,10 +4287,10 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 					usleep(1);
 					txcvr.assemble_frame(header, payload, suce.payloadLen, ms, fec0, fec1);
 					int isLastSymbol = 0;
-					while(!isLastSymbol) //&& rxCBs.primaryon==0)
+					while(!isLastSymbol) //&& dsaCBs.primaryon==0)
 						{
 						usleep(1);
-						//printf("%d\n", rxCBs.primaryon);
+						//printf("%d\n", dsaCBs.primaryon);
 						isLastSymbol = txcvr.write_symbol();
 						if(usescenario)
 						enactScenarioBaseband(txcvr.fgbuffer, suce, sc);
@@ -4568,7 +4307,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 
 				//The secondary user will wait in this while loop and wait and see if any
 				//primary users appear
-				while(0.5 > (float)time) //&& rxCBs.primaryon == 0)
+				while(0.5 > (float)time) //&& dsaCBs.primaryon == 0)
 					{
 					current = std::clock();
 					time = ((float)(current-start))/CLOCKS_PER_SEC;
@@ -4583,14 +4322,14 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			//and switches to sensing in a new while loop
 			mess.number = secondarymsgnumber;
 			mess.purpose = 'r';
-			write(rxCBs.client, (const void*)&mess, sizeof(mess));
+			write(dsaCBs.client, (const void*)&mess, sizeof(mess));
 			secondarymsgnumber++;
 			//printf("%d\n", mess.number);
-			while(rxCBs.primaryon==1)
+			while(dsaCBs.primaryon==1)
 				{
-				//printf("%d\n", rxCBs.primaryon);
+				//printf("%d\n", dsaCBs.primaryon);
 				time = 0;
-				rxCBs.primaryon = 0;
+				dsaCBs.primaryon = 0;
 				start = std::clock();
 				std::clock_t current;
 
@@ -4606,17 +4345,17 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				}
 			}
 		}
-	if(secondary == 1 && rxCBs.detectiontype == 'r'){
+	if(secondary == 1 && dsaCBs.detectiontype == 'r' && !receiver){
 		//printf("receiver\n");
 		struct broadcastfeedbackinfo bfi;
 		mess.type = 'S';
-		rxCBs.usrptype = 'S';
+		dsaCBs.usrptype = 'S';
 		mess.msgreceived = 1;
 		verbose = 0;
 		if(broadcasting==1){
 		bfi.primaryon = 0;
 		bfi.user = 'S';
-		bfi.client = rxCBs.client;
+		bfi.client = dsaCBs.client;
 		bfi.m_ptr = &msg;
 		bfi.msgnumber = &secondarymsgnumber;
 		pthread_create( &receiverfeedbackThread, NULL, feedbackThread, (void*) &bfi);
@@ -4638,7 +4377,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		printf("%d %d %d\n", suce.numSubcarriers, suce.CPLen, suce.taperLen);
 
 		//Sets up transceiver object
-		ofdmtxrx txcvr(suce.numSubcarriers, suce.CPLen, suce.taperLen, p, dsaCallback, (void*) &rxCBs);
+		ofdmtxrx txcvr(suce.numSubcarriers, suce.CPLen, suce.taperLen, p, dsaCallback, (void*) &dsaCBs);
 		txcvr.set_tx_freq(suce.frequency);
 		txcvr.set_tx_rate(suce.bandwidth);
 		txcvr.set_tx_gain_soft(suce.txgain_dB);
@@ -4660,7 +4399,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			printf("SU transmitting\n");
 			mess.number = secondarymsgnumber;
 			mess.purpose = 't';
-			write(rxCBs.client, (const void*)&mess, sizeof(mess));
+			write(dsaCBs.client, (const void*)&mess, sizeof(mess));
 			//printf("%d\n", mess.number);
 			secondarymsgnumber++;
 			int z;
@@ -4668,7 +4407,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			while(bfi.primaryon==0)
 				{
 				for(z=0; z<uninterruptedframes; z++){
-					//printf("%d\n", rxCBs.primaryon);
+					//printf("%d\n", dsaCBs.primaryon);
 					//if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
 					modulation_scheme ms = convertModScheme(suce.modScheme, &suce.bitsPerSym);
 
@@ -4685,10 +4424,10 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 					usleep(1);
 					txcvr.assemble_frame(header, payload, suce.payloadLen, ms, fec0, fec1);
 					int isLastSymbol = 0;
-					while(!isLastSymbol) //&& rxCBs.primaryon==0)
+					while(!isLastSymbol) //&& dsaCBs.primaryon==0)
 						{
 						usleep(1);
-						//printf("%d\n", rxCBs.primaryon);
+						//printf("%d\n", dsaCBs.primaryon);
 						isLastSymbol = txcvr.write_symbol();
 						if(usescenario)
 						enactScenarioBaseband(txcvr.fgbuffer, suce, sc);
@@ -4705,7 +4444,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 
 				//The secondary user will wait in this while loop and wait and see if any
 				//primary users appear
-				while(0.5 > (float)time) //&& rxCBs.primaryon == 0)
+				while(0.5 > (float)time) //&& dsaCBs.primaryon == 0)
 					{
 					current = std::clock();
 					time = ((float)(current-start))/CLOCKS_PER_SEC;
@@ -4720,12 +4459,12 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			//and switches to sensing in a new while loop
 			mess.number = secondarymsgnumber;
 			mess.purpose = 'r';
-			write(rxCBs.client, (const void*)&mess, sizeof(mess));
+			write(dsaCBs.client, (const void*)&mess, sizeof(mess));
 			secondarymsgnumber++;
 			//printf("%d\n", mess.number);
 			while(bfi.primaryon==1)
 				{
-				//printf("%d\n", rxCBs.primaryon);
+				//printf("%d\n", dsaCBs.primaryon);
 				time = 0;
 				bfi.primaryon = 0;
 				start = std::clock();
@@ -4747,7 +4486,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 
 	//If the secondary transmitter is using energy detection it will call the fftscan function to check for
 	//spectrum holes
-	if(secondary == 1 && rxCBs.detectiontype == 'e'){
+	if(secondary == 1 && dsaCBs.detectiontype == 'e' && !receiver){
 		struct broadcastfeedbackinfo bfi;
 		std::string args = "internal";
 		int e;
@@ -4758,12 +4497,12 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		int primaryoncounter;
 		int primaryoffcounter;
 		mess.type = 'S';
-		rxCBs.usrptype = 'S';
+		dsaCBs.usrptype = 'S';
 		mess.msgreceived = 1;
 		verbose = 0;
 		if(broadcasting==1){
 		bfi.user = 'S';
-		bfi.client = rxCBs.client;
+		bfi.client = dsaCBs.client;
 		bfi.m_ptr = &msg;
 		bfi.msgnumber = &secondarymsgnumber;
 		pthread_create( &receiverfeedbackThread, NULL, feedbackThread, (void*) &bfi);
@@ -4785,7 +4524,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		printf("%d %d %d\n", suce.numSubcarriers, suce.CPLen, suce.taperLen);
 
 		//Sets up transceiver object
-		ofdmtxrx txcvr(suce.numSubcarriers, suce.CPLen, suce.taperLen, p, dsaCallback, (void*) &rxCBs);
+		ofdmtxrx txcvr(suce.numSubcarriers, suce.CPLen, suce.taperLen, p, dsaCallback, (void*) &dsaCBs);
 		txcvr.set_tx_freq(suce.frequency);
 		txcvr.set_tx_rate(suce.bandwidth);
 		txcvr.set_tx_gain_soft(suce.txgain_dB);
@@ -4813,7 +4552,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			printf("SU transmitting\n");
 			mess.number = secondarymsgnumber;
 			mess.purpose = 't';
-			write(rxCBs.client, (const void*)&mess, sizeof(mess));
+			write(dsaCBs.client, (const void*)&mess, sizeof(mess));
 			//printf("%d\n", mess.number);
 			secondarymsgnumber++;
 			int z;
@@ -4822,7 +4561,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				{
 				for(z=0; z<uninterruptedframes; z++)
 					{
-					//printf("%d\n", rxCBs.primaryon);
+					//printf("%d\n", dsaCBs.primaryon);
 					//if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
 					modulation_scheme ms = convertModScheme(suce.modScheme, &suce.bitsPerSym);
 
@@ -4839,10 +4578,10 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 					usleep(1);
 					txcvr.assemble_frame(header, payload, suce.payloadLen, ms, fec0, fec1);
 					int isLastSymbol = 0;
-					while(!isLastSymbol) //&& rxCBs.primaryon==0)
+					while(!isLastSymbol) //&& dsaCBs.primaryon==0)
 						{
 						usleep(1);
-						//printf("%d\n", rxCBs.primaryon);
+						//printf("%d\n", dsaCBs.primaryon);
 						isLastSymbol = txcvr.write_symbol();
 						if(usescenario)
 						enactScenarioBaseband(txcvr.fgbuffer, suce, sc);
@@ -4864,7 +4603,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				primaryoffcounter = 0;
 			
 					
-				for(int h=0; h<fftinfo.testnumber; h++) //&& rxCBs.primaryon == 0)
+				for(int h=0; h<fftinfo.testnumber; h++) //&& dsaCBs.primaryon == 0)
 					{
 					//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
 
@@ -4899,13 +4638,13 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			//and switches to sensing in a new while loop
 			mess.number = secondarymsgnumber;
 			mess.purpose = 'r';
-			write(rxCBs.client, (const void*)&mess, sizeof(mess));
+			write(dsaCBs.client, (const void*)&mess, sizeof(mess));
 			secondarymsgnumber++;
 				//printf("%d\n", mess.number);
 			//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
 			while(cantransmit==0)
 				{
-				//printf("%d\n", rxCBs.primaryon);
+				//printf("%d\n", dsaCBs.primaryon);
 				//time = 0;
 		
 				//start = std::clock();
@@ -4916,7 +4655,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				//finishes without a new primary transmission switching it to 1 then
 				//the secondary user will assume it has stopped and resume transmitting
 				//This while loop below will run for secondaryscantime seconds
-				for(int h=0; h<fftinfo.testnumber; h++) //&& rxCBs.primaryon == 0)
+				for(int h=0; h<fftinfo.testnumber; h++) //&& dsaCBs.primaryon == 0)
 					{
 
 					cantransmit = fftscan(suce, usrp, noisefloor, fftinfo);
@@ -4964,7 +4703,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		while(true){
 			primaryoffcounter = 0;
 			primaryoncounter = 0;
-			for(int h=0; h<fftinfo.testnumber; h++) //&& rxCBs.primaryon == 0)
+			for(int h=0; h<fftinfo.testnumber; h++) //&& dsaCBs.primaryon == 0)
 				{
 				cantransmit = 0;
 				cantransmit = fftscan(suce, usrp, noisefloor, fftinfo);
@@ -4980,12 +4719,81 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		
 			if(primaryoffcounter < primaryoncounter){
 				//printf("Message sent %c %c %d\n", emsg.type, emsg.purpose, emsg.number);				
-				write(rxCBs.client, &emsg, sizeof(emsg));
+				write(dsaCBs.client, &emsg, sizeof(emsg));
 				emsg.number++;
 	
 			}
 		}
 	}	
+	//Primary receiver. Does nothing but use dsaCallback function to send feedback
+	if(receiver == 1 && primary == 1){
+		struct message mess;
+		mess.type = 'p';
+		dsaCBs.usrptype = 'p';
+		ce = CreateCognitiveEngine();
+		readCEConfigFile(&ce, "ce1.txt", verbose);
+		printf("receiver\n");
+		int u;
+		unsigned char * p = NULL;   // default subcarrier allocation
+		if (verbose) 
+		printf("Using ofdmtxrx\n");
+
+		//Basic transceiver setup
+		printf("%d %d %d\n", puce.numSubcarriers, puce.CPLen, puce.taperLen);
+		ofdmtxrx txcvr(puce.numSubcarriers, puce.CPLen, puce.taperLen, p, dsaCallback, (void*) &dsaCBs);
+		txcvr.set_tx_freq(puce.frequency);
+		txcvr.set_tx_rate(puce.bandwidth);
+		txcvr.set_tx_gain_soft(puce.txgain_dB);
+		txcvr.set_tx_gain_uhd(puce.uhd_txgain_dB);
+		txcvr.set_rx_freq(frequency);
+		txcvr.set_rx_rate(bandwidth);
+		txcvr.set_rx_gain_uhd(uhd_rxgain);
+		txcvr.start_rx();
+
+		//The receiver sits in this infinite while loop and does nothing but wait to receive
+		//liquid frames that it will interpret with dsaCallback
+		while(true){
+			u=1;
+		}
+		return 0;
+
+	}
+
+	if(receiver == 1 && secondary == 1){
+		struct message mess;
+		mess.type = 's';
+		dsaCBs.usrptype = 's';
+		printf("receiver\n");
+		int u;
+		unsigned char * p = NULL;   // default subcarrier allocation
+		if (verbose) 
+		printf("Using ofdmtxrx\n");
+
+		//Basic transceiver setup
+		printf("%d %d %d\n", suce.numSubcarriers, suce.CPLen, suce.taperLen);
+		ofdmtxrx txcvr(suce.numSubcarriers, suce.CPLen, suce.taperLen, p, dsaCallback, (void*) &dsaCBs);
+		txcvr.set_tx_freq(suce.frequency);
+		txcvr.set_tx_rate(suce.bandwidth);
+		txcvr.set_tx_gain_soft(suce.txgain_dB);
+		txcvr.set_tx_gain_uhd(suce.uhd_txgain_dB);
+		txcvr.set_rx_freq(frequency);
+		txcvr.set_rx_rate(bandwidth);
+		txcvr.set_rx_gain_uhd(uhd_rxgain);
+		txcvr.start_rx();
+
+		//The receiver sits in this infinite while loop and does nothing but wait to receive
+		//liquid frames that it will interpret with dsaCallback
+		while(true){
+			u=1;
+		}
+		return 0;
+
+	}
+
+
+
+
+
 }
 
 //If a receiver is being used but not DSA then a basic receiver is made. It does nothing
@@ -5017,186 +4825,6 @@ if(receiver == 1 && dsa != 1){
 		u=1;
 	}
 	return 0;
-
-}
-
-//If a receiver is being used but not DSA then a basic receiver is made. It does nothing
-//but wait to receive transmissions and execute the dsaCallback function
-if(receiver == 1 && dsa == 1 && primary == 1){
-	struct message mess;
-	mess.type = 'p';
-	rxCBs.usrptype = 'p';
-	ce = CreateCognitiveEngine();
-	readCEConfigFile(&ce, "ce1.txt", verbose);
-	printf("receiver\n");
-	int u;
-	unsigned char * p = NULL;   // default subcarrier allocation
-	if (verbose) 
-	printf("Using ofdmtxrx\n");
-
-	//Basic transceiver setup
-	printf("%d %d %d\n", ce.numSubcarriers, ce.CPLen, ce.taperLen);
-	ofdmtxrx txcvr(ce.numSubcarriers, ce.CPLen, ce.taperLen, p, dsaCallback, (void*) &rxCBs);
-	txcvr.set_tx_freq(ce.frequency);
-	txcvr.set_tx_rate(ce.bandwidth);
-	txcvr.set_tx_gain_soft(ce.txgain_dB);
-	txcvr.set_tx_gain_uhd(ce.uhd_txgain_dB);
-    txcvr.set_rx_freq(frequency);
-    txcvr.set_rx_rate(bandwidth);
-    txcvr.set_rx_gain_uhd(uhd_rxgain);
-	txcvr.start_rx();
-
-	//The receiver sits in this infinite while loop and does nothing but wait to receive
-	//liquid frames that it will interpret with dsaCallback
-	while(true){
-		u=1;
-	}
-	return 0;
-
-}
-
-if(receiver == 1 && dsa == 1 && secondary == 1){
-	struct message mess;
-	mess.type = 's';
-	rxCBs.usrptype = 's';
-	ce = CreateCognitiveEngine();
-	readCEConfigFile(&ce, "ce1.txt", verbose);
-	printf("receiver\n");
-	int u;
-	unsigned char * p = NULL;   // default subcarrier allocation
-	if (verbose) 
-	printf("Using ofdmtxrx\n");
-
-	//Basic transceiver setup
-	printf("%d %d %d\n", ce.numSubcarriers, ce.CPLen, ce.taperLen);
-	ofdmtxrx txcvr(ce.numSubcarriers, ce.CPLen, ce.taperLen, p, dsaCallback, (void*) &rxCBs);
-	txcvr.set_tx_freq(ce.frequency);
-	txcvr.set_tx_rate(ce.bandwidth);
-	txcvr.set_tx_gain_soft(ce.txgain_dB);
-	txcvr.set_tx_gain_uhd(ce.uhd_txgain_dB);
-    txcvr.set_rx_freq(frequency);
-    txcvr.set_rx_rate(bandwidth);
-    txcvr.set_rx_gain_uhd(uhd_rxgain);
-	txcvr.start_rx();
-	float primarywarningdelay = 0.5;
-	std::clock_t start;
-	std::clock_t current;
-
-	//The receiver sits in this infinite while loop and does nothing but wait to receive
-	//liquid frames that it will interpret with dsaCallback
-	while(true){
-		/*if(rxCBs.primaryon==1){
-			start = std::clock();
-			current = std::clock();
-			while(primarywarningdelay > (float)(current-start)/CLOCKS_PER_SEC){
-				current = std::clock();
-			}
-		}
-		rxCBs.primaryon==0;*/
-		u=1;
-	}
-	return 0;
-
-}
-
-//If DSA is used and a receiver is used then a DSA receiver is made
-//This is a receiver that the secondary transmitter will broadcast to
-//Typically this DSA receiver will only sit and receive, unless it senses the
-//primary user. Then it will send a warning message to the secondary transmitter to tell
-//it to switch to scanning mode
-if(dsa== 1 && receiver == 1 && secondary==1){
-	struct message mess;
-	printf("DSA receiver\n");
-	mess.type = 's';
-	rxCBs.usrptype = 's';
-	//The DSA receiver has a header and payload of all 2's for easy identification
-	for(int h = 0; h<8; h++){
-		header[h] = 2;
-	};
-	for(int h = 0; h<ce.payloadLen; h++){
-		payload[h] = 2;
-	};
-	ce = CreateCognitiveEngine();
-	readCEConfigFile(&ce, "ce1.txt", verbose);
-	int u;
-	unsigned char * p = NULL;   // default subcarrier allocation
-	if (verbose) 
-	printf("Using ofdmtxrx\n");
-	printf("%d %d %d\n", ce.numSubcarriers, ce.CPLen, ce.taperLen);
-	ofdmtxrx txcvr(ce.numSubcarriers, ce.CPLen, ce.taperLen, p, dsaCallback, (void*) &rxCBs);
-	txcvr.set_tx_freq(ce.frequency);
-	txcvr.set_tx_rate(ce.bandwidth);
-	txcvr.set_tx_gain_soft(ce.txgain_dB);
-	txcvr.set_tx_gain_uhd(ce.uhd_txgain_dB);
-    txcvr.set_rx_freq(frequency);
-    txcvr.set_rx_rate(bandwidth);
-    txcvr.set_rx_gain_uhd(uhd_rxgain);
-	txcvr.start_rx();
-
-	//variable that determines whether it has received a secondary transmission or not
-	rxCBs.secondarysending = 0;
-	while(true){
-
-		//First the receiver will be in a while loop where it does nothing but waits to
-		//receive secondary transmissions
-		//It will leave the while loop if it sense the primary user
-		printf("Receiving from secondary user\n");
-		while(rxCBs.primaryon == 0);{
-			u=1;
-			}
-
-
-		txcvr.start_rx();
-		std::clock_t time = 0;
-		std::clock_t start;
-		std::clock_t current;
-
-		//After the primary user has been detected the receiver enters  new while loop where
-		//it transmits a warning message to the secondary transmitter, then waits to see if
-		//it receives any more primary transmissions. If it receives any more in its wait
-		//time interval then it will send another warning message and continue sensing
-		//If it receives no other primary transmissions it will exit the while loop and
-		//wait to receive secondary transmissions
-		printf("Scanning for Primary User\n");
-		while(rxCBs.primaryon == 1){ //&& rxCBs.secondarysending ==0){
-
-			printf("Sending warning to secondary user\n");
-			if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
-			modulation_scheme ms = convertModScheme(ce.modScheme, &ce.bitsPerSym);
-
-			// Set Cyclic Redundency Check Scheme
-			//crc_scheme check = convertCRCScheme(ce.crcScheme);
-
-			// Set inner forward error correction scheme
-			if (verbose) printf("Inner FEC: ");
-			fec_scheme fec0 = convertFECScheme(ce.innerFEC, verbose);
-
-			// Set outer forward error correction scheme
-			if (verbose) printf("Outer FEC: ");
-			fec_scheme fec1 = convertFECScheme(ce.outerFEC, verbose);
-			txcvr.assemble_frame(header, payload, ce.payloadLen, ms, fec0, fec1);
-			int isLastSymbol = 0;
-			while(!isLastSymbol){
-				isLastSymbol = txcvr.write_symbol();
-				//enactScenarioBaseband(txcvr.fgbuffer, ce, sc);
-				txcvr.transmit_symbol();
-				}
-	   		txcvr.end_transmit_frame();
-			rxCBs.secondarysending = 0;
-
-			time = 0;
-			rxCBs.primaryon = 0;
-			start = std::clock();
-			while(1>time){
-				//printf("%ju\n", (uintmax_t)time);
-				current = std::clock();
-				time = (current-start)/CLOCKS_PER_SEC;
-			}
-		}
-			
-
-	}
-	//return 0;
 
 }
 

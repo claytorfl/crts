@@ -19,6 +19,7 @@ numavrg = 10;
 measuredbins = 20;
 testnumber = 7;
 repeat = 10;
+debug = 1;
 };
 
 PU=
