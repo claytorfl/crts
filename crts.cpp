@@ -2819,7 +2819,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
 	else{
 		cantransmit = 1;
 	}
-	//printf("%d %f %f\n", cantransmit, totalpower, noisefloor);
+	printf("%d %f %f\n", cantransmit, totalpower, noisefloor);
 	//printf("%d %f %f\n", cantransmit, centeraverage, noisefloor);
 
 	return cantransmit;
@@ -2963,10 +2963,11 @@ int main(int argc, char ** argv){
 	int secondary = 0;
 	int primary = 0;
 	int receiver = 0;
+	int energy = 0;
 
     // Check Program options
     int d;
-    while ((d = getopt(argc,argv,"QRDStBPNuhqvdrsp:ca:f:b:G:M:C:T:")) != EOF) {
+    while ((d = getopt(argc,argv,"EQRDStBPNuhqvdrsp:ca:f:b:G:M:C:T:")) != EOF) {
         switch (d) {
         case 'u':
         case 'h':   usage();                           return 0;
@@ -2997,6 +2998,10 @@ int main(int argc, char ** argv){
 
 		//Designate the node as a receiver
 		case 'R':	receiver = 1; break;
+		
+		//Designate the node as an energy detector
+		case 'E':	energy = 1; dsa = 1; break;
+	
         //case 'p':   serverPort = atol(optarg);            break;
         //case 'f':   frequency = atof(optarg);           break;
         //case 'b':   bandwidth = atof(optarg);           break;
@@ -3115,7 +3120,7 @@ int main(int argc, char ** argv){
 	rxCBs.rx_ms_ptr = &rx_ms;
 
 	//Becomes a one if a primary transmission has been detected
-	rxCBs.primaryon = 1;
+	rxCBs.primaryon = 0;
 
 	//Becomes a one if a secondary transmission has been received
 	rxCBs.secondarysending = 0;
@@ -4501,7 +4506,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		txcvr.set_tx_gain_soft(suce.txgain_dB);
 		txcvr.set_tx_gain_uhd(suce.uhd_txgain_dB);
     	txcvr.set_rx_freq(frequency);
-   		txcvr.set_rx_rate(bandwidth);
+   		txcvr.set_rx_rate(suce.bandwidth);
     	txcvr.set_rx_gain_uhd(uhd_rxgain);
 		txcvr.start_rx();
 	
@@ -4638,7 +4643,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		txcvr.set_tx_gain_soft(suce.txgain_dB);
 		txcvr.set_tx_gain_uhd(suce.uhd_txgain_dB);
     	txcvr.set_rx_freq(frequency);
-   		txcvr.set_rx_rate(bandwidth);
+   		txcvr.set_rx_rate(suce.bandwidth);
     	txcvr.set_rx_gain_uhd(uhd_rxgain);
 		txcvr.start_rx();
 	
@@ -4785,7 +4790,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		txcvr.set_tx_gain_soft(suce.txgain_dB);
 		txcvr.set_tx_gain_uhd(suce.uhd_txgain_dB);
     	txcvr.set_rx_freq(frequency);
-   		txcvr.set_rx_rate(fftinfo.rate*2);
+   		txcvr.set_rx_rate(suce.bandwidth);
     	txcvr.set_rx_gain_uhd(uhd_rxgain);
 		printf("\nMake sure no transmitters are transmitting before finding the noise floor\n");
 		txcvr.start_rx();
@@ -4858,7 +4863,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				primaryoffcounter = 0;
 			
 					
-				for(int h=0; h<7; h++) //&& rxCBs.primaryon == 0)
+				for(int h=0; h<fftinfo.testnumber; h++) //&& rxCBs.primaryon == 0)
 					{
 					//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
 
@@ -4910,7 +4915,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				//finishes without a new primary transmission switching it to 1 then
 				//the secondary user will assume it has stopped and resume transmitting
 				//This while loop below will run for secondaryscantime seconds
-				for(int h=0; h<7; h++) //&& rxCBs.primaryon == 0)
+				for(int h=0; h<fftinfo.testnumber; h++) //&& rxCBs.primaryon == 0)
 					{
 
 					cantransmit = fftscan(suce, usrp, noisefloor, fftinfo);
@@ -4936,7 +4941,47 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		};
 		return 0;
 	}
+
+	if(energy==1){
+		std::string(args) = "";
+		uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
+		struct message emsg;
+		emsg.type = 's';
+		emsg.purpose = 'P';
+		emsg.number = 1;
+		int cantransmit = 0;
+		int primaryoncounter = 0;
+		int primaryoffcounter = 0;
+		float noisefloor;
+		std::clock_t start;
+		std::clock_t current;
+		printf("\nMake sure the secondary transmitter is transmitting before finding the noise floor\n");
+		printf("This insures that detection of the SU's energy won't cause a false detection\n");
+		noisefloor = noise_floor(suce, usrp, fftinfo);
+		printf("\nNoise floor found! Press any key to start energy detector %f\n", noisefloor);
+		getchar();
+		while(true){
+			for(int h=0; h<fftinfo.testnumber; h++) //&& rxCBs.primaryon == 0)
+				{
+
+				cantransmit = fftscan(suce, usrp, noisefloor, fftinfo);
+				if(cantransmit==1){
+					primaryoffcounter++;
+				}
+				else{
+					primaryoncounter++;
+				}
+				//current = std::clock();
+				//time = ((float)(current-start))/CLOCKS_PER_SEC;
+			}
+		
+			if(primaryoffcounter < primaryoncounter){
+				write(rxCBs.client, &emsg, sizeof(emsg));
+				emsg.number++;
 	
+			}
+		}
+	}	
 }
 
 //If a receiver is being used but not DSA then a basic receiver is made. It does nothing
