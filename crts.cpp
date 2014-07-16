@@ -4966,6 +4966,8 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		getchar();
 		printf("%d\n", fftinfo.testnumber);
 		while(true){
+			primaryoffcounter = 0;
+			primaryoncounter = 0;
 			for(int h=0; h<fftinfo.testnumber; h++) //&& rxCBs.primaryon == 0)
 				{
 				cantransmit = 0;
