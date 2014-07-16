@@ -4738,7 +4738,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				//finishes without a new primary transmission switching it to 1 then
 				//the secondary user will assume it has stopped and resume transmitting
 				//This while loop below will run for secondaryscantime seconds
-				while(secondaryscantime > time)
+				while(2.0 > time)//secondaryscantime > time)
 					{
 					current = std::clock();
 					time = (current-start)/CLOCKS_PER_SEC;
