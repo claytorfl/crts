@@ -1510,6 +1510,14 @@ void * feedbackThread(void * v_ptr){
 					//printf("Primary receiver received secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					secondary++;
 				}
+				if(m_ptr->purpose == 'u'){
+					//time = std::clock();
+					//printf("Primary receiver received secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+					msg.purpose = 'u';
+					msg.number = *bfi_ptr->msgnumber;
+					write(client, (const void *)&msg, sizeof(msg));
+					(*bfi_ptr->msgnumber)++;
+				}
 				//Feedback from primary transmission
 				if(m_ptr->purpose == 'f'){;
 					//time = std::clock();
@@ -1550,7 +1558,6 @@ void * feedbackThread(void * v_ptr){
 						msg.feed = basicfb;
 						msg.purpose = 'f';
 						msg.number = *bfi_ptr->msgnumber;
-						//printf("%d\n", msg.number);
 						write(client, (const void *)&msg, sizeof(msg));
 						(*bfi_ptr->msgnumber)++;
 						basicfb.header_valid = 0;
@@ -1593,6 +1600,14 @@ void * feedbackThread(void * v_ptr){
 					
 					//printf("Secondary receiver received secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					secondary++;
+				}
+				if(m_ptr->purpose == 'u'){
+					//time = std::clock();
+					//printf("Primary receiver received secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+					msg.purpose = 'u';
+					msg.number = *bfi_ptr->msgnumber;
+					write(client, (const void *)&msg, sizeof(msg));
+					(*bfi_ptr->msgnumber)++;
 				}
 				//Feedback from secondary transmission
 				if(m_ptr->purpose == 'F'){;
@@ -2377,6 +2392,15 @@ int dsaCallback(unsigned char *  _header,
 		received = 'F';
 		//printf("\n\nSecondary transmission\n\n");
 	}
+	if(ones==0 and zeroes == 0){
+		struct message mess;
+		mess.type = dsaCBs_ptr->usrptype;
+		mess.purpose = 'u';
+		mess.number = dsaCBs_ptr->number;
+		mess.client = dsaCBs_ptr->client;
+		++dsaCBs_ptr->number;
+		write(dsaCBs_ptr->client, (void*)&mess, sizeof(mess));
+	}
 
     // Variables for checking number of errors 
     unsigned int payloadByteErrors  =   0;
@@ -2440,13 +2464,6 @@ int dsaCallback(unsigned char *  _header,
 		mess.number = dsaCBs_ptr->number;
 		mess.client = dsaCBs_ptr->client;
 		++dsaCBs_ptr->number;
-		/*if(dsaCBs_ptr->usrptype == 's' and dsaCBs_ptr->primaryon == 1 and mess.purpose == 'f'){
-			return 1;
-		}
-		if(mess.purpose== 'f' and dsaCBs_ptr->usrptype == 's'){
-			dsaCBs_ptr->primaryon = 1;
-			printf("Primary message detected\n");
-		}*/
 		write(dsaCBs_ptr->client, (void*)&mess, sizeof(mess));
 	}
 
@@ -4844,6 +4861,7 @@ if(dsa && isController){
 	int pcfb = 0;
 	int sfb = 0;
 	int scfb = 0;
+	int unknownheader = 0;
 	float headertfb = 0.0;
 	float headerpfb = 0.0;
 	float headersfb = 0.0;
@@ -4964,6 +4982,9 @@ if(dsa && isController){
 						printf("Primary user stopped transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 						fprintf(dataFile, "Primary user stopped transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					}
+					if(msg.purpose == 'u'){
+						unknownheader++;
+					}
 					if(msg.purpose == 'F'){
 						primary = 0;
 						latestprimary = msg.number;
@@ -5024,12 +5045,9 @@ if(dsa && isController){
 							rendcounter++;
 							totalrendevoustime += rendevoustime;
 						}
-						if(primary == 1){
-							printf("False Alarm\n");
-							fprintf(dataFile, "False Alarm\n");
-							++totalfalsealarm;
-						}
-							
+					}
+					if(msg.purpose == 'u'){
+						unknownheader++;
 					}
 					if(msg.purpose == 'r'){
 						secondary = 0;
@@ -5091,6 +5109,7 @@ if(dsa && isController){
 		}
 	};
 	printf("Testing Complete\n");
+	printf("%d unidentifiable headers\n\n", unknownheader);
 	falsealarmprob = totalfalsealarm/totalcycles;
 	printf("Probability of False Alarm: %f\n", falsealarmprob);
 	fprintf(dataFile, "Probability of False Alarm: %f\n", falsealarmprob);
