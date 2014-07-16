@@ -286,9 +286,9 @@ struct broadcastfeedbackinfo{
 
 //Struct for passing variables to fftscan function
 struct fftStruct {
-	int bandwidth;
+	float bandwidth;
 	int repeat;
-	int channelbandwidth;
+	float channelbandwidth;
 	int rate;
 	int numbins;
 	char * antennae;
@@ -4217,13 +4217,13 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 	if (setting != NULL)
 	{
 		// Read the strings
-		if (config_setting_lookup_int(setting, "bandwidth", &tmpI))
+		if (config_setting_lookup_float(setting, "bandwidth", &tmpD))
 		{
-		fftinfo.bandwidth = tmpI;
+		fftinfo.bandwidth = tmpD;
 		}
-		if (config_setting_lookup_int(setting, "channelbandwidth", &tmpI))
+		if (config_setting_lookup_float(setting, "channelbandwidth", &tmpD))
 		{
-		fftinfo.channelbandwidth = tmpI;
+		fftinfo.channelbandwidth = tmpD;
 		}
 		if (config_setting_lookup_int(setting, "rate", &tmpI))
 		{

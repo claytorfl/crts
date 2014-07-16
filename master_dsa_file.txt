@@ -9,8 +9,8 @@ detectiontype = "r";
 
 fft=
 {
-bandwidth = 1000000;
-channelbandwidth = 500000;
+bandwidth = 1000000.0;
+channelbandwidth = 500000.0;
 rate = 195312;
 numbins = 1024;
 antennae = "RX2";
