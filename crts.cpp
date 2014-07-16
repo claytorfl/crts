@@ -4174,7 +4174,7 @@ if(dsa==1 && usingUSRPs && !isController){
 					{
 					isLastSymbol = txcvr.write_symbol();
 					if(usescenario){
-					enactScenarioBaseband(txcvr.fgbuffer, ce, sc);}
+					enactScenarioBaseband(txcvr.fgbuffer, puce, sc);}
 					txcvr.transmit_symbol();
 					}
 				usleep(100);
@@ -4844,6 +4844,16 @@ if(dsa && isController){
 	int pcfb = 0;
 	int sfb = 0;
 	int scfb = 0;
+	float headertfb = 0.0;
+	float headerpfb = 0.0;
+	float headersfb = 0.0;
+	float headerpcfb = 0.0;
+	float headerscfb = 0.0;
+	float payloadtfb = 0.0;
+	float payloadpfb = 0.0;
+	float payloadsfb = 0.0;
+	float payloadpcfb = 0.0;
+	float payloadscfb = 0.0;
 	int latestprimary = 0;
 	int latestsecondary = 0;
 	float rendcounter = 0.0;
@@ -4971,6 +4981,20 @@ if(dsa && isController){
 							"pudata:", msg.feed.iteration,  msg.feed.evm, msg.feed.rssi, msg.feed.payloadByteErrors,
 							msg.feed.payloadBitErrors, 1, 1.0, 1.0);
 						//printf("%d\n", msg.feed.payloadBitErrors);
+						if(msg.feed.header_valid==1){
+							headertfb++;
+							headerpfb++;
+							if(secondary==1){
+								headerpcfb++;
+							}
+						}
+						if(msg.feed.payload_valid==1){
+							payloadtfb++;
+							payloadpfb++;
+							if(secondary==1){
+								payloadpcfb++;
+							}
+						}
 						totalfb = feedbackadder(totalfb, msg.feed);
 						tfb++;
 						primaryfb = feedbackadder(primaryfb, msg.feed);
@@ -5037,6 +5061,20 @@ if(dsa && isController){
 						fprintf(dataFile, "%-13s %-10i %-10.2f %-13.2f %-15.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
 							"sudata:", msg.feed.iteration,  msg.feed.evm, msg.feed.rssi, msg.feed.payloadByteErrors,
 							msg.feed.payloadBitErrors, 1, 1.0, 1.0);
+						if(msg.feed.header_valid==1){
+							headertfb++;
+							headersfb++;
+							if(primary==1){
+								headerscfb++;
+							}
+						}
+						if(msg.feed.payload_valid==1){
+							payloadtfb++;
+							payloadsfb++;
+							if(primary==1){
+								payloadscfb++;
+							}
+						}
 						totalfb = feedbackadder(totalfb, msg.feed);
 						totalfb = feedbackadder(totalfb, msg.feed);
 						tfb++;
@@ -5123,6 +5161,8 @@ if(dsa && isController){
 	secondaryfb.block_flag /= sfb;}
     fprintf(dataFile, "%-13s %-10s %-10s %-13s %-15s %-12s %-12s %-20s %-19s\n", "linetype","frameNum","evm (dB)","rssi (dB)","Byte Errors","Bit Errors", "Throughput", "Spectral Efficiency", "Average Goal Value");
 	printf("\n%d Total Frames\nAverage Total Frame Feedback\n\n", tfb);
+	printf("Total Frame Valid Header Percentage: %%%f\n", headertfb/tfb);
+	printf("Total Frame Valid Payload Percentage: %%%f\n", payloadtfb/tfb);
 	fprintf(dataFile, "\n%d Total Frames\nAverage Total Frame Feedback\n\n", tfb);
 	fprintf(dataFile, "%-13s %-10i %-10.2f %-13.2f %-15.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
 		"totalframes:", totalfb.iteration,  totalfb.evm, totalfb.rssi, totalfb.payloadByteErrors,
