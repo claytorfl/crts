@@ -2729,7 +2729,8 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
     //unsigned int Moving_Avg_size = 4;
 	//unsigned int navrg = fftinfo.numavrg;
     double rate = fftinfo.rate;
-	double freq = ce.frequency;
+	double freq = (double)ce.frequency;
+	printf("%f\n", freq);
 	double gain = ce.uhd_txgain_dB;
 	double bw = fftinfo.bandwidth;//ce.bandwidth;
 	double chbw = fftinfo.channelbandwidth;
