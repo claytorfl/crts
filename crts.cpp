@@ -5066,56 +5066,56 @@ if(dsa && isController){
 	averagerendevoustime = totalrendevoustime/rendcounter;
 	printf("Average Rendezvous Time: %f seconds\n", ((float)averagerendevoustime)/CLOCKS_PER_SEC);
 	fprintf(dataFile, "Average Rendezvous Time: %f seconds\n", ((float)averagerendevoustime)/CLOCKS_PER_SEC);
-	if(tfb<0){
-	totalfb.header_valid /= tfb;
-	totalfb.payload_valid /= tfb;
-   	totalfb.payload_len /= tfb;
-	totalfb.payloadByteErrors /= tfb;
-   	totalfb.payloadBitErrors /= tfb;
+	if(tfb>0){
+	totalfb.header_valid = (int)ceil((float)totalfb.header_valid/(float)tfb);
+	totalfb.payload_valid = (int)ceil((float)totalfb.payload_valid/(float)tfb);
+   	totalfb.payload_len = (int)ceil((float)totalfb.payload_len/(float)tfb);
+	totalfb.payloadByteErrors = (int)ceil((float)totalfb.payloadByteErrors/(float)tfb);
+   	totalfb.payloadBitErrors = (int)ceil((float)totalfb.payloadBitErrors/(float)tfb);
 	totalfb.iteration /= tfb;
    	totalfb.evm /= tfb;
 	totalfb. rssi /= tfb;
 	totalfb.cfo /= tfb;
 	totalfb.block_flag /= tfb;}
 	if(scfb>0){
-	secondarycollisionfb.header_valid /= scfb;
-	secondarycollisionfb.payload_valid /= scfb;
-   	secondarycollisionfb.payload_len /= scfb;
-	secondarycollisionfb.payloadByteErrors /= scfb;
-   	secondarycollisionfb.payloadBitErrors /= scfb;
+	secondarycollisionfb.header_valid = (int)ceil((float)secondarycollisionfb.header_valid/(float)scfb);
+	secondarycollisionfb.payload_valid = (int)ceil((float)secondarycollisionfb.payload_valid/(float)scfb);
+   	secondarycollisionfb.payload_len = (int)ceil((float)secondarycollisionfb.payload_len/(float)scfb);
+	secondarycollisionfb.payloadByteErrors = (int)ceil((float)secondarycollisionfb.payloadByteErrors/(float)scfb);
+   	secondarycollisionfb.payloadBitErrors = (int)ceil((float)secondarycollisionfb.payloadBitErrors/(float)scfb);
 	secondarycollisionfb.iteration /= scfb;
    	secondarycollisionfb.evm /= scfb;
 	secondarycollisionfb. rssi /= scfb;
 	secondarycollisionfb.cfo /= scfb;
 	secondarycollisionfb.block_flag /= scfb;}
 	if(pfb>0){
-	primaryfb.header_valid /= pfb;
-	primaryfb.payload_valid /= pfb;
-   	primaryfb.payload_len /= pfb;
-	primaryfb.payloadByteErrors /= pfb;
-   	primaryfb.payloadBitErrors /= pfb;
+	primaryfb.header_valid = (int)ceil((float)primaryfb.header_valid/(float)pfb);
+	primaryfb.payload_valid = (int)ceil((float)primaryfb.payload_valid/(float)pfb);
+   	primaryfb.payload_len = (int)ceil((float)primaryfb.payload_len/(float)pfb);
+	primaryfb.payloadByteErrors = (int)ceil((float)primaryfb.payloadByteErrors/(float)pfb);
+   	primaryfb.payloadBitErrors = (int)ceil((float)primaryfb.payloadBitErrors/(float)pfb);
 	primaryfb.iteration /= pfb;
    	primaryfb.evm /= pfb;
 	primaryfb. rssi /= pfb;
 	primaryfb.cfo /= pfb;
 	primaryfb.block_flag /= pfb;}
 	if(pcfb>0){
-	primarycollisionfb.header_valid /= pcfb;
-	primarycollisionfb.payload_valid /= pcfb;
-   	primarycollisionfb.payload_len /= pcfb;
-	primarycollisionfb.payloadByteErrors /= pcfb;
-   	primarycollisionfb.payloadBitErrors /= pcfb;
+	primarycollisionfb.header_valid = (int)ceil((float)primarycollisionfb.header_valid/(float)pcfb);
+	primarycollisionfb.payload_valid = (int)ceil((float)primarycollisionfb.payload_valid/(float)pcfb);
+   	primarycollisionfb.payload_len = (int)ceil((float)primarycollisionfb.payload_len/(float)pcfb);
+	primarycollisionfb.payloadByteErrors = (int)ceil((float)primarycollisionfb.payloadByteErrors/(float)pcfb);
+   	primarycollisionfb.payloadBitErrors = (int)ceil((float)primarycollisionfb.payloadBitErrors/(float)pcfb);
 	primarycollisionfb.iteration /= pcfb;
    	primarycollisionfb.evm /= pcfb;
 	primarycollisionfb. rssi /= pcfb;
 	primarycollisionfb.cfo /= pcfb;
 	primarycollisionfb.block_flag /= pcfb;}
 	if(sfb>0){
-	secondaryfb.header_valid /= sfb;
-	secondaryfb.payload_valid /= sfb;
-   	secondaryfb.payload_len /= sfb;
-	secondaryfb.payloadByteErrors /= sfb;
-   	secondaryfb.payloadBitErrors /= sfb;
+	secondaryfb.header_valid = (int)ceil((float)secondaryfb.header_valid/(float)sfb);
+	secondaryfb.payload_valid = (int)ceil((float)secondaryfb.payload_valid/(float)sfb);
+   	secondaryfb.payload_len = (int)ceil((float)secondaryfb.payload_len/(float)sfb);
+	secondaryfb.payloadByteErrors = (int)ceil((float)secondaryfb.payloadByteErrors/(float)sfb);
+   	secondaryfb.payloadBitErrors = (int)ceil((float)secondaryfb.payloadBitErrors/(float)sfb);
 	secondaryfb.iteration /= sfb;
    	secondaryfb.evm /= sfb;
 	secondaryfb. rssi /= sfb;
