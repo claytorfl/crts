@@ -1513,7 +1513,6 @@ void * feedbackThread(void * v_ptr){
 		//printf("%d\n", *bfi_ptr->msgnumber);
 		//When a new message is received
 		if(m_ptr->msgreceived == 1){
-			printf("Message\n");
 			//If the message is from a primary receiver
 			if(m_ptr->type == 'p'){
 				//index = finder(clientlist, &clientlistlength, msg.client); 
@@ -1598,7 +1597,6 @@ void * feedbackThread(void * v_ptr){
 				}
 			}
 			if(m_ptr->type == 's'){
-				printf("s message\n");
 				//index = finder(clientlist, &clientlistlength, msg.client); 
 				//Receiver saying that it received a primary transmission
 				if(m_ptr->purpose == 'P'){
@@ -1678,7 +1676,6 @@ void * feedbackThread(void * v_ptr){
 				}
 				//Receiver giving feedback from primary transmission
 				if(m_ptr->purpose == 'f'){
-					printf("s f message\n");
 					//time = std::clock();
 					bfi_ptr->primaryon = 1;
 					//printf("Received feedback from secondary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
@@ -2823,7 +2820,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
 	else{
 		cantransmit = 1;
 	}
-	printf("%d %f %f\n", cantransmit, totalpower, noisefloor);
+	//printf("%d %f %f\n", cantransmit, totalpower, noisefloor);
 	//printf("%d %f %f\n", cantransmit, centeraverage, noisefloor);
 
 	return cantransmit;
@@ -4738,7 +4735,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 				//finishes without a new primary transmission switching it to 1 then
 				//the secondary user will assume it has stopped and resume transmitting
 				//This while loop below will run for secondaryscantime seconds
-				while(2.0 > time)//secondaryscantime > time)
+				while(secondaryscantime > time)
 					{
 					current = std::clock();
 					time = (current-start)/CLOCKS_PER_SEC;
@@ -4963,8 +4960,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		printf("This insures that detection of the SU's energy won't cause a false detection\n");
 		noisefloor = noise_floor(suce, usrp, fftinfo);
 		printf("\nNoise floor found! Press any key to start energy detector\n");
-		getchar();
-		printf("%d\n", fftinfo.testnumber);
+		getchar();;
 		while(true){
 			primaryoffcounter = 0;
 			primaryoncounter = 0;
@@ -4983,7 +4979,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 			}
 		
 			if(primaryoffcounter < primaryoncounter){
-				printf("Message sent %c %c %d\n", emsg.type, emsg.purpose, emsg.number);				
+				//printf("Message sent %c %c %d\n", emsg.type, emsg.purpose, emsg.number);				
 				write(rxCBs.client, &emsg, sizeof(emsg));
 				emsg.number++;
 	
