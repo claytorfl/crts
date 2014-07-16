@@ -4970,6 +4970,7 @@ if(dsa && isController){
 						fprintf(dataFile, "%-13s %-10i %-10.2f %-13.2f %-15.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
 							"pudata:", msg.feed.iteration,  msg.feed.evm, msg.feed.rssi, msg.feed.payloadByteErrors,
 							msg.feed.payloadBitErrors, 1, 1.0, 1.0);
+						printf("%d\n", msg.feed.payloadBitErrors);
 						totalfb = feedbackadder(totalfb, msg.feed);
 						tfb++;
 						primaryfb = feedbackadder(primaryfb, msg.feed);
