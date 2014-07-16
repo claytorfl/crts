@@ -5109,7 +5109,7 @@ if(dsa && isController){
 		}
 	};
 	printf("Testing Complete\n");
-	printf("%d unidentifiable headers\n\n", unknownheader);
+	printf("\n%d unidentifiable headers\n\n", unknownheader);
 	falsealarmprob = totalfalsealarm/totalcycles;
 	printf("Probability of False Alarm: %f\n", falsealarmprob);
 	fprintf(dataFile, "Probability of False Alarm: %f\n", falsealarmprob);
