@@ -4307,7 +4307,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		}
 	}
 	setting = config_lookup(&cfg, "SU");
-	if (setting != NULL && secondary == 1)
+	if (setting != NULL && (secondary == 1 or energy==1))
 	{
 		// Read the strings
 		if (config_setting_lookup_float(setting, "bursttime", &tmpD))
