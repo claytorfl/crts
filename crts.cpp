@@ -4207,6 +4207,7 @@ if(dsa==1 && usingUSRPs && !isController){
 		mess.purpose = 'F';
 		mess.number = primarymsgnumber;
 		write(dsaCBs.client, (const void*)&mess, sizeof(mess));
+		return 1;
 	}
 
 	//If it is a secondary user then the node acts as a secondary transmitter
