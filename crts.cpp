@@ -2730,7 +2730,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
 	//unsigned int navrg = fftinfo.numavrg;
     double rate = fftinfo.rate;
 	double freq = (double)ce.frequency;
-	printf("%f\n", freq);
+	//printf("%f\n", freq);
 	double gain = ce.uhd_txgain_dB;
 	double bw = fftinfo.bandwidth;//ce.bandwidth;
 	double chbw = fftinfo.channelbandwidth;
@@ -2820,7 +2820,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
 	else{
 		cantransmit = 1;
 	}
-	printf("%d %f %f\n", cantransmit, totalpower, noisefloor);
+	//printf("%d %f %f\n", cantransmit, totalpower, noisefloor);
 	//printf("%d %f %f\n", cantransmit, centeraverage, noisefloor);
 
 	return cantransmit;
@@ -4948,7 +4948,7 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
 		struct message emsg;
 		emsg.type = 's';
-		emsg.purpose = 'P';
+		emsg.purpose = 'f';
 		emsg.number = 1;
 		int cantransmit = 0;
 		int primaryoncounter = 0;
@@ -4959,12 +4959,12 @@ if(dsa==1 && usingUSRPs && !receiver && !isController){
 		printf("\nMake sure the secondary transmitter is transmitting before finding the noise floor\n");
 		printf("This insures that detection of the SU's energy won't cause a false detection\n");
 		noisefloor = noise_floor(suce, usrp, fftinfo);
-		printf("\nNoise floor found! Press any key to start energy detector %f\n", noisefloor);
+		printf("\nNoise floor found! Press any key to start energy detector");
 		getchar();
 		while(true){
 			for(int h=0; h<fftinfo.testnumber; h++) //&& rxCBs.primaryon == 0)
 				{
-
+				cantransmit = 0;
 				cantransmit = fftscan(suce, usrp, noisefloor, fftinfo);
 				if(cantransmit==1){
 					primaryoffcounter++;
