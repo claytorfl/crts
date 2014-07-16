@@ -32,7 +32,7 @@ ce = "primary.txt";
 uninterruptedframes = 1;
 adapt = 0;
 usescenario = 1;
-scenario = "AWGN.txt"
+scenario = "sc1.txt"
 };
 
 SU=
