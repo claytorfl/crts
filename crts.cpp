@@ -3884,6 +3884,7 @@ if(dsa==1 && usingUSRPs && !isController){
     dsaCBs.serverAddr = rxCBs.serverAddr;
     dsaCBs.verbose = rxCBs.verbose;
 	dsaCBs.rx_ms_ptr = &rx_ms;
+	dsaCBs.client = rxCBs.client;
 	pthread_t receiverfeedbackThread;
 	struct message mess;
 	struct fftStruct fftinfo;
