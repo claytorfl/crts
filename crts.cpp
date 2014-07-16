@@ -5159,34 +5159,62 @@ if(dsa && isController){
 	secondaryfb. rssi /= sfb;
 	secondaryfb.cfo /= sfb;
 	secondaryfb.block_flag /= sfb;}
+	if(tfb<1)
+	tfb=1;
+	if(pfb<1)
+	pfb=1;
+	if(pcfb<1)
+	pcfb=1;
+	if(sfb<1)
+	sfb=1;
+	if(scfb<1)
+	scfb=1;
     fprintf(dataFile, "%-13s %-10s %-10s %-13s %-15s %-12s %-12s %-20s %-19s\n", "linetype","frameNum","evm (dB)","rssi (dB)","Byte Errors","Bit Errors", "Throughput", "Spectral Efficiency", "Average Goal Value");
 	printf("\n%d Total Frames\nAverage Total Frame Feedback\n\n", tfb);
-	printf("Total Frame Valid Header Percentage: %%%f\n", headertfb/tfb);
-	printf("Total Frame Valid Payload Percentage: %%%f\n", payloadtfb/tfb);
+	printf("Total Frame Valid Header Percentage: %%%f\n", headertfb/tfb * 100);
+	printf("Total Frame Valid Payload Percentage: %%%f\n", payloadtfb/tfb * 100);
+	fprintf(dataFile, "Total Frame Valid Header Percentage: %%%f\n", headertfb/tfb * 100);
+	fprintf(dataFile, "Total Frame Valid Payload Percentage: %%%f\n", payloadtfb/tfb * 100);
 	fprintf(dataFile, "\n%d Total Frames\nAverage Total Frame Feedback\n\n", tfb);
 	fprintf(dataFile, "%-13s %-10i %-10.2f %-13.2f %-15.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
 		"totalframes:", totalfb.iteration,  totalfb.evm, totalfb.rssi, totalfb.payloadByteErrors,
 		totalfb.payloadBitErrors, 1, 1.0, 1.0);
 	feedbackStruct_print(&totalfb);
 	printf("\n%d Primary Frames\nAverage Primary Frame Feedback\n\n", pfb);
+	printf("Primary Frame Valid Header Percentage: %%%f\n", headerpfb/pfb * 100);
+	printf("Primary Frame Valid Payload Percentage: %%%f\n", payloadpfb/pfb * 100);
+	fprintf(dataFile, "Primary Frame Valid Header Percentage: %%%f\n", headerpfb/pfb * 100);
+	fprintf(dataFile, "Primary Frame Valid Payload Percentage: %%%f\n", payloadpfb/pfb * 100);
 	fprintf(dataFile, "\n%d Primary Frames\nAverage Primary Frame Feedback\n\n", pfb);
 	fprintf(dataFile, "%-13s %-10i %-10.2f %-13.2f %-15.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
 		"puframes:", primaryfb.iteration,  primaryfb.evm, primaryfb.rssi, primaryfb.payloadByteErrors,
 		primaryfb.payloadBitErrors, 1, 1.0, 1.0);
 	feedbackStruct_print(&primaryfb);
 	printf("\n%d Primary Collision Frames\nAverage Primary Collision Frame Feedback\n\n", pcfb);
+	printf("Primary Collision Frame Valid Header Percentage: %%%f\n", headerpcfb/pcfb * 100);
+	printf("Primary Collision Frame Valid Payload Percentage: %%%f\n", payloadpcfb/pcfb * 100);
+	fprintf(dataFile, "Primary Collision Frame Valid Header Percentage: %%%f\n", headerpcfb/pcfb * 100);
+	fprintf(dataFile, "Primary Collision Frame Valid Payload Percentage: %%%f\n", payloadpcfb/pcfb * 100);
 	fprintf(dataFile, "\n%d Primary Collision Frames\nAverage Primary Collision Frame Feedback\n\n", pcfb);
 	fprintf(dataFile,"%-13s %-10i %-10.2f %-13.2f %-15.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
 		"puCframes:", primarycollisionfb.iteration,  primarycollisionfb.evm, primarycollisionfb.rssi, primarycollisionfb.payloadByteErrors,
 		primarycollisionfb.payloadBitErrors, 1, 1.0, 1.0);
 	feedbackStruct_print(&primarycollisionfb);
 	printf("\n%d Secondary Frames\nAverage Secondary Frame Feedback\n\n", sfb);
+	printf("Secondary Frame Valid Header Percentage: %%%f\n", headersfb/sfb * 100);
+	printf("Secondary Frame Valid Payload Percentage: %%%f\n", payloadsfb/sfb * 100);
+	fprintf(dataFile, "Secondary Frame Valid Header Percentage: %%%f\n", headersfb/sfb * 100);
+	fprintf(dataFile, "Secondary Frame Valid Payload Percentage: %%%f\n", payloadsfb/sfb * 100);
 	fprintf(dataFile, "\n%d Secondary Frames\nAverage Secondary Frame Feedback\n\n", sfb);
 	fprintf(dataFile, "%-13s %-10i %-10.2f %-13.2f %-15.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
 		"suframes:", secondaryfb.iteration,  secondaryfb.evm, secondaryfb.rssi, secondaryfb.payloadByteErrors,
 		secondaryfb.payloadBitErrors, 1, 1.0, 1.0);
 	feedbackStruct_print(&secondaryfb);
 	printf("\n%d Secondary Collision Frames\nAverage Secondary Collision Frame Feedback\n\n", scfb);
+	printf("Secondary Collision Frame Valid Header Percentage: %%%f\n", headerscfb/scfb * 100);
+	printf("Secondary Collision Frame Valid Payload Percentage: %%%f\n", payloadscfb/scfb * 100);
+	fprintf(dataFile, "Secondary Collision Frame Valid Header Percentage: %%%f\n", headerscfb/scfb * 100);
+	fprintf(dataFile, "Secondary Collision Frame Valid Payload Percentage: %%%f\n", payloadscfb/scfb * 100);
 	fprintf(dataFile, "\n%d Secondary Collision Frames\nAverage Secondary Collision Frame Feedback\n\n", scfb);
 	fprintf(dataFile,"%-13s %-10i %-10.2f %-13.2f %-15.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
 		"suCframes:", secondarycollisionfb.iteration,  secondarycollisionfb.evm, secondarycollisionfb.rssi, secondarycollisionfb.payloadByteErrors,
