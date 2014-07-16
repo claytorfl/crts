@@ -1513,6 +1513,7 @@ void * feedbackThread(void * v_ptr){
 		//printf("%d\n", *bfi_ptr->msgnumber);
 		//When a new message is received
 		if(m_ptr->msgreceived == 1){
+			printf("Message");
 			//If the message is from a primary receiver
 			if(m_ptr->type == 'p'){
 				//index = finder(clientlist, &clientlistlength, msg.client); 
@@ -1597,6 +1598,7 @@ void * feedbackThread(void * v_ptr){
 				}
 			}
 			if(m_ptr->type == 's'){
+				printf("s message");
 				//index = finder(clientlist, &clientlistlength, msg.client); 
 				//Receiver saying that it received a primary transmission
 				if(m_ptr->purpose == 'P'){
@@ -1675,7 +1677,8 @@ void * feedbackThread(void * v_ptr){
 						
 				}
 				//Receiver giving feedback from primary transmission
-				if(m_ptr->purpose == 'f'){;
+				if(m_ptr->purpose == 'f'){
+					printf("s f message");
 					//time = std::clock();
 					bfi_ptr->primaryon = 1;
 					//printf("Received feedback from secondary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
