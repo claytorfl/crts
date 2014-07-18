@@ -2592,7 +2592,6 @@ float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, s
     //unsigned int Moving_Avg_size = 4;
 	//unsigned int navrg = fftinfo.numavrg;
     double rate = fftinfo.rate;
-	printf("%f\n", rate);
 	double freq = ce.frequency;
 	double gain = ce.uhd_txgain_dB;
 	double bw = fftinfo.bandwidth;//ce.bandwidth;
@@ -2694,7 +2693,7 @@ int main(int argc, char ** argv){
     // TEMPORARY VARIABLE
     int usingUSRPs = 0;
 	int tester = 0;
-
+	
     int verbose = 1;
     int verbose_explicit = 0;
     int dataToStdout = 0;    
