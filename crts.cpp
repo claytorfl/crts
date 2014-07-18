@@ -4855,22 +4855,30 @@ if(dsa && isController){
 	struct feedbackStruct primarycollisionfb;
 	struct feedbackStruct secondarycollisionfb;
 	struct feedbackStruct secondaryfb;
+	struct feedbackStruct primarysafefb;
+	struct feedbackStruct secondarysafefb;
 	int tfb = 0;
 	int pfb = 0;
 	int pcfb = 0;
 	int sfb = 0;
 	int scfb = 0;
+	int psfb = 0;
+	int ssfb = 0;
 	int unknownheader = 0;
 	float headertfb = 0.0;
 	float headerpfb = 0.0;
 	float headersfb = 0.0;
 	float headerpcfb = 0.0;
 	float headerscfb = 0.0;
+	float headerpsfb = 0.0;
+	float headerssfb = 0.0;
 	float payloadtfb = 0.0;
 	float payloadpfb = 0.0;
 	float payloadsfb = 0.0;
 	float payloadpcfb = 0.0;
 	float payloadscfb = 0.0;
+	float payloadpsfb = 0.0;
+	float payloadssfb = 0.0;
 	int latestprimary = 0;
 	int latestsecondary = 0;
 	float rendcounter = 0.0;
@@ -4945,6 +4953,26 @@ if(dsa && isController){
 	secondaryfb. rssi = 0.0;
 	secondaryfb.cfo = 0.0;
 	secondaryfb.block_flag = 0;
+	primarysafefb.header_valid = 0;
+	primarysafefb.payload_valid = 0;
+   	primarysafefb.payload_len = 0;
+	primarysafefb.payloadByteErrors = 0;
+   	primarysafefb.payloadBitErrors = 0;
+	primarysafefb.iteration = 0;
+   	primarysafefb.evm = 0.0;
+	primarysafefb. rssi = 0.0;
+	primarysafefb.cfo = 0.0;
+	primarysafefb.block_flag = 0;	
+	secondarysafefb.header_valid = 0;
+	secondarysafefb.payload_valid = 0;
+   	secondarysafefb.payload_len = 0;
+	secondarysafefb.payloadByteErrors = 0;
+   	secondarysafefb.payloadBitErrors = 0;
+	secondarysafefb.iteration = 0;
+   	secondarysafefb.evm = 0.0;
+	secondarysafefb. rssi = 0.0;
+	secondarysafefb.cfo = 0.0;
+	secondarysafefb.block_flag = 0;
 		
 	std::clock_t primaryofftime = 0;
 	std::clock_t primaryontime = 0;
@@ -5007,12 +5035,18 @@ if(dsa && isController){
 							if(secondary==1){
 								headerpcfb++;
 							}
+							else{
+								headerpsfb++;
+							}
 						}
 						if(msg.feed.payload_valid==1){
 							payloadtfb++;
 							payloadpfb++;
 							if(secondary==1){
 								payloadpcfb++;
+							}
+							else{
+								payloadpsfb++;
 							}
 						}
 						totalfb = feedbackadder(totalfb, msg.feed);
@@ -5022,6 +5056,10 @@ if(dsa && isController){
 						if(secondary==1){
 							primarycollisionfb = feedbackadder(primarycollisionfb, msg.feed);
 							pcfb++;
+						}
+						else{
+							primarysafefb = feedbackadder(primarysafefb, msg.feed);
+							psfb++;
 						}
 					}
 				}
@@ -5084,12 +5122,18 @@ if(dsa && isController){
 							if(primary==1){
 								headerscfb++;
 							}
+							else{
+								headerssfb++;
+							}
 						}
 						if(msg.feed.payload_valid==1){
 							payloadtfb++;
 							payloadsfb++;
 							if(primary==1){
 								payloadscfb++;
+							}
+							else{
+								payloadssfb++;
 							}
 						}
 						totalfb = feedbackadder(totalfb, msg.feed);
@@ -5100,6 +5144,10 @@ if(dsa && isController){
 						if(primary==1){
 							secondarycollisionfb = feedbackadder(secondarycollisionfb, msg.feed);
 							scfb++;
+						}
+						else{
+							secondarysafefb = feedbackadder(secondarysafefb, msg.feed);
+							ssfb++;
 						}
 					}
 				}
@@ -5177,6 +5225,28 @@ if(dsa && isController){
 	secondaryfb. rssi /= sfb;
 	secondaryfb.cfo /= sfb;
 	secondaryfb.block_flag /= sfb;}
+	if(ssfb>0){
+	secondarysafefb.header_valid = (int)ceil((float)secondarysafefb.header_valid/(float)ssfb);
+	secondarysafefb.payload_valid = (int)ceil((float)secondarysafefb.payload_valid/(float)ssfb);
+   	secondarysafefb.payload_len = (int)ceil((float)secondarysafefb.payload_len/(float)ssfb);
+	secondarysafefb.payloadByteErrors = (int)ceil((float)secondarysafefb.payloadByteErrors/(float)ssfb);
+   	secondarysafefb.payloadBitErrors = (int)ceil((float)secondarysafefb.payloadBitErrors/(float)ssfb);
+	secondarysafefb.iteration /= ssfb;
+   	secondarysafefb.evm /= ssfb;
+	secondarysafefb. rssi /= ssfb;
+	secondarysafefb.cfo /= ssfb;
+	secondarysafefb.block_flag /= ssfb;}
+	if(psfb>0){
+	primarysafefb.header_valid = (int)ceil((float)primarysafefb.header_valid/(float)psfb);
+	primarysafefb.payload_valid = (int)ceil((float)primarysafefb.payload_valid/(float)psfb);
+   	primarysafefb.payload_len = (int)ceil((float)primarysafefb.payload_len/(float)psfb);
+	primarysafefb.payloadByteErrors = (int)ceil((float)primarysafefb.payloadByteErrors/(float)psfb);
+   	primarysafefb.payloadBitErrors = (int)ceil((float)primarysafefb.payloadBitErrors/(float)psfb);
+	primarysafefb.iteration /= psfb;
+   	primarysafefb.evm /= psfb;
+	primarysafefb. rssi /= psfb;
+	primarysafefb.cfo /= psfb;
+	primarysafefb.block_flag /= psfb;}
 	if(tfb<1)
 	tfb=1;
 	if(pfb<1)
@@ -5185,6 +5255,10 @@ if(dsa && isController){
 	pcfb=1;
 	if(sfb<1)
 	sfb=1;
+	if(psfb<1)
+	psfb=1;
+	if(ssfb<1)
+	ssfb=1;
 	if(scfb<1)
 	scfb=1;
     fprintf(dataFile, "%-13s %-10s %-10s %-13s %-15s %-12s %-12s %-20s %-19s\n", "linetype","frameNum","evm (dB)","rssi (dB)","Byte Errors","Bit Errors", "Throughput", "Spectral Efficiency", "Average Goal Value");
@@ -5208,6 +5282,16 @@ if(dsa && isController){
 		"puframes:", primaryfb.iteration,  primaryfb.evm, primaryfb.rssi, primaryfb.payloadByteErrors,
 		primaryfb.payloadBitErrors, 1, 1.0, 1.0);
 	feedbackStruct_print(&primaryfb);
+	printf("\n%d Safe Primary Frames\nAverage Safe Primary Frame Feedback\n\n", psfb);
+	printf("Safe Primary Frame Valid Header Percentage: %%%f\n", headerpsfb/psfb * 100);
+	printf("Safe Primary Frame Valid Payload Percentage: %%%f\n", payloadpsfb/psfb * 100);
+	fprintf(dataFile, "Safe Primary Frame Valid Header Percentage: %%%f\n", headerpsfb/psfb * 100);
+	fprintf(dataFile, "Safe Primary Frame Valid Payload Percentage: %%%f\n", payloadpsfb/psfb * 100);
+	fprintf(dataFile, "\n%d Primary Frames\nAverage Primary Frame Feedback\n\n", psfb);
+	fprintf(dataFile, "%-13s %-10i %-10.2f %-13.2f %-15.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
+		"puframes:", primarysafefb.iteration,  primarysafefb.evm, primarysafefb.rssi, primarysafefb.payloadByteErrors,
+		primarysafefb.payloadBitErrors, 1, 1.0, 1.0);
+	feedbackStruct_print(&primarysafefb);
 	printf("\n%d Primary Collision Frames\nAverage Primary Collision Frame Feedback\n\n", pcfb);
 	printf("Primary Collision Frame Valid Header Percentage: %%%f\n", headerpcfb/pcfb * 100);
 	printf("Primary Collision Frame Valid Payload Percentage: %%%f\n", payloadpcfb/pcfb * 100);
@@ -5228,6 +5312,16 @@ if(dsa && isController){
 		"suframes:", secondaryfb.iteration,  secondaryfb.evm, secondaryfb.rssi, secondaryfb.payloadByteErrors,
 		secondaryfb.payloadBitErrors, 1, 1.0, 1.0);
 	feedbackStruct_print(&secondaryfb);
+	printf("\n%d Safe Secondary Frames\nAverage Safe Secondary Frame Feedback\n\n", ssfb);
+	printf("Safe Secondary Frame Valid Header Percentage: %%%f\n", headerssfb/ssfb * 100);
+	printf("Safe Secondary Frame Valid Payload Percentage: %%%f\n", payloadssfb/ssfb * 100);
+	fprintf(dataFile, "Safe Secondary Frame Valid Header Percentage: %%%f\n", headerssfb/ssfb * 100);
+	fprintf(dataFile, "Safe Secondary Frame Valid Payload Percentage: %%%f\n", payloadssfb/ssfb * 100);
+	fprintf(dataFile, "\n%d Safe Secondary Frames\nAverage Secondary Frame Feedback\n\n", ssfb);
+	fprintf(dataFile, "%-13s %-10i %-10.2f %-13.2f %-15.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
+		"suframes:", secondarysafefb.iteration,  secondarysafefb.evm, secondarysafefb.rssi, secondarysafefb.payloadByteErrors,
+		secondarysafefb.payloadBitErrors, 1, 1.0, 1.0);
+	feedbackStruct_print(&secondarysafefb);
 	printf("\n%d Secondary Collision Frames\nAverage Secondary Collision Frame Feedback\n\n", scfb);
 	printf("Secondary Collision Frame Valid Header Percentage: %%%f\n", headerscfb/scfb * 100);
 	printf("Secondary Collision Frame Valid Payload Percentage: %%%f\n", payloadscfb/scfb * 100);
