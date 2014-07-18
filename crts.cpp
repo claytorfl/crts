@@ -4552,7 +4552,7 @@ if(dsa==1 && usingUSRPs && !isController){
    		txcvr.set_rx_rate(suce.bandwidth);
     	txcvr.set_rx_gain_uhd(uhd_rxgain);
 		printf("\nMake sure no transmitters are transmitting before finding the noise floor\n");
-		txcvr.start_rx();
+		//txcvr.start_rx();
 		float noisefloor = noise_floor(suce, usrp, fftinfo);
 	
 		printf("\nNoise floor found! Press any key to start secondary user");
@@ -4612,7 +4612,7 @@ if(dsa==1 && usingUSRPs && !isController){
 					postTxTasks(&puce, &msg.feed, verbose);
 				}
 				//time = 0.0;
-				txcvr.start_rx();
+				//txcvr.start_rx();
 				start = std::clock();
 
 				//The secondary user will wait in this while loop and wait and see if any
