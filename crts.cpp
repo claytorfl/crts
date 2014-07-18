@@ -2573,7 +2573,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
 		cantransmit = 1;
 	}
 	if(fftinfo.debug==1){
-	printf("%d %f %f\n", cantransmit, totalpower, noisefloor);}
+	printf("Cantransmit = %d Measured Power = %f Threshold = %f\n", cantransmit, totalpower, noisefloor);}
 	//printf("%d %f %f\n", cantransmit, centeraverage, noisefloor);
 
 	return cantransmit;
