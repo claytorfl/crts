@@ -2684,7 +2684,12 @@ int main(int argc, char ** argv){
 
     // TEMPORARY VARIABLE
     int usingUSRPs = 0;
+
+	//If tester is 1 then the test if statement is run
 	int tester = 0;
+
+	//If noise is 1 then the node will be initialized as a noise producer, doing nothing but transmitting noise
+	int noise = 0;
 	
     int verbose = 1;
     int verbose_explicit = 0;
@@ -2714,7 +2719,7 @@ int main(int argc, char ** argv){
 
     // Check Program options
     int d;
-    while ((d = getopt(argc,argv,"EQRDStBPNuhqvdrsp:ca:f:b:G:M:C:T:")) != EOF) {
+    while ((d = getopt(argc,argv,"IEQRDStBPNuhqvdrsp:ca:f:b:G:M:C:T:")) != EOF) {
         switch (d) {
         case 'u':
         case 'h':   usage();                           return 0;
@@ -2748,6 +2753,9 @@ int main(int argc, char ** argv){
 		
 		//Designate the node as an energy detector
 		case 'E':	energy = 1; dsa = 1; break;
+
+		//Designate the node as an interference maker that transmits noise
+		case 'I':	noise = 1; break;
 	
         //case 'p':   serverPort = atol(optarg);            break;
         //case 'f':   frequency = atof(optarg);           break;
@@ -4851,6 +4859,10 @@ if(dsa && isController){
 	float spectrumused = 0.0;
 	float spectrumtotal = 0.0;
 
+	//Only becomes one once the primary user first starts transmitting
+	//Makes sure spectrum efficiency measurements are started at the right time
+	int primarystart = 0;
+
 
 
 	fprintf(dataFile, "DSA CRTS\n");
@@ -5053,7 +5065,7 @@ if(dsa && isController){
 		//This if statement runs every spectrumchecktime interval and will see if the spectrum is currently being utilized
 		//by the primary or secondary user
 		if(spectrumchecktime<(float)((spectrumcurrent-spectrumstart)/CLOCKS_PER_SEC)){
-			if(primary==1 or secondarysensing == 0){
+			if(primarystart == 1 and (primary==1 or secondarysensing == 0)){
 				spectrumused++;
 			}
 			else{
@@ -5071,6 +5083,7 @@ if(dsa && isController){
 					
 					if(msg.purpose == 't'){
 						primary = 1;
+						primarystart = 1;
 						primarychange = 1;
 						latestprimary = msg.number;
 						time = std::clock();
@@ -5462,6 +5475,61 @@ if(tester==1){
 	uhd::usrp::multi_usrp::sptr usrp;
 	//fftscan(ce, usrp);
 	return 1;
+}
+
+//The node will transmit noise using the ce1.txt cognitive engine and scenario sc1.txt
+//sc1.txt will be set to have a very low SNR
+if(noise==1){
+	struct CognitiveEngine ce = CreateCognitiveEngine();
+	readCEConfigFile(&ce, (char*) "ce1.txt", 0);
+	struct Scenario sc = CreateScenario();
+	readScConfigFile(&sc, "sc1.txt", 0);
+    unsigned char * p = NULL;   // default subcarrier allocation
+    if (verbose) 
+        printf("Using ofdmtxrx\n");
+    ofdmtxrx txcvr(ce.numSubcarriers, ce.CPLen, ce.taperLen, p, rxCallback, (void*) &rxCBs);
+
+    txcvr.set_tx_freq(ce.frequency);
+    txcvr.set_tx_rate(ce.bandwidth);
+    txcvr.set_tx_gain_soft(ce.txgain_dB);
+    txcvr.set_tx_gain_uhd(ce.uhd_txgain_dB);
+
+
+    int i = 0;
+
+	//The transmission of the interferer will have a header of all 23's and a random payload
+	//Before transmission each frame will be heavily distorted by the sc1.txt scenario
+    for (i=0; i<8; i++)
+        header[i] = 23;
+
+    for (i=0; i<(signed int)ce.payloadLen; i++)
+        payload[i] = (unsigned char)msequence_generate_symbol(tx_ms,8);
+    // Set Modulation Scheme
+    if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
+    modulation_scheme ms = convertModScheme(ce.modScheme, &ce.bitsPerSym);
+
+    // Set inner forward error correction scheme
+    if (verbose) printf("Inner FEC: ");
+    fec_scheme fec0 = convertFECScheme(ce.innerFEC, verbose);
+
+    // Set outer forward error correction scheme
+    if (verbose) printf("Outer FEC: ");
+    fec_scheme fec1 = convertFECScheme(ce.outerFEC, verbose);
+	
+	while(true){
+
+        //txcvr.transmit_packet(header, payload, ce.payloadLen, ms, fec0, fec1);
+        // Replace with txcvr methods that allow access to samples:
+        txcvr.assemble_frame(header, payload, ce.payloadLen, ms, fec0, fec1);
+        int isLastSymbol = 0;
+        while(!isLastSymbol)
+        {
+            isLastSymbol = txcvr.write_symbol();
+            enactScenarioBaseband(txcvr.fgbuffer, ce, sc);
+            txcvr.transmit_symbol();
+        }
+        txcvr.end_transmit_frame();
+	}	
 }
 
 return 0;
