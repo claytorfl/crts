@@ -4843,6 +4843,15 @@ if(receiver == 1 && dsa != 1){
 }
 
 if(dsa && isController){
+	float spectrumchecktime = 0.05;
+	std::clock_t spectrumstart;
+	std::clock_t spectrumcurrent;
+	float spectrumempty = 0.0;
+	float spectrumused = 0.0;
+	float spectrumtotal = 0.0;
+
+
+
 	fprintf(dataFile, "DSA CRTS\n");
     fprintf(dataFile,  "%-13s %-10s %-10s %-13s %-15s %-12s %-12s %-20s %-19s\n", "linetype","frameNum","evm (dB)","rssi (dB)","Byte Errors","Bit Errors", "Throughput", "Spectral Efficiency", "Average Goal Value");
     fflush(dataFile);
@@ -4979,7 +4988,19 @@ if(dsa && isController){
 	//int secondary = 0;
 	std::clock_t time = std::clock();
 	int loop = 1;
+	spectrumstart = std::clock();
 	while(loop){
+		spectrumcurrent = std::clock();
+		if(spectrumchecktime<(float)((spectrumcurrent-spectrumstart)/CLOCKS_PER_SEC)){
+			if(primary==1 or secondary == 1){
+				spectrumused++;
+			}
+			else{
+				spectrumempty++;
+			}
+			spectrumtotal++;
+			spectrumstart = std::clock();
+		}
 		//printf("%d\n", latestprimary);
 		//rssi = usrp->uhd::usrp::multi_usrp::read_rssi(0);
 		//printf("%f\n", rssi);
@@ -5161,6 +5182,7 @@ if(dsa && isController){
 		}
 	};
 	printf("Testing Complete\n");
+	printf("Spectrum Usage: %%%f\n", spectrumused/spectrumtotal);
 	printf("\n%d unidentifiable headers\n\n", unknownheader);
 	falsealarmprob = totalfalsealarm/totalcycles;
 	printf("Probability of False Alarm: %f\n", falsealarmprob);
