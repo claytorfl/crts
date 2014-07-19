@@ -5503,7 +5503,7 @@ if(noise==1){
         header[i] = 23;
 
     for (i=0; i<(signed int)ce.payloadLen; i++)
-        payload[i] = (unsigned char)msequence_generate_symbol(tx_ms,8);
+        payload[i] = 1;//(unsigned char)msequence_generate_symbol(tx_ms,8);
     // Set Modulation Scheme
     if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
     modulation_scheme ms = convertModScheme(ce.modScheme, &ce.bitsPerSym);
