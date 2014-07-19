@@ -1448,7 +1448,7 @@ void * serveTCPDSAclient(void * _sc_ptr){
     return NULL;
 }
 
-//Thread that a broadcasting primary transmitter runs to interpret receiver feedback
+//Thread that a broadcasting transmitter runs to interpret receiver feedback
 void * feedbackThread(void * v_ptr){
 	struct broadcastfeedbackinfo * bfi_ptr = (struct broadcastfeedbackinfo*) v_ptr;
 	struct message * m_ptr = bfi_ptr->m_ptr;
@@ -1603,7 +1603,7 @@ void * feedbackThread(void * v_ptr){
 				}
 				//Feedback from secondary transmission
 				if(m_ptr->purpose == 'F'){
-					printf("Secondary info\n");
+					//printf("Secondary info\n");
 					secondary++;
 					//Checks if the message's client is in the client list
 					//If it isn't then the transmitter hasn't received feedback from that node for that
@@ -2454,7 +2454,7 @@ int dsaCallback(unsigned char *  _header,
 		mess.number = dsaCBs_ptr->number;
 		mess.client = dsaCBs_ptr->client;
 		++dsaCBs_ptr->number;
-		printf("%c %c %d %d\n", mess.type, mess.purpose, mess.number, mess.client);
+		//printf("%c %c %d %d\n", mess.type, mess.purpose, mess.number, mess.client);
 		write(dsaCBs_ptr->client, (void*)&mess, sizeof(mess));
 	}
 
@@ -5057,7 +5057,7 @@ if(dsa && isController){
 				}
 			}
 			if(msg.type == 'S'){
-				printf("Secondary message\n");
+				//printf("Secondary message\n");
 				if(latestsecondary<msg.number){
 					if(msg.purpose == 't'){
 						secondary = 1;
@@ -5108,7 +5108,7 @@ if(dsa && isController){
 						primarychange = 0;
 					}
 					if(msg.purpose == 'f'){
-						printf("Receieved secondary feedback\n");
+						//printf("Receieved secondary feedback\n");
 						latestsecondary = msg.number;
 						
 						//printf("Secondary feedback!!!\n");
