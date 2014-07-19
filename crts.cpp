@@ -4277,7 +4277,6 @@ if(dsa==1 && usingUSRPs && !isController){
 			mess.number = secondarymsgnumber;
 			mess.purpose = 't';
 			write(dsaCBs.client, (const void*)&mess, sizeof(mess));
-			//printf("%d\n", mess.number);
 			secondarymsgnumber++;
 			int z;
 			//If it does not sense the primary user then the secondary user will transmit
@@ -4321,11 +4320,19 @@ if(dsa==1 && usingUSRPs && !isController){
 
 				//The secondary user will wait in this while loop and wait and see if any
 				//primary users appear
+				mess.number = secondarymsgnumber;
+				mess.purpose = 'S';
+				write(dsaCBs.client, (const void*)&mess, sizeof(mess));
+				secondarymsgnumber++;
 				while(0.5 > (float)time) //&& dsaCBs.primaryon == 0)
 					{
 					current = std::clock();
 					time = ((float)(current-start))/CLOCKS_PER_SEC;
 					}
+				mess.number = secondarymsgnumber;
+				mess.purpose = 's';
+				write(dsaCBs.client, (const void*)&mess, sizeof(mess));
+				secondarymsgnumber++;
 				}
 			time = 0;
 			start = std::clock();
@@ -4452,17 +4459,6 @@ if(dsa==1 && usingUSRPs && !isController){
 					if(adapt==1)
 					postTxTasks(&suce, &msg.feed, verbose);
 				}
-				/*time = 0.0;
-				txcvr.start_rx();
-				start = std::clock();
-
-				//The secondary user will wait in this while loop and wait and see if any
-				//primary users appear
-				while(0.5 > (float)time) //&& dsaCBs.primaryon == 0)
-					{
-					current = std::clock();
-					time = ((float)(current-start))/CLOCKS_PER_SEC;
-					}*/
 			}
 			time = 0;
 			start = std::clock();
@@ -4575,64 +4571,64 @@ if(dsa==1 && usingUSRPs && !isController){
 				{
 				for(z=0; z<uninterruptedframes; z++)
 					{
-					//printf("%d\n", dsaCBs.primaryon);
-					//if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
+					//Sets modulation scheme
 					modulation_scheme ms = convertModScheme(suce.modScheme, &suce.bitsPerSym);
 
 					// Set Cyclic Redundency Check Scheme
 					//crc_scheme check = convertCRCScheme(ce.crcScheme);
 
 					// Set inner forward error correction scheme
-					//if (verbose) printf("Inner FEC: ");
 					fec_scheme fec0 = convertFECScheme(suce.innerFEC, verbose);
 
 					// Set outer forward error correction scheme
-					//if (verbose) printf("Outer FEC: ");
 					fec_scheme fec1 = convertFECScheme(suce.outerFEC, verbose);
 					usleep(1);
 					txcvr.assemble_frame(header, payload, suce.payloadLen, ms, fec0, fec1);
 					int isLastSymbol = 0;
-					while(!isLastSymbol) //&& dsaCBs.primaryon==0)
+
+					while(!isLastSymbol)
 						{
-						usleep(1);
-						//printf("%d\n", dsaCBs.primaryon);
+						usleep(1);;
 						isLastSymbol = txcvr.write_symbol();
 						if(usescenario)
 						enactScenarioBaseband(txcvr.fgbuffer, suce, sc);
 						txcvr.transmit_symbol();
 					}
+
 			   		txcvr.end_transmit_frame();
 					usleep(100);
 					if(adapt==1)
 					postTxTasks(&puce, &msg.feed, verbose);
 				}
-				//time = 0.0;
-				//txcvr.start_rx();
 				start = std::clock();
 
-				//The secondary user will wait in this while loop and wait and see if any
-				//primary users appear
+
 				cantransmit = 0;
 				primaryoncounter = 0;
 				primaryoffcounter = 0;
 			
-					
-				for(int h=0; h<fftinfo.testnumber; h++) //&& dsaCBs.primaryon == 0)
-					{
-					//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
+				mess.number = secondarymsgnumber;
+				mess.purpose = 'S';
+				write(dsaCBs.client, (const void*)&mess, sizeof(mess));
+				secondarymsgnumber++;
 
+				//The secondary user will wait in this while loop and wait and see if any
+				//primary users appear
+				for(int h=0; h<fftinfo.testnumber; h++)
+					{
 					cantransmit = fftscan(suce, usrp, noisefloor, fftinfo);
 					if(cantransmit==1){
 						primaryoffcounter++;
 					}
 					else{
 						primaryoncounter++;
-					}
-					//current = std::clock();
-					//time = ((float)(current-start))/CLOCKS_PER_SEC;
-					
+					}	
+				mess.number = secondarymsgnumber;
+				mess.purpose = 's';
+				write(dsaCBs.client, (const void*)&mess, sizeof(mess));
+				secondarymsgnumber++;
 				}
-				//delete usrp;
+				
 				if(primaryoffcounter > primaryoncounter)
 					{
 					cantransmit = 1;
@@ -4643,9 +4639,6 @@ if(dsa==1 && usingUSRPs && !isController){
 					cantransmit = 0;
 				}
 			}
-			//time = 0;
-			//start = std::clock();
-			//std::clock_t current;
 			printf("SU sensing\n");
 
 			//Once the primary user is detected the secondary user stops transmitting
@@ -4843,9 +4836,17 @@ if(receiver == 1 && dsa != 1){
 }
 
 if(dsa && isController){
+
+	//These variables deal with checking how efficiently the secondary user utilizes the spectrum
+
+	//The time intervals between when the controller checks if the spectrum is occupied or not
 	float spectrumchecktime = 0.05;
+
+	//Time variables used to check if a spectrumchecktime interval has passed
 	std::clock_t spectrumstart;
 	std::clock_t spectrumcurrent;
+
+	//Accumulators that increment when the spectrum is empty, when it is being used, or whenever the spectrum is checked
 	float spectrumempty = 0.0;
 	float spectrumused = 0.0;
 	float spectrumtotal = 0.0;
@@ -4855,15 +4856,46 @@ if(dsa && isController){
 	fprintf(dataFile, "DSA CRTS\n");
     fprintf(dataFile,  "%-13s %-10s %-10s %-13s %-15s %-12s %-12s %-20s %-19s\n", "linetype","frameNum","evm (dB)","rssi (dB)","Byte Errors","Bit Errors", "Throughput", "Spectral Efficiency", "Average Goal Value");
     fflush(dataFile);
+
+	//Set to 0 so that the rendezvous time won't be calculated for the first time the secondary user turns on, since
+	//it should be turned on first before the primary user
 	int canchecktime = 0;
+
+	//Set to one whenever the primary user switches from on to off or off to on
+	//Makes sure that evacuation time and rendezvous time are only calculated once per switch
+	//Prevents problems from happening if secondary user turns off and on multiple times in one spectrum hole
 	int primarychange = 0;
+
+	//1 if the secondary user is currently sensing for the primary user
+	//It is 1 if it is currently in sensing mode or if it is still in transmit mode but is paused
+	//to check the spectrum before sending another burst
+	int secondarysensing = 0;
+
+	//Feedback structs calculated at end of DSA test
+
+	//Average feedback of all feedback received
 	struct feedbackStruct totalfb;
+
+	//Average feedback of all primary feedback received
 	struct feedbackStruct primaryfb;
+
+	//Average feedback of all primary feedback received when secondary user was on
 	struct feedbackStruct primarycollisionfb;
+
+	//Average feedback of all secondary feedback received when primary user was on
 	struct feedbackStruct secondarycollisionfb;
+
+	//Average feedback of all secondary feedback received
 	struct feedbackStruct secondaryfb;
+
+	//Average feedback of all primary feedback received when secondary user was off
 	struct feedbackStruct primarysafefb;
+
+	//Average feedback of all secondary feedback received when primary user was off
 	struct feedbackStruct secondarysafefb;
+
+	//Accumulator variables that are incremented whenever a new feedback of their type is read in and added to their
+	//respective feedback struct
 	int tfb = 0;
 	int pfb = 0;
 	int pcfb = 0;
@@ -4871,7 +4903,11 @@ if(dsa && isController){
 	int scfb = 0;
 	int psfb = 0;
 	int ssfb = 0;
+
+	//Increments whenever a receiver cannot identify a header as primary or secondary
 	int unknownheader = 0;
+
+	//Accumulator variables track how many feedback structs of each type have valid headers
 	float headertfb = 0.0;
 	float headerpfb = 0.0;
 	float headersfb = 0.0;
@@ -4879,6 +4915,8 @@ if(dsa && isController){
 	float headerscfb = 0.0;
 	float headerpsfb = 0.0;
 	float headerssfb = 0.0;
+
+	//Accumulator variables track how many feedback structs of each type have valid payloads
 	float payloadtfb = 0.0;
 	float payloadpfb = 0.0;
 	float payloadsfb = 0.0;
@@ -4886,14 +4924,29 @@ if(dsa && isController){
 	float payloadscfb = 0.0;
 	float payloadpsfb = 0.0;
 	float payloadssfb = 0.0;
+
+	//The message number of the last received primary and secondary messages
 	int latestprimary = 0;
 	int latestsecondary = 0;
+
+	//The total number of rendezvous times
 	float rendcounter = 0.0;
+	
+	//The total number of evacuation times
 	float evaccounter = 0.0;
+
+	//Total number of false alarms
 	float totalfalsealarm = 0.0;
+
+	//Total number of missed spectrum holes
 	float totalmissedhole = 0.0;
+
+	//Total number of primary user cycles (one transmit burst and one rest interval)
 	float totalcycles = 0.0;
+
+	//Total number of successful spectrum hole identifications by the secondary user
 	float success = 0.0;
+
 	float falsealarmprob = 0.0;
 	float probofdetection = 0.0;
 	std::clock_t totalevacuationtime = 0;
@@ -4907,6 +4960,8 @@ if(dsa && isController){
 	float evacuationtimelist[100];
 	float rendezvoustimelist[100];
 
+	//Before starting its message checking while loop the controller sets all of its feedback
+	//structs to have variables of all 0's
 	totalfb.header_valid = 0;
 	totalfb.payload_valid = 0;
    	totalfb.payload_len = 0;
@@ -4989,10 +5044,16 @@ if(dsa && isController){
 	std::clock_t time = std::clock();
 	int loop = 1;
 	spectrumstart = std::clock();
+
+	//This loop will iterate and read in new messages until the primary user finishes its  cycles and sends the
+	//finish message with a purpose char of 'F'
 	while(loop){
 		spectrumcurrent = std::clock();
+
+		//This if statement runs every spectrumchecktime interval and will see if the spectrum is currently being utilized
+		//by the primary or secondary user
 		if(spectrumchecktime<(float)((spectrumcurrent-spectrumstart)/CLOCKS_PER_SEC)){
-			if(primary==1 or secondary == 1){
+			if(primary==1 or secondarysensing == 0){
 				spectrumused++;
 			}
 			else{
@@ -5085,8 +5146,11 @@ if(dsa && isController){
 			if(msg.type == 'S'){
 				//printf("Secondary message\n");
 				if(latestsecondary<msg.number){
+
+					//The secondary user has started transmitting
 					if(msg.purpose == 't'){
 						secondary = 1;
+						secondarysensing = 0;
 						latestsecondary = msg.number;
 						time = std::clock();
 						secondaryontime = time;
@@ -5107,11 +5171,26 @@ if(dsa && isController){
 						}
 						primarychange = 0;
 					}
+
+					//Sent when a receiver tells the secondary user that it could't decode a header
 					if(msg.purpose == 'u'){
 						unknownheader++;
 					}
+
+					//Sent when the secondary user starts sensing (But not necessarily in the sensing while loop)
+					if(msg.purpose == 'S'){
+						secondarysensing=1;
+					}
+
+					//Sent when the secondary user is done sensing
+					if(msg.purpose == 's'){
+						secondarysensing=0;
+					}
+
+					//The secondary user has stopped transmitting
 					if(msg.purpose == 'r'){
 						secondary = 0;
+						secondarysensing = 1;
 						latestsecondary = msg.number;
 						time = std::clock();
 						secondaryofftime = time;
@@ -5133,6 +5212,10 @@ if(dsa && isController){
 						}
 						primarychange = 0;
 					}
+
+					//The secondary user is sending feedback to the controller
+					//The feedback is written to the data file and added to the proper accumulator feedback
+					//structs where it will later be averaged together
 					if(msg.purpose == 'f'){
 						//printf("Receieved secondary feedback\n");
 						latestsecondary = msg.number;
@@ -5182,7 +5265,7 @@ if(dsa && isController){
 		}
 	};
 	printf("Testing Complete\n");
-	printf("Spectrum Usage: %%%f\n", spectrumused/spectrumtotal);
+	printf("Spectrum Usage: %%%f\n", 100*(spectrumused/spectrumtotal));
 	printf("\n%d unidentifiable headers\n\n", unknownheader);
 	falsealarmprob = totalfalsealarm/totalcycles;
 	printf("Probability of False Alarm: %f\n", falsealarmprob);
@@ -5197,6 +5280,8 @@ if(dsa && isController){
 	averagerendevoustime = totalrendevoustime/rendcounter;
 	printf("Average Rendezvous Time: %f seconds\n", ((float)averagerendevoustime)/CLOCKS_PER_SEC);
 	fprintf(dataFile, "Average Rendezvous Time: %f seconds\n", ((float)averagerendevoustime)/CLOCKS_PER_SEC);
+
+	//The if statements prevent division by 0
 	if(tfb>0){
 	totalfb.header_valid = (int)ceil((float)totalfb.header_valid/(float)tfb);
 	totalfb.payload_valid = (int)ceil((float)totalfb.payload_valid/(float)tfb);
