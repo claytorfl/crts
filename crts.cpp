@@ -1495,33 +1495,26 @@ void * feedbackThread(void * v_ptr){
 		//When a new message is received
 		if(m_ptr->msgreceived == 1){
 			//If the message is from a primary receiver
-			if(m_ptr->type == 'p'){
-				//index = finder(clientlist, &clientlistlength, msg.client); 
+			if(m_ptr->type == 'p'){ 
 				//Receiver saying that it received a primary transmission
 				if(m_ptr->purpose == 'P'){
-					//fblist[index] = feedbackadder(fblist[index], msg.feed);
-					//time = std::clock();
-					//printf("Primary receiver received primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+
 					primary++;
 				}
 				//receiver saying it received secondary transmission
 				if(m_ptr->purpose == 'S'){
-					//time = std::clock();
-					//printf("Primary receiver received secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+
 					secondary++;
 				}
 				if(m_ptr->purpose == 'u'){
-					//time = std::clock();
-					//printf("Primary receiver received secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+
 					msg.purpose = 'u';
 					msg.number = *bfi_ptr->msgnumber;
 					write(client, (const void *)&msg, sizeof(msg));
 					(*bfi_ptr->msgnumber)++;
 				}
 				//Feedback from primary transmission
-				if(m_ptr->purpose == 'f'){;
-					//time = std::clock();
-					//printf("Received feedback from primary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+				if(m_ptr->purpose == 'f'){
 					primary++;
 					//Checks if the message's client is in the client list
 					//If it isn't then the transmitter hasn't received feedback from that node for that
@@ -1579,13 +1572,11 @@ void * feedbackThread(void * v_ptr){
 				}
 				//Receiver giving feedback from secondary transmission
 				if(m_ptr->purpose == 'F'){;
-					//time = std::clock();
-					//printf("Received feedback from primary receiver with secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					secondary++;
 				}
 			}
 			if(m_ptr->type == 's'){
-				printf("Secondary info\n");
+				
 				//index = finder(clientlist, &clientlistlength, msg.client); 
 				//Receiver saying that it received a primary transmission
 				if(m_ptr->purpose == 'P'){
@@ -1611,11 +1602,9 @@ void * feedbackThread(void * v_ptr){
 					(*bfi_ptr->msgnumber)++;
 				}
 				//Feedback from secondary transmission
-				if(m_ptr->purpose == 'F'){;
-					//time = std::clock();
-					;
-					//printf("Received feedback from secondary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
-					primary++;
+				if(m_ptr->purpose == 'F'){
+					printf("Secondary info\n");
+					secondary++;
 					//Checks if the message's client is in the client list
 					//If it isn't then the transmitter hasn't received feedback from that node for that
 					//transmission so it adds it to the list and adds its feedback to basicfb
@@ -1676,7 +1665,7 @@ void * feedbackThread(void * v_ptr){
 					//time = std::clock();
 					bfi_ptr->primaryon = 1;
 					//printf("Received feedback from secondary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
-					secondary++;
+					primary++;
 				}
 			}
 		m_ptr->msgreceived = 0;
@@ -4560,7 +4549,7 @@ if(dsa==1 && usingUSRPs && !isController){
 	
 		//int on = 1;
 		//float time = 0;	
-		cantransmit = 0;
+		cantransmit = 1;
 		start = std::clock();
 		while(true)
 			{
@@ -5067,6 +5056,7 @@ if(dsa && isController){
 				}
 			}
 			if(msg.type == 'S'){
+				printf("Secondary message\n");
 				if(latestsecondary<msg.number){
 					if(msg.purpose == 't'){
 						secondary = 1;
