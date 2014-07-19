@@ -2454,6 +2454,7 @@ int dsaCallback(unsigned char *  _header,
 		mess.number = dsaCBs_ptr->number;
 		mess.client = dsaCBs_ptr->client;
 		++dsaCBs_ptr->number;
+		printf("%c %c %d %d\n", mess.type, mess.purpose, mess.number, mess.client);
 		write(dsaCBs_ptr->client, (void*)&mess, sizeof(mess));
 	}
 
