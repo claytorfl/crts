@@ -2716,6 +2716,7 @@ int main(int argc, char ** argv){
 	int primary = 0;
 	int receiver = 0;
 	int energy = 0;
+	int normalcrts = 1;
 
     // Check Program options
     int d;
@@ -2738,24 +2739,24 @@ int main(int argc, char ** argv){
         case 'M':   numSubcarriers = atoi(optarg);          break;
         case 'C':   CPLen = atoi(optarg);                   break;
         case 'T':   taperLen = atoi(optarg);                break;
-		case 'N':   networking = 1; break;
-		case 'D':   dsa = 1; break;
-		case 'B':	broadcasting = 1; break;
-		case 'Q':   tester = 1; break;
+		case 'N':   networking = 1; normalcrts = 0; break;
+		case 'D':   dsa = 1; normalcrts = 0; break;
+		case 'B':	broadcasting = 1; normalcrts = 0; break;
+		case 'Q':   tester = 1; normalcrts = 0; break;
 		//Designate the node as a primary user
-		case 'P':	primary = 1; dsa = 1; break;
+		case 'P':	primary = 1; dsa = 1; normalcrts = 0; break;
 
 		//Designate the node as a secondary user
-		case 'S':	secondary = 1; dsa = 1; break;
+		case 'S':	secondary = 1; dsa = 1; normalcrts = 0; break;
 
 		//Designate the node as a receiver
-		case 'R':	receiver = 1; break;
+		case 'R':	receiver = 1; normalcrts = 0; break;
 		
 		//Designate the node as an energy detector
-		case 'E':	energy = 1; dsa = 1; break;
+		case 'E':	energy = 1; dsa = 1; normalcrts = 0; break;
 
 		//Designate the node as an interference maker that transmits noise
-		case 'I':	noise = 1; break;
+		case 'I':	noise = 1; isController = 1; normalcrts = 0; break;
 	
         //case 'p':   serverPort = atol(optarg);            break;
         //case 'f':   frequency = atof(optarg);           break;
@@ -2937,7 +2938,7 @@ int main(int argc, char ** argv){
 
     // For each Cognitive Engine
 
-	if(dsa==0 && broadcasting==0 && networking == 0 && receiver == 0 && tester == 0){
+	if(normalcrts){
 
     for (i_CE=0; i_CE<NumCE; i_CE++)
     {
@@ -5480,6 +5481,7 @@ if(tester==1){
 //The node will transmit noise using the ce1.txt cognitive engine and scenario sc1.txt
 //sc1.txt will be set to have a very low SNR
 if(noise==1){
+	verbose = 0;
 	struct CognitiveEngine ce = CreateCognitiveEngine();
 	readCEConfigFile(&ce, (char*) "ce1.txt", 0);
 	struct Scenario sc = CreateScenario();
@@ -5503,7 +5505,7 @@ if(noise==1){
         header[i] = 23;
 
     for (i=0; i<(signed int)ce.payloadLen; i++)
-        payload[i] = 1;//(unsigned char)msequence_generate_symbol(tx_ms,8);
+        payload[i] = (unsigned char)msequence_generate_symbol(tx_ms,8);
     // Set Modulation Scheme
     if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
     modulation_scheme ms = convertModScheme(ce.modScheme, &ce.bitsPerSym);
