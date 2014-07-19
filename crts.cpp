@@ -5169,7 +5169,7 @@ if(dsa && isController){
 	printf("Probability of False Alarm: %f\n", falsealarmprob);
 	fprintf(dataFile, "Probability of False Alarm: %f\n", falsealarmprob);
 	probofdetection = success/totalcycles;
-	if(probofdetection > 1){probofdetection=1.0;}
+	//if(probofdetection > 1){probofdetection=1.0;}
 	printf("Probability of Detection: %f\n", probofdetection);
 	fprintf(dataFile, "Probability of Detection: %f\n", probofdetection);
 	averageevacuationtime = totalevacuationtime/evaccounter;
