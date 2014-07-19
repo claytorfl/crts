@@ -5278,8 +5278,14 @@ if(dsa && isController){
 		msg.msgreceived = 0;
 		}
 	};
+
+	//After the primary transmitter finishes its cycles and sends the finished message to the controller
+	//the controller will stop iterating through the while loop and print out the data to the standard output
+	//and the data file
 	printf("Testing Complete\n");
-	printf("Spectrum Usage: %%%f\n", 100*(spectrumused/spectrumtotal));
+
+	//What percentage of the time the spectrum was occupied
+	printf("\nSpectrum Usage: %%%f\n", 100*(spectrumused/spectrumtotal));
 	printf("\n%d unidentifiable headers\n\n", unknownheader);
 	falsealarmprob = totalfalsealarm/totalcycles;
 	printf("Probability of False Alarm: %f\n", falsealarmprob);
@@ -5296,6 +5302,9 @@ if(dsa && isController){
 	fprintf(dataFile, "Average Rendezvous Time: %f seconds\n", ((float)averagerendevoustime)/CLOCKS_PER_SEC);
 
 	//The if statements prevent division by 0
+	//The variables in the feedback struct are divided by the accumulator variables
+	//to create average feedbacks for each type
+	//These feedbacks will then be printed out and written to the data file
 	if(tfb>0){
 	totalfb.header_valid = (int)ceil((float)totalfb.header_valid/(float)tfb);
 	totalfb.payload_valid = (int)ceil((float)totalfb.payload_valid/(float)tfb);
@@ -5458,6 +5467,8 @@ if(dsa && isController){
 		"suCframes:", secondarycollisionfb.iteration,  secondarycollisionfb.evm, secondarycollisionfb.rssi, secondarycollisionfb.payloadByteErrors,
 		secondarycollisionfb.payloadBitErrors, 1, 1.0, 1.0);
 	feedbackStruct_print(&secondarycollisionfb);
+
+	//A list of evacuation times and rendezvous times are written to the data file
 	fprintf(dataFile, "\n\nEvacuation Times\n\n");
 	int v;
 	for(v=0; v<evaccounter; v++){
