@@ -1585,6 +1585,7 @@ void * feedbackThread(void * v_ptr){
 				}
 			}
 			if(m_ptr->type == 's'){
+				printf("Secondary info\n");
 				//index = finder(clientlist, &clientlistlength, msg.client); 
 				//Receiver saying that it received a primary transmission
 				if(m_ptr->purpose == 'P'){
@@ -5076,7 +5077,7 @@ if(dsa && isController){
 						fprintf(dataFile, "Secondary user started transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 						if(primary == 0 && canchecktime && primarychange){
 							rendevoustime = secondaryontime - primaryofftime;
-							rendcounter++;
+							//rendcounter++;
 							printf("Rendezvous time = %f seconds\n", ((float)rendevoustime/CLOCKS_PER_SEC));
 							fprintf(dataFile, "Rendezvous time = %f seconds\n", ((float)rendevoustime/CLOCKS_PER_SEC));
 							rendezvoustimelist[(int)rendcounter] = ((float)rendevoustime/CLOCKS_PER_SEC);
