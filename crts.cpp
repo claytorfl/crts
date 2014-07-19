@@ -5116,7 +5116,7 @@ if(dsa && isController){
 						primarychange = 0;
 					}
 					if(msg.purpose == 'f'){
-						
+						printf("Receieved secondary feedback\n");
 						latestsecondary = msg.number;
 						
 						//printf("Secondary feedback!!!\n");
