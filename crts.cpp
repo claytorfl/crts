@@ -4850,6 +4850,8 @@ if(dsa && isController){
 	fprintf(dataFile, "DSA CRTS\n");
     fprintf(dataFile,  "%-13s %-10s %-10s %-13s %-15s %-12s %-12s %-20s %-19s\n", "linetype","frameNum","evm (dB)","rssi (dB)","Byte Errors","Bit Errors", "Throughput", "Spectral Efficiency", "Average Goal Value");
     fflush(dataFile);
+	int canchecktime = 0;
+	int primarychange = 0;
 	struct feedbackStruct totalfb;
 	struct feedbackStruct primaryfb;
 	struct feedbackStruct primarycollisionfb;
@@ -4897,11 +4899,8 @@ if(dsa && isController){
 	int fblistlength = 10;
 	struct feedbackStruct fblist[fblistlength];
 	int feedbacknum[fblistlength];
-	//std::string args = "";
-	//double rssi;
-	//std::string strings = "A:0";
-	//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
-	//usrp->set_rx_subdev_spec(strings, 0);
+	float evacuationtimelist[100];
+	float rendezvoustimelist[100];
 
 	totalfb.header_valid = 0;
 	totalfb.payload_valid = 0;
@@ -4994,6 +4993,7 @@ if(dsa && isController){
 					
 					if(msg.purpose == 't'){
 						primary = 1;
+						primarychange = 1;
 						latestprimary = msg.number;
 						time = std::clock();
 						primaryontime = time;
@@ -5002,6 +5002,7 @@ if(dsa && isController){
 					}
 					if(msg.purpose == 'r'){
 						primary = 0;
+						primarychange = 1;
 						latestprimary = msg.number;
 						time = std::clock();
 						primaryofftime = time;
@@ -5073,15 +5074,20 @@ if(dsa && isController){
 						secondaryontime = time;
 						printf("Secondary user started transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 						fprintf(dataFile, "Secondary user started transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
-						if(primary == 0){
+						if(primary == 0 && canchecktime && primarychange){
 							rendevoustime = secondaryontime - primaryofftime;
 							rendcounter++;
 							printf("Rendezvous time = %f seconds\n", ((float)rendevoustime/CLOCKS_PER_SEC));
 							fprintf(dataFile, "Rendezvous time = %f seconds\n", ((float)rendevoustime/CLOCKS_PER_SEC));
+							rendezvoustimelist[(int)rendcounter] = ((float)rendevoustime/CLOCKS_PER_SEC);
 							success++;
 							rendcounter++;
 							totalrendevoustime += rendevoustime;
 						}
+						else{
+							canchecktime = 1;
+						}
+						primarychange = 0;
 					}
 					if(msg.purpose == 'u'){
 						unknownheader++;
@@ -5094,10 +5100,11 @@ if(dsa && isController){
 						printf("Secondary user stopped transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 						fprintf(dataFile, "Secondary user stopped transmitting at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 						//printf("Primary number: %d Secondar number %d\n", latestprimary, latestsecondary);
-						if(primary==1){
+						if(primary==1 && primarychange){
 							evacuationtime = secondaryofftime - primaryontime;
 							printf("Evacuation time = %f seconds\n", ((float)evacuationtime/CLOCKS_PER_SEC));
 							fprintf(dataFile, "Evacuation time = %f seconds\n", ((float)evacuationtime/CLOCKS_PER_SEC));
+							evacuationtimelist[(int)evaccounter] = ((float)evacuationtime/CLOCKS_PER_SEC);
 							evaccounter++;
 							totalevacuationtime += evacuationtime;
 						}
@@ -5106,6 +5113,7 @@ if(dsa && isController){
 							fprintf(dataFile, "Wasted Spectrum Hole\n");
 							++totalmissedhole;
 						}
+						primarychange = 0;
 					}
 					if(msg.purpose == 'f'){
 						
@@ -5332,6 +5340,15 @@ if(dsa && isController){
 		"suCframes:", secondarycollisionfb.iteration,  secondarycollisionfb.evm, secondarycollisionfb.rssi, secondarycollisionfb.payloadByteErrors,
 		secondarycollisionfb.payloadBitErrors, 1, 1.0, 1.0);
 	feedbackStruct_print(&secondarycollisionfb);
+	fprintf(dataFile, "\n\nEvacuation Times\n\n");
+	int v;
+	for(v=0; v<evaccounter; v++){
+		fprintf(dataFile, "%f\n", evacuationtimelist[v]);
+	}
+	fprintf(dataFile, "\n\nRendezvous Times\n\n");
+	for(v=0; v<rendcounter; v++){
+		fprintf(dataFile, "%f\n", rendezvoustimelist[v]);
+	}
 	return 1;
 }
 
