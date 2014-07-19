@@ -278,6 +278,7 @@ struct fftStruct {
 	int measuredbins;
 	int testnumber;
 	int debug;
+	float gain;
 };
 
 struct scenarioSummaryInfo{
@@ -2474,7 +2475,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
     double rate = fftinfo.rate;
 	double freq = (double)ce.frequency;
 	//printf("%f\n", freq);
-	double gain = ce.uhd_txgain_dB;
+	double gain = fftinfo.gain;
 	double bw = fftinfo.bandwidth;//ce.bandwidth;
 	double chbw = fftinfo.channelbandwidth;
     std::string addr, port, mode;
@@ -2584,7 +2585,7 @@ float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, s
 	//unsigned int navrg = fftinfo.numavrg;
     double rate = fftinfo.rate;
 	double freq = ce.frequency;
-	double gain = ce.uhd_txgain_dB;
+	double gain = fftinfo.gain;
 	double bw = fftinfo.bandwidth;//ce.bandwidth;
 	double chbw = fftinfo.channelbandwidth;
     std::string addr, port, mode;
@@ -4005,6 +4006,10 @@ if(dsa==1 && usingUSRPs && !isController){
 		if (config_setting_lookup_int (setting, "debug", &tmpI))
 		{
 		fftinfo.debug = tmpI;
+		}
+		if (config_setting_lookup_float (setting, "gain", &tmpD))
+		{
+		fftinfo.gain = tmpD;
 		}
 	}
 	setting = config_lookup(&cfg, "PU");
