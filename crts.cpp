@@ -4847,7 +4847,12 @@ if(dsa && isController){
 
 	//Increments whenever a receiver cannot identify a header as primary or secondary
 	int unknownheader = 0;
-
+	
+	//Time variables that show the start and end of the test cycles
+	//Starting when the primary user first transmits and ending when the primary
+	//user rests for its final cycle
+	std::clock_t primarystarttime;
+	std::clock_t primaryendtime;
 	//Accumulator variables track how many feedback structs of each type have valid headers
 	float headertfb = 0.0;
 	float headerpfb = 0.0;
@@ -5023,8 +5028,11 @@ if(dsa && isController){
 				if(latestprimary<msg.number){
 					
 					if(msg.purpose == 't'){
+						if(primarystart==0){
+							primarystarttime = std::clock();
+							primarystart = 1;
+						}
 						primary = 1;
-						primarystart = 1;
 						primarychange = 1;
 						latestprimary = msg.number;
 						time = std::clock();
@@ -5048,6 +5056,7 @@ if(dsa && isController){
 					if(msg.purpose == 'F'){
 						primary = 0;
 						latestprimary = msg.number;
+						primaryendtime = std::clock();
 						loop = 0;
 						break;
 					}
@@ -5210,6 +5219,8 @@ if(dsa && isController){
 	//the controller will stop iterating through the while loop and print out the data to the standard output
 	//and the data file
 	printf("Testing Complete\n");
+	printf("Total Test Time: %f seconds\n", (float)((primaryendtime-primarystarttime)/CLOCKS_PER_SEC));
+	fprintf(dataFile, "Total Test Time: %f seconds\n", (float)((primaryendtime-primarystarttime)/CLOCKS_PER_SEC));
 
 	//What percentage of the time the spectrum was occupied
 	printf("\nSpectrum Usage: %%%f\n", 100*(spectrumused/spectrumtotal));
