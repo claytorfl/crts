@@ -4859,6 +4859,10 @@ if(dsa && isController){
 	float spectrumempty = 0.0;
 	float spectrumused = 0.0;
 	float spectrumtotal = 0.0;
+	float spectrumusedsecondary = 0.0;
+	float spectrumusedprimary = 0.0;
+	float spectrumunusedprimary = 0.0;
+	float spectrumusedoverlap = 0.0;
 
 	//Only becomes one once the primary user first starts transmitting
 	//Makes sure spectrum efficiency measurements are started at the right time
@@ -5066,13 +5070,32 @@ if(dsa && isController){
 		//This if statement runs every spectrumchecktime interval and will see if the spectrum is currently being utilized
 		//by the primary or secondary user
 		if(spectrumchecktime<(float)((spectrumcurrent-spectrumstart)/CLOCKS_PER_SEC)){
-			if(primarystart == 1 and (primary==1 or secondarysensing == 0)){
+			if(primarystart==1){
+				if(primary==1 and secondarysensing == 0){
 				spectrumused++;
+				spectrumusedprimary++;
+				spectrumusedsecondary++;
+				spectrumusedoverlap++;
+				}
+				else{
+					if(primary==1){
+						spectrumused++;
+						spectrumusedprimary++;
+					}
+					else{
+						spectrumunusedprimary++;
+						if(secondary==1){
+							spectrumused++;
+							spectrumusedsecondary++;
+						}
+						else{
+							spectrumempty++;
+						}
+					}
+				}
+				spectrumtotal++;
+				
 			}
-			else{
-				spectrumempty++;
-			}
-			spectrumtotal++;
 			spectrumstart = std::clock();
 		}
 		//printf("%d\n", latestprimary);
@@ -5286,7 +5309,17 @@ if(dsa && isController){
 
 	//What percentage of the time the spectrum was occupied
 	printf("\nSpectrum Usage: %%%f\n", 100*(spectrumused/spectrumtotal));
+	printf("Primary User Spectrum Usage: %%%f\n", 100*(spectrumusedprimary/spectrumtotal));
+	printf("Secondary User Spectrum Usage: %%%f\n", 100*(spectrumusedsecondary/spectrumtotal));
+	printf("Secondary User Free Spectrum Usage: %%%f\n", 100*(spectrumusedsecondary/spectrumunusedprimary));
+	printf("Overlapped Spectrum Usage: %%%f\n", 100*(spectrumusedoverlap/spectrumtotal));
+	fprintf(dataFile, "\nSpectrum Usage: %%%f\n", 100*(spectrumused/spectrumtotal));
+	fprintf(dataFile, "Primary User Spectrum Usage: %%%f\n", 100*(spectrumusedprimary/spectrumtotal));
+	fprintf(dataFile, "Secondary User Spectrum Usage: %%%f\n", 100*(spectrumusedsecondary/spectrumtotal));
+	fprintf(dataFile, "Secondary User Free Spectrum Usage: %%%f\n", 100*(spectrumusedsecondary/spectrumunusedprimary));
+	fprintf(dataFile, "Overlapped Spectrum Usage: %%%f\n", 100*(spectrumusedoverlap/spectrumtotal));
 	printf("\n%d unidentifiable headers\n\n", unknownheader);
+	fprintf(dataFile, "\n%d unidentifiable headers\n\n", unknownheader);
 	falsealarmprob = totalfalsealarm/totalcycles;
 	printf("Probability of False Alarm: %f\n", falsealarmprob);
 	fprintf(dataFile, "Probability of False Alarm: %f\n", falsealarmprob);
