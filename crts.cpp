@@ -5084,7 +5084,7 @@ if(dsa && isController){
 					}
 					else{
 						spectrumunusedprimary++;
-						if(secondary==1){
+						if(secondarysensing==0){
 							spectrumused++;
 							spectrumusedsecondary++;
 						}
