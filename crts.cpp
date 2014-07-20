@@ -2339,7 +2339,7 @@ int dsaCallback(unsigned char * _header,
                framesyncstats_s _stats,
                void * _userdata)
 {
-	printf(";lkfdsaj;");
+	printf(";lkfdsaj;\n");
     struct dsaCBstruct * dsaCBs_ptr = (struct dsaCBstruct *) _userdata;
 //If the secondary transmitter is using energy detection then the callback is unnecessary and it is skipped
 if(dsaCBs_ptr->usrptype == 'S' and dsaCBs_ptr->detectiontype == 'e')
