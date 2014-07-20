@@ -4184,8 +4184,8 @@ if(dsa==1 && usingUSRPs && !isController){
 				current = std::clock();
 				time = ((float)(current-start))/CLOCKS_PER_SEC;
 				/*for (h=0; h<(signed int)ce.payloadLen; h++)
-				    payload[h] = (unsigned char)msequence_generate_symbol(tx_ms,8);
-				txcvr.assemble_frame(header, payload, puce.payloadLen, ms, fec0, fec1);*/
+				    payload[h] = (unsigned char)msequence_generate_symbol(tx_ms,8);*/
+				txcvr.assemble_frame(header, payload, puce.payloadLen, ms, fec0, fec1);
 				int isLastSymbol = 0;
 				while(!isLastSymbol)
 					{
