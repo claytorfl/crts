@@ -4231,7 +4231,7 @@ if(dsa==1 && usingUSRPs && !isController){
 		//After it has completed its cycles the primary transmitter sends a finished message to the controller
 		mess.purpose = 'F';
 		mess.number = primarymsgnumber;
-		write(dsaCBs.client, (const void*)&mess, sizeof(mess));
+		//write(dsaCBs.client, (const void*)&mess, sizeof(mess));
 		return 1;
 	}
 
