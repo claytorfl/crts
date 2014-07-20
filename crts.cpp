@@ -1552,6 +1552,7 @@ void * feedbackThread(void * v_ptr){
 						msg.feed = basicfb;
 						msg.purpose = 'f';
 						msg.number = *bfi_ptr->msgnumber;
+						printf("Sending primary feedback\n");
 						write(client, (const void *)&msg, sizeof(msg));
 						(*bfi_ptr->msgnumber)++;
 						basicfb.header_valid = 0;
@@ -2457,7 +2458,7 @@ int dsaCallback(unsigned char *  _header,
 		mess.number = dsaCBs_ptr->number;
 		mess.client = dsaCBs_ptr->client;
 		++dsaCBs_ptr->number;
-		//printf("%c %c %d %d\n", mess.type, mess.purpose, mess.number, mess.client);
+		printf("%c %c %d %d\n", mess.type, mess.purpose, mess.number, mess.client);
 		write(dsaCBs_ptr->client, (void*)&mess, sizeof(mess));
 	}
 
@@ -5141,7 +5142,7 @@ if(dsa && isController){
 						
 						latestprimary = msg.number;
 						
-						//printf("Primary feedback!!!\n");
+						printf("Primary feedback!!!\n");
 						//feedbackStruct_print(&msg.feed);
 						fprintf(dataFile, "%-13s %-10i %-10.2f %-13.2f %-15.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
 							"pudata:", msg.feed.iteration,  msg.feed.evm, msg.feed.rssi, msg.feed.payloadByteErrors,
