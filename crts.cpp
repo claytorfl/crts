@@ -4770,6 +4770,23 @@ if(receiver == 1 && dsa != 1){
 
 if(dsa && isController){
 
+	//Acccumulator variables used to find percentages for byte and bit errors
+	float tfbbyte = 0.0;
+	float tfbbit = 0.0;
+	float pfbbyte = 0.0;
+	float pfbbit = 0.0;
+	float sfbbyte = 0.0;
+	float sfbbit = 0.0;
+	float psfbbyte = 0.0;
+	float psfbbit = 0.0;
+	float ssfbbyte = 0.0;
+	float ssfbbit = 0.0;
+	float pcfbbyte = 0.0;
+	float pcfbbit = 0.0;
+	float scfbbyte = 0.0;
+	float scfbbit = 0.0;
+
+
 	//These variables deal with checking how efficiently the secondary user utilizes the spectrum
 
 	//The time intervals between when the controller checks if the spectrum is occupied or not
@@ -5068,6 +5085,7 @@ if(dsa && isController){
 						if(msg.feed.header_valid==1){
 							headertfb++;
 							headerpfb++;
+
 							if(secondary==1){
 								headerpcfb++;
 							}
@@ -5085,17 +5103,25 @@ if(dsa && isController){
 								payloadpsfb++;
 							}
 						}
+						tfbbyte += msg.feed.payloadByteErrors;
+						tfbbit += msg.feed.payloadBitErrors;
 						totalfb = feedbackadder(totalfb, msg.feed);
 						tfb++;
 						primaryfb = feedbackadder(primaryfb, msg.feed);
 						pfb++;
+						pfbbyte += msg.feed.payloadByteErrors;
+						pfbbit += msg.feed.payloadBitErrors;
 						if(secondary==1){
 							primarycollisionfb = feedbackadder(primarycollisionfb, msg.feed);
 							pcfb++;
+							pcfbbyte += msg.feed.payloadByteErrors;
+							pcfbbit += msg.feed.payloadBitErrors;
 						}
 						else{
 							primarysafefb = feedbackadder(primarysafefb, msg.feed);
 							psfb++;
+							psfbbyte += msg.feed.payloadByteErrors;
+							psfbbit += msg.feed.payloadBitErrors;
 						}
 					}
 				}
@@ -5195,18 +5221,26 @@ if(dsa && isController){
 								payloadssfb++;
 							}
 						}
+						tfbbyte += msg.feed.payloadByteErrors;
+						tfbbit += msg.feed.payloadBitErrors;
 						totalfb = feedbackadder(totalfb, msg.feed);
 						totalfb = feedbackadder(totalfb, msg.feed);
 						tfb++;
+						sfbbyte += msg.feed.payloadByteErrors;
+						sfbbit += msg.feed.payloadBitErrors;
 						secondaryfb = feedbackadder(secondaryfb, msg.feed);
 						sfb++;
 						if(primary==1){
 							secondarycollisionfb = feedbackadder(secondarycollisionfb, msg.feed);
 							scfb++;
+							scfbbyte += msg.feed.payloadByteErrors;
+							scfbbit += msg.feed.payloadBitErrors;
 						}
 						else{
 							secondarysafefb = feedbackadder(secondarysafefb, msg.feed);
 							ssfb++;
+							ssfbbyte += msg.feed.payloadByteErrors;
+							ssfbbit += msg.feed.payloadBitErrors;
 						}
 					}
 				}
@@ -5347,6 +5381,10 @@ if(dsa && isController){
 	printf("\n%d Total Frames\nAverage Total Frame Feedback\n\n", tfb);
 	printf("Total Frame Valid Header Percentage: %%%f\n", headertfb/tfb * 100);
 	printf("Total Frame Valid Payload Percentage: %%%f\n", payloadtfb/tfb * 100);
+	printf("Total Frame Payload Byte Errors: %f\n", tfbbyte/tfb * 100);
+	printf("Total Frame Payload Bit Errors: %f\n", tfbbit/tfb * 100);
+	fprintf(dataFile, "Total Frame Payload Byte Errors: %f\n", tfbbyte/tfb * 100);
+	fprintf(dataFile, "Total Frame Payload Bit Errors: %f\n", tfbbit/tfb * 100);
 	fprintf(dataFile, "Total Frame Valid Header Percentage: %%%f\n", headertfb/tfb * 100);
 	fprintf(dataFile, "Total Frame Valid Payload Percentage: %%%f\n", payloadtfb/tfb * 100);
 	fprintf(dataFile, "\n%d Total Frames\nAverage Total Frame Feedback\n\n", tfb);
@@ -5357,6 +5395,10 @@ if(dsa && isController){
 	printf("\n%d Primary Frames\nAverage Primary Frame Feedback\n\n", pfb);
 	printf("Primary Frame Valid Header Percentage: %%%f\n", headerpfb/pfb * 100);
 	printf("Primary Frame Valid Payload Percentage: %%%f\n", payloadpfb/pfb * 100);
+	printf("Primary Frame Payload Byte Errors: %f\n", pfbbyte/pfb * 100);
+	printf("Primary Frame Payload Bit Errors: %f\n", pfbbit/pfb * 100);
+	fprintf(dataFile, "Primary Frame Payload Byte Errors: %f\n", pfbbyte/pfb * 100);
+	fprintf(dataFile, "Primary Frame Payload Bit Errors: %f\n", pfbbit/pfb * 100);
 	fprintf(dataFile, "Primary Frame Valid Header Percentage: %%%f\n", headerpfb/pfb * 100);
 	fprintf(dataFile, "Primary Frame Valid Payload Percentage: %%%f\n", payloadpfb/pfb * 100);
 	fprintf(dataFile, "\n%d Primary Frames\nAverage Primary Frame Feedback\n\n", pfb);
@@ -5367,6 +5409,11 @@ if(dsa && isController){
 	printf("\n%d Safe Primary Frames\nAverage Safe Primary Frame Feedback\n\n", psfb);
 	printf("Safe Primary Frame Valid Header Percentage: %%%f\n", headerpsfb/psfb * 100);
 	printf("Safe Primary Frame Valid Payload Percentage: %%%f\n", payloadpsfb/psfb * 100);
+	printf("Safe Primary Frame Payload Byte Errors: %f\n", psfbbyte/psfb * 100);
+	printf("Safe Primary Frame Payload Bit Errors: %f\n", psfbbit/psfb * 100);
+	fprintf(dataFile, "Safe Primary Frame Payload Byte Errors: %f\n", psfbbyte/psfb * 100);
+	fprintf(dataFile, "Safe Primary Frame Payload Bit Errors: %f\n", psfbbit/psfb * 100);
+	fprintf(dataFile, "\n%d Primary Frames\nAverage Primary Frame Feedback\n\n", psfb);
 	fprintf(dataFile, "Safe Primary Frame Valid Header Percentage: %%%f\n", headerpsfb/psfb * 100);
 	fprintf(dataFile, "Safe Primary Frame Valid Payload Percentage: %%%f\n", payloadpsfb/psfb * 100);
 	fprintf(dataFile, "\n%d Primary Frames\nAverage Primary Frame Feedback\n\n", psfb);
@@ -5380,6 +5427,10 @@ if(dsa && isController){
 	fprintf(dataFile, "Primary Collision Frame Valid Header Percentage: %%%f\n", headerpcfb/pcfb * 100);
 	fprintf(dataFile, "Primary Collision Frame Valid Payload Percentage: %%%f\n", payloadpcfb/pcfb * 100);
 	fprintf(dataFile, "\n%d Primary Collision Frames\nAverage Primary Collision Frame Feedback\n\n", pcfb);
+	printf("Primary Collision Frame Payload Byte Errors: %f\n", pcfbbyte/pcfb * 100);
+	printf("Primary Collision Frame Payload Bit Errors: %f\n", pcfbbit/pcfb * 100);
+	fprintf(dataFile, "Primary Collision Frame Payload Byte Errors: %f\n", pcfbbyte/pcfb * 100);
+	fprintf(dataFile, "Primary Collision Frame Payload Bit Errors: %f\n", pcfbbit/pcfb * 100);
 	fprintf(dataFile,"%-13s %-10i %-10.2f %-13.2f %-15.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
 		"puCframes:", primarycollisionfb.iteration,  primarycollisionfb.evm, primarycollisionfb.rssi, primarycollisionfb.payloadByteErrors,
 		primarycollisionfb.payloadBitErrors, 1, 1.0, 1.0);
@@ -5389,6 +5440,10 @@ if(dsa && isController){
 	printf("Secondary Frame Valid Payload Percentage: %%%f\n", payloadsfb/sfb * 100);
 	fprintf(dataFile, "Secondary Frame Valid Header Percentage: %%%f\n", headersfb/sfb * 100);
 	fprintf(dataFile, "Secondary Frame Valid Payload Percentage: %%%f\n", payloadsfb/sfb * 100);
+	printf("Secondary Frame Payload Byte Errors: %f\n", sfbbyte/sfb * 100);
+	printf("Secondary Frame Payload Bit Errors: %f\n", sfbbit/sfb * 100);
+	fprintf(dataFile, "Secondary Frame Payload Byte Errors: %f\n", sfbbyte/sfb * 100);
+	fprintf(dataFile, "Secondary Frame Payload Bit Errors: %f\n", sfbbit/sfb * 100);
 	fprintf(dataFile, "\n%d Secondary Frames\nAverage Secondary Frame Feedback\n\n", sfb);
 	fprintf(dataFile, "%-13s %-10i %-10.2f %-13.2f %-15.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
 		"suframes:", secondaryfb.iteration,  secondaryfb.evm, secondaryfb.rssi, secondaryfb.payloadByteErrors,
@@ -5399,6 +5454,10 @@ if(dsa && isController){
 	printf("Safe Secondary Frame Valid Payload Percentage: %%%f\n", payloadssfb/ssfb * 100);
 	fprintf(dataFile, "Safe Secondary Frame Valid Header Percentage: %%%f\n", headerssfb/ssfb * 100);
 	fprintf(dataFile, "Safe Secondary Frame Valid Payload Percentage: %%%f\n", payloadssfb/ssfb * 100);
+	printf("Safe Secondary Frame Payload Byte Errors: %f\n", ssfbbyte/ssfb * 100);
+	printf("Safe Secondary Frame Payload Bit Errors: %f\n", ssfbbit/ssfb * 100);
+	fprintf(dataFile, "Safe Secondary Frame Payload Byte Errors: %f\n", ssfbbyte/ssfb * 100);
+	fprintf(dataFile, "Safe Secondary Frame Payload Bit Errors: %f\n", ssfbbit/ssfb * 100);
 	fprintf(dataFile, "\n%d Safe Secondary Frames\nAverage Secondary Frame Feedback\n\n", ssfb);
 	fprintf(dataFile, "%-13s %-10i %-10.2f %-13.2f %-15.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
 		"suframes:", secondarysafefb.iteration,  secondarysafefb.evm, secondarysafefb.rssi, secondarysafefb.payloadByteErrors,
@@ -5409,6 +5468,10 @@ if(dsa && isController){
 	printf("Secondary Collision Frame Valid Payload Percentage: %%%f\n", payloadscfb/scfb * 100);
 	fprintf(dataFile, "Secondary Collision Frame Valid Header Percentage: %%%f\n", headerscfb/scfb * 100);
 	fprintf(dataFile, "Secondary Collision Frame Valid Payload Percentage: %%%f\n", payloadscfb/scfb * 100);
+	printf("Secondary Collision Frame Payload Byte Errors: %f\n", scfbbyte/scfb * 100);
+	printf("Secondary Collision Frame Payload Bit Errors: %f\n", scfbbit/scfb * 100);
+	fprintf(dataFile, "Secondary Collision Frame Payload Byte Errors: %f\n", scfbbyte/scfb * 100);
+	fprintf(dataFile, "Secondary Collision Frame Payload Bit Errors: %f\n", scfbbit/scfb * 100);
 	fprintf(dataFile, "\n%d Secondary Collision Frames\nAverage Secondary Collision Frame Feedback\n\n", scfb);
 	fprintf(dataFile,"%-13s %-10i %-10.2f %-13.2f %-15.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
 		"suCframes:", secondarycollisionfb.iteration,  secondarycollisionfb.evm, secondarycollisionfb.rssi, secondarycollisionfb.payloadByteErrors,
