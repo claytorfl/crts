@@ -2406,8 +2406,7 @@ int dsaCallback(unsigned char *  _header,
     {
 		//tx_byte = msequence_generate_symbol(rx_ms,8);
 		//printf( "%1i %1i\n", (signed int)_payload[m], tx_byte );
-		if(dsaCBs_ptr->usrptype == 'p' or dsaCBs_ptr->usrptype == 's')
-		printf("%c", _payload[m]);
+
         if (((int)_payload[m] != tx_byte))
         {
             payloadByteErrors++;
@@ -2418,8 +2417,7 @@ int dsaCallback(unsigned char *  _header,
             }      
         }           
     }
-	if(dsaCBs_ptr->usrptype == 'p' or dsaCBs_ptr->usrptype == 's')
-	printf("\n");               
+               
                     
     // Data that will be sent to server
     // TODO: Send other useful data through feedback array
