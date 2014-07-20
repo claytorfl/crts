@@ -2399,8 +2399,8 @@ write(dsaCBs_ptr->client, (void*)&mess, sizeof(mess));
     unsigned int payloadBitErrors = 0;
     int j,m;
 unsigned int tx_byte;
-if(received == 'f') tx_byte = (int)'1';
-if(received == 'F') tx_byte = (int)'0';
+if(received == 'f') tx_byte = 1;
+if(received == 'F') tx_byte = 0;
 
     // Calculate byte error rate and bit error rate for payload
     for (m=0; m<(signed int)_payload_len; m++)
