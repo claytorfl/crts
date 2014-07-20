@@ -2399,8 +2399,8 @@ write(dsaCBs_ptr->client, (void*)&mess, sizeof(mess));
     unsigned int payloadBitErrors = 0;
     int j,m;
 unsigned int tx_byte;
-if(received == 'f') tx_byte = 1;
-if(received == 'F') tx_byte = 0;
+if(received == 'f') tx_byte = 111;
+if(received == 'F') tx_byte = 110;
 
     // Calculate byte error rate and bit error rate for payload
     for (m=0; m<(signed int)_payload_len; m++)
@@ -4134,7 +4134,7 @@ if(dsa==1 && usingUSRPs && !isController){
 			header[h] = 1;
 		};
 		for(h = 0; h<puce.payloadLen; h++){
-			payload[h] = 1;
+			payload[h] = 111;
 		};
 
 		std::clock_t start;
