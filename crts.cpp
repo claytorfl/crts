@@ -4133,9 +4133,9 @@ if(dsa==1 && usingUSRPs && !isController){
 		for(h = 0; h<8; h++){
 			header[h] = 1;
 		};
-		/*for(h = 0; h<puce.payloadLen; h++){
+		for(h = 0; h<puce.payloadLen; h++){
 			payload[h] = 1;
-		};*/
+		};
 
 		std::clock_t start;
 		std::clock_t current;
@@ -4183,9 +4183,9 @@ if(dsa==1 && usingUSRPs && !isController){
 			while(primarybursttime/timedivisor > time){
 				current = std::clock();
 				time = ((float)(current-start))/CLOCKS_PER_SEC;
-				for (h=0; h<(signed int)ce.payloadLen; h++)
+				/*for (h=0; h<(signed int)ce.payloadLen; h++)
 				    payload[h] = (unsigned char)msequence_generate_symbol(tx_ms,8);
-				txcvr.assemble_frame(header, payload, puce.payloadLen, ms, fec0, fec1);
+				txcvr.assemble_frame(header, payload, puce.payloadLen, ms, fec0, fec1);*/
 				int isLastSymbol = 0;
 				while(!isLastSymbol)
 					{
