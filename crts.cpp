@@ -2456,6 +2456,7 @@ for(int i=0; i<4; i++)	fb.iteration += _header[i+2]<<(8*(3-i));
 		mess.number = dsaCBs_ptr->number;
 		mess.client = dsaCBs_ptr->client;
 		++dsaCBs_ptr->number;
+		printf("%c %c %d\n", mess.type, mess.purpose, mess.number);
 		write(dsaCBs_ptr->client, (void*)&mess, sizeof(mess));
 	}
 
