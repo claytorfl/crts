@@ -4680,7 +4680,7 @@ if(dsa==1 && usingUSRPs && !isController){
 		unsigned char * p = NULL;   // default subcarrier allocation
 		if (verbose) 
 		printf("Using ofdmtxrx\n");
-		uhd_rxgain = 35;
+		uhd_rxgain = 31;
 		//Basic transceiver setup
 		printf("%d %d %d\n", puce.numSubcarriers, puce.CPLen, puce.taperLen);
 		ofdmtxrx txcvr(puce.numSubcarriers, puce.CPLen, puce.taperLen, p, dsaCallback, (void*) &dsaCBs);
