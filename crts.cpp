@@ -5495,10 +5495,14 @@ if(dsa && isController){
 }
 
 if(tester==1){
-	struct CognitiveEngine ce = CreateCognitiveEngine();
-	readCEConfigFile(&ce, (char*) "ce1.txt", 0);
-	uhd::usrp::multi_usrp::sptr usrp;
-	//fftscan(ce, usrp);
+	int w;
+	int txbyte;
+	int rxbyte;
+	for(w=0; w<20; w++){
+		txbyte = msequence_generate_symbol(tx_ms,8);
+		rxbyte = msequence_generate_symbol(rx_ms,8);
+		printf("%d %d\n", txbyte, rxbyte);
+	}
 	return 1;
 }
 
