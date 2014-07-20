@@ -4185,6 +4185,7 @@ if(dsa==1 && usingUSRPs && !isController){
 			//printf("%d\n", mess.number);
 			//For some reason time is about 5 times slower in this while loop
 			while(primarybursttime/timedivisor > time){
+				printf("loop\n");
 				//printf("Primary time %d\n", CLOCKS_PER_SEC);
 				//printf("%f\n", (float)time);
 		   		//txcvr.end_transmit_frame();
