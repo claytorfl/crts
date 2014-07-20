@@ -4187,7 +4187,7 @@ if(dsa==1 && usingUSRPs && !isController){
 			while(primarybursttime/timedivisor > time){
 				//printf("Primary time %d\n", CLOCKS_PER_SEC);
 				//printf("%f\n", (float)time);
-		   		txcvr.end_transmit_frame();
+		   		//txcvr.end_transmit_frame();
 				current = std::clock();
 				time = ((float)(current-start))/CLOCKS_PER_SEC;
 				txcvr.assemble_frame(header, payload, puce.payloadLen, ms, fec0, fec1);
@@ -4201,9 +4201,9 @@ if(dsa==1 && usingUSRPs && !isController){
 					enactScenarioBaseband(txcvr.fgbuffer, puce, sc);}
 					txcvr.transmit_symbol();
 					}
-				usleep(100);
+				usleep(10);
 		   		txcvr.end_transmit_frame();
-				usleep(100);
+				usleep(10);
 				//The radio adapts if it can
 				if(adapt==1)
 				postTxTasks(&puce, &msg.feed, verbose);
