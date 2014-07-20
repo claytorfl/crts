@@ -2345,7 +2345,7 @@ int dsaCallback(unsigned char * _header,
 if(dsaCBs_ptr->usrptype == 'S' and dsaCBs_ptr->detectiontype == 'e')
 return 1;
     //int verbose = dsaCBs_ptr->verbose;
-//msequence rx_ms = *dsaCBs_ptr->rx_ms_ptr;
+msequence rx_ms = *dsaCBs_ptr->rx_ms_ptr;
 //int primary;
 int ones = 0;
 int zeroes = 0;
@@ -2399,14 +2399,14 @@ write(dsaCBs_ptr->client, (void*)&mess, sizeof(mess));
     unsigned int payloadBitErrors = 0;
     int j,m;
 unsigned int tx_byte;
-if(received == 'f') tx_byte = 1;
-if(received == 'F') tx_byte = 0;
+if(received == 'f') tx_byte = (int)'1';
+if(received == 'F') tx_byte = (int)'0';
 
     // Calculate byte error rate and bit error rate for payload
     for (m=0; m<(signed int)_payload_len; m++)
     {
-//tx_byte = msequence_generate_symbol(rx_ms,8);
-//printf( "%1i %1i\n", (signed int)_payload[m], tx_byte );
+tx_byte = msequence_generate_symbol(rx_ms,8);
+printf( "%1i %1i\n", (signed int)_payload[m], tx_byte );
         if (((int)_payload[m] != tx_byte))
         {
             payloadByteErrors++;
@@ -4133,9 +4133,10 @@ if(dsa==1 && usingUSRPs && !isController){
 		for(h = 0; h<8; h++){
 			header[h] = 1;
 		};
-		for(h = 0; h<puce.payloadLen; h++){
+		/*for(h = 0; h<puce.payloadLen; h++){
 			payload[h] = 1;
-		};
+		};*/
+
 		std::clock_t start;
 		std::clock_t current;
 		unsigned char * p = NULL;   // default subcarrier allocation
@@ -4182,6 +4183,8 @@ if(dsa==1 && usingUSRPs && !isController){
 			while(primarybursttime/timedivisor > time){
 				current = std::clock();
 				time = ((float)(current-start))/CLOCKS_PER_SEC;
+				for (h=0; h<(signed int)ce.payloadLen; h++)
+				    payload[h] = (unsigned char)msequence_generate_symbol(tx_ms,8);
 				txcvr.assemble_frame(header, payload, puce.payloadLen, ms, fec0, fec1);
 				int isLastSymbol = 0;
 				while(!isLastSymbol)
