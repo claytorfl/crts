@@ -279,6 +279,7 @@ struct fftStruct {
 	int testnumber;
 	int debug;
 	float gain;
+	float noisemult;
 };
 
 struct scenarioSummaryInfo{
@@ -2675,7 +2676,7 @@ float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, s
 	fftwf_destroy_plan(p);
 	if(fftinfo.debug==1){
 	printf("%f\n", (float)(totalpower/fftinfo.repeat + fftinfo.noiseadder));}
-	return totalpower/fftinfo.repeat + fftinfo.noiseadder;
+	return ((totalpower/fftinfo.repeat) * fftinfo.noisemult) + fftinfo.noiseadder;
 }
 
 
@@ -4022,6 +4023,10 @@ if(dsa==1 && usingUSRPs && !isController){
 		if (config_setting_lookup_float (setting, "gain", &tmpD))
 		{
 		fftinfo.gain = tmpD;
+		}
+		if (config_setting_lookup_float (setting, "noisemult", &tmpD))
+		{
+		fftinfo.noisemult = tmpD;
 		}
 	}
 	setting = config_lookup(&cfg, "PU");
