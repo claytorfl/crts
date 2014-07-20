@@ -2400,13 +2400,13 @@ write(dsaCBs_ptr->client, (void*)&mess, sizeof(mess));
     int j,m;
 unsigned int tx_byte;
 if(received == 'f') tx_byte = 111;
-if(received == 'F') tx_byte = 110;
+if(received == 'F') tx_byte = 0;
 
     // Calculate byte error rate and bit error rate for payload
     for (m=0; m<(signed int)_payload_len; m++)
     {
 //tx_byte = msequence_generate_symbol(rx_ms,8);
-printf( "%1i %1i\n", (signed int)_payload[m], tx_byte );
+//printf( "%1i %1i\n", (signed int)_payload[m], tx_byte );
         if (((int)_payload[m] != tx_byte))
         {
             payloadByteErrors++;
