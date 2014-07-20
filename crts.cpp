@@ -2331,125 +2331,122 @@ struct SU{
 	int time;
 };
 
-//Callback function that determines if the frame was received from a primary or secondary user using headers
-int dsaCallback(unsigned char *  _header,
-               int              _header_valid,
-               unsigned char *  _payload,
-               unsigned int     _payload_len,
-               int              _payload_valid,
+int dsaCallback(unsigned char * _header,
+               int _header_valid,
+               unsigned char * _payload,
+               unsigned int _payload_len,
+               int _payload_valid,
                framesyncstats_s _stats,
-               void *           _userdata)
+               void * _userdata)
 {
     struct dsaCBstruct * dsaCBs_ptr = (struct dsaCBstruct *) _userdata;
-	//If the secondary transmitter is using energy detection then the callback is unnecessary and it is skipped
-	if(dsaCBs_ptr->usrptype == 'S' and dsaCBs_ptr->detectiontype == 'e')
-	return 1;
+//If the secondary transmitter is using energy detection then the callback is unnecessary and it is skipped
+if(dsaCBs_ptr->usrptype == 'S' and dsaCBs_ptr->detectiontype == 'e')
+return 1;
     //int verbose = dsaCBs_ptr->verbose;
-	//msequence rx_ms = *dsaCBs_ptr->rx_ms_ptr; 
-	//int primary;
-	int ones = 0;
-	int zeroes = 0;
-	int twos = 0;
-	char received;
+//msequence rx_ms = *dsaCBs_ptr->rx_ms_ptr;
+//int primary;
+int ones = 0;
+int zeroes = 0;
+int twos = 0;
+char received;
 
-	//The different kinds of transmissions are determined by the content of the header
-	//and its number of 0's, 1's, and 2's
-	for(int i = 0; i<8; ++i){
-		if(_header[i]==1){
-			ones++;
-		}
-		if(_header[i]==0){
-			zeroes++;
-		}
-		if(_header[i]==2){
-			twos++;
-		}
-	}
+//The different kinds of transmissions are determined by the content of the header
+//and its number of 0's, 1's, and 2's
+for(int i = 0; i<8; ++i){
+if(_header[i]==1){
+ones++;
+}
+if(_header[i]==0){
+zeroes++;
+}
+if(_header[i]==2){
+twos++;
+}
+}
 
-	//If the message has all 1's or all 2's then a primary transmission was received
-	//and the dsaCBs struct changes its variables to show this information
-	if(ones>zeroes || twos>zeroes){
-		//primary = 1;
-		if(dsaCBs_ptr->usrptype == 'S'){
-		dsaCBs_ptr->primaryon = 1;}
-		received = 'f';
-		//printf("\n\nPrimary transmission\n\n");
-	}
+//If the message has all 1's or all 2's then a primary transmission was received
+//and the dsaCBs struct changes its variables to show this information
+if(ones>zeroes || twos>zeroes){
+//primary = 1;
+if(dsaCBs_ptr->usrptype == 'S'){
+dsaCBs_ptr->primaryon = 1;}
+received = 'f';
+//printf("\n\nPrimary transmission\n\n");
+}
 
-	//If the message has all zeroes then it is a secondary transmission
-	if(zeroes>ones && zeroes>twos){
-		//primary = 0;
-		//dsaCBs_ptr->primaryon = 0;
-		dsaCBs_ptr->secondarysending = 1;
-		received = 'F';
-		//printf("\n\nSecondary transmission\n\n");
-	}
-	if(ones==0 and zeroes == 0){
-		struct message mess;
-		mess.type = dsaCBs_ptr->usrptype;
-		mess.purpose = 'u';
-		mess.number = dsaCBs_ptr->number;
-		mess.client = dsaCBs_ptr->client;
-		++dsaCBs_ptr->number;
-		write(dsaCBs_ptr->client, (void*)&mess, sizeof(mess));
-	}
+//If the message has all zeroes then it is a secondary transmission
+if(zeroes>ones && zeroes>twos){
+//primary = 0;
+//dsaCBs_ptr->primaryon = 0;
+dsaCBs_ptr->secondarysending = 1;
+received = 'F';
+//printf("\n\nSecondary transmission\n\n");
+}
+if(ones==0 and zeroes == 0){
+struct message mess;
+mess.type = dsaCBs_ptr->usrptype;
+mess.purpose = 'u';
+mess.number = dsaCBs_ptr->number;
+mess.client = dsaCBs_ptr->client;
+++dsaCBs_ptr->number;
+write(dsaCBs_ptr->client, (void*)&mess, sizeof(mess));
+}
 
-    // Variables for checking number of errors 
-    unsigned int payloadByteErrors  =   0;
-    unsigned int payloadBitErrors   =   0;
+    // Variables for checking number of errors
+    unsigned int payloadByteErrors = 0;
+    unsigned int payloadBitErrors = 0;
     int j,m;
-	unsigned int tx_byte;
-	if(received == 'f') tx_byte = 1;
-	if(received == 'F') tx_byte = 0;
+unsigned int tx_byte;
+if(received == 'f') tx_byte = 1;
+if(received == 'F') tx_byte = 0;
 
     // Calculate byte error rate and bit error rate for payload
     for (m=0; m<(signed int)_payload_len; m++)
     {
-		//tx_byte = msequence_generate_symbol(rx_ms,8);
-		//printf( "%1i %1i\n", (signed int)_payload[m], tx_byte );
-
+//tx_byte = msequence_generate_symbol(rx_ms,8);
+//printf( "%1i %1i\n", (signed int)_payload[m], tx_byte );
         if (((int)_payload[m] != tx_byte))
         {
             payloadByteErrors++;
             for (j=0; j<8; j++)
             {
-				if ((_payload[m]&(1<<j)) != (tx_byte&(1<<j)))
+if ((_payload[m]&(1<<j)) != (tx_byte&(1<<j)))
                    payloadBitErrors++;
-            }      
-        }           
+            }
+        }
     }
-               
                     
     // Data that will be sent to server
     // TODO: Send other useful data through feedback array
-	//printf("CALLBACK!!!\n\n");
+//printf("CALLBACK!!!\n\n");
     struct feedbackStruct fb = {};
-    fb.header_valid         =   _header_valid;
-    fb.payload_valid        =   _payload_valid;
-    fb.payload_len          =   _payload_len;
-    fb.payloadByteErrors    =   payloadByteErrors;
-    fb.payloadBitErrors     =   payloadBitErrors;
-    fb.evm                  =   _stats.evm;
-    fb.rssi                 =   _stats.rssi;
-    fb.cfo                  =   _stats.cfo;	
-	//fb.ce_num				=	_header[0];
-	//fb.sc_num				=	_header[1];
-	fb.iteration			=	0;
-	fb.block_flag			=	0;
+    fb.header_valid = _header_valid;
+    fb.payload_valid = _payload_valid;
+    fb.payload_len = _payload_len;
+    fb.payloadByteErrors = payloadByteErrors;
+    fb.payloadBitErrors = payloadBitErrors;
+    fb.evm = _stats.evm;
+    fb.rssi = _stats.rssi;
+    fb.cfo = _stats.cfo;	
+//fb.ce_num = _header[0];
+//fb.sc_num = _header[1];
+fb.iteration	=	0;
+fb.block_flag	=	0;
 
-	for(int i=0; i<4; i++)	fb.iteration += _header[i+2]<<(8*(3-i));
+for(int i=0; i<4; i++)	fb.iteration += _header[i+2]<<(8*(3-i));
 
     if (false)
     {
         printf("In rxcallback():\n");
-        printf("Header: %i %i %i %i %i %i %i %i\n", _header[0], _header[1], 
+        printf("Header: %i %i %i %i %i %i %i %i\n", _header[0], _header[1],
             _header[2], _header[3], _header[4], _header[5], _header[6], _header[7]);
         feedbackStruct_print(&fb);
     }
 
     // Receiver sends data to server*/
-	//struct feedbackStruct fb = {};
-	//If the usrp is a receiver then it will put the feedback into a message and send it to its transmitter
+//struct feedbackStruct fb = {};
+//If the usrp is a receiver then it will put the feedback into a message and send it to its transmitter
 	if(dsaCBs_ptr->usrptype == 'p' or dsaCBs_ptr->usrptype == 's'){
 		struct message mess;
 		mess.type = dsaCBs_ptr->usrptype;
@@ -2458,13 +2455,14 @@ int dsaCallback(unsigned char *  _header,
 		mess.number = dsaCBs_ptr->number;
 		mess.client = dsaCBs_ptr->client;
 		++dsaCBs_ptr->number;
-		printf("%c %c %d %d\n", mess.type, mess.purpose, mess.number, mess.client);
 		write(dsaCBs_ptr->client, (void*)&mess, sizeof(mess));
 	}
 
     return 0;
 
 } // end rxCallback()
+
+
 
 int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float noisefloor, struct fftStruct fftinfo){
 	int cantransmit;
@@ -4231,7 +4229,7 @@ if(dsa==1 && usingUSRPs && !isController){
 		//After it has completed its cycles the primary transmitter sends a finished message to the controller
 		mess.purpose = 'F';
 		mess.number = primarymsgnumber;
-		//write(dsaCBs.client, (const void*)&mess, sizeof(mess));
+		write(dsaCBs.client, (const void*)&mess, sizeof(mess));
 		return 1;
 	}
 
