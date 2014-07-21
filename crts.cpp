@@ -5205,6 +5205,7 @@ if(dsa && isController){
 					//The feedback is written to the data file and added to the proper accumulator feedback
 					//structs where it will later be averaged together
 					if(msg.purpose == 'f'){
+						feedbackStruct_print(&msg.feed);
 						latestsecondary = msg.number;
 						fprintf(dataFile, "%-13s %-10i %-10.2f %-13.2f %-15.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
 							"sudata:", msg.feed.iteration,  msg.feed.evm, msg.feed.rssi, msg.feed.payloadByteErrors,
