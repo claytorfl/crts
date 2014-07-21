@@ -263,6 +263,7 @@ struct broadcastfeedbackinfo{
 	int * msgnumber;
 	char user;
 	int primaryon;
+	char killsign;
 };
 
 //Struct for passing variables to fftscan function
@@ -1604,7 +1605,8 @@ void * feedbackThread(void * v_ptr){
 				}
 
 				//Energy detector detects that the spectrum is free
-				if(m_ptr->purpose == 'd'){
+				if(m_ptr->purpose == bfi_ptr->killsign){
+					//if(bfi_ptr->killsign = 'd')
 					bfi_ptr->primaryon = 0;
 					primary++;
 				}
@@ -3929,6 +3931,7 @@ if(dsa==1 && usingUSRPs && !isController){
 	int uninterruptedframes = 1;
 	int adapt = 0;
 	int usescenario = 0;
+	char killsign = 'z';
 	
 	struct CognitiveEngine puce;
 	struct CognitiveEngine suce;
@@ -3978,6 +3981,11 @@ if(dsa==1 && usingUSRPs && !isController){
 		{
 		str2 = (char *)str;
 		dsaCBs.detectiontype = str[0];
+		}
+		if (config_setting_lookup_string(setting, "detectiontype", &str))
+		{
+		str2 = (char *)str;
+		killsign = *str2;
 		}
 	}
 	setting = config_lookup(&cfg, "fft");
@@ -4480,6 +4488,7 @@ if(dsa==1 && usingUSRPs && !isController){
 		if(broadcasting==1){
 		bfi.primaryon = 0;
 		bfi.user = 'S';
+		bfi.killsign = killsign;
 		bfi.client = dsaCBs.client;
 		bfi.m_ptr = &msg;
 		bfi.msgnumber = &secondarymsgnumber;
