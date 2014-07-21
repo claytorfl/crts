@@ -4694,8 +4694,8 @@ if(dsa==1 && usingUSRPs && !isController){
 		txcvr.set_tx_rate(puce.bandwidth);
 		txcvr.set_tx_gain_soft(puce.txgain_dB);
 		txcvr.set_tx_gain_uhd(puce.uhd_txgain_dB);
-		txcvr.set_rx_freq(frequency);
-		txcvr.set_rx_rate(bandwidth);
+		txcvr.set_rx_freq(puce.frequency);
+		txcvr.set_rx_rate(puce.bandwidth);
 		txcvr.set_rx_gain_uhd(uhd_rxgain);
 		txcvr.start_rx();
 
@@ -4725,8 +4725,8 @@ if(dsa==1 && usingUSRPs && !isController){
 		txcvr.set_tx_rate(suce.bandwidth);
 		txcvr.set_tx_gain_soft(suce.txgain_dB);
 		txcvr.set_tx_gain_uhd(suce.uhd_txgain_dB);
-		txcvr.set_rx_freq(frequency);
-		txcvr.set_rx_rate(bandwidth);
+		txcvr.set_rx_freq(suce.frequency);
+		txcvr.set_rx_rate(suce.bandwidth);
 		txcvr.set_rx_gain_uhd(uhd_rxgain);
 		txcvr.start_rx();
 
