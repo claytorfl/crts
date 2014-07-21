@@ -2390,7 +2390,6 @@ received = 'f';
 if(zeroes>ones && zeroes>twos){
 //primary = 0;
 //dsaCBs_ptr->primaryon = 0;
-printf("secondary\n");
 dsaCBs_ptr->secondarysending = 1;
 received = 'F';
 //printf("\n\nSecondary transmission\n\n");
