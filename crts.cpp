@@ -2381,6 +2381,7 @@ received = 'f';
 if(zeroes>ones && zeroes>twos){
 //primary = 0;
 //dsaCBs_ptr->primaryon = 0;
+printf("secondary\n");
 dsaCBs_ptr->secondarysending = 1;
 received = 'F';
 //printf("\n\nSecondary transmission\n\n");
@@ -2457,7 +2458,7 @@ for(int i=0; i<4; i++)	fb.iteration += _header[i+2]<<(8*(3-i));
 		mess.number = dsaCBs_ptr->number;
 		mess.client = dsaCBs_ptr->client;
 		++dsaCBs_ptr->number;
-		//printf("%c %c %d\n", mess.type, mess.purpose, mess.number);
+		printf("%c %c %d\n", mess.type, mess.purpose, mess.number);
 		write(dsaCBs_ptr->client, (void*)&mess, sizeof(mess));
 	}
 
