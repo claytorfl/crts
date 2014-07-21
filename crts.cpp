@@ -1450,6 +1450,26 @@ void * serveTCPDSAclient(void * _sc_ptr){
     return NULL;
 }
 
+/*struct fftthreadinfo{
+	struct CognitiveEngine ce;
+	struct fftstruct fftinfo;
+	float noisefloor;
+	uhd::usrp::multi_usrp::sptr usrp;
+	int primaryon;
+}
+
+void * fftthread(void * v_ptr){
+	struct fftthreadinfo * fti_ptr = (struct fftthreadinfo*) v_ptr;
+	while(1){
+		fti_ptr->primaryon = fftscan(fti_ptr->ce, fti_ptr->usrp, fti_ptr->noisefloor, fti_ptr->fftinfo);
+	}
+}*/
+	
+	
+
+
+
+
 //Thread that a broadcasting transmitter runs to interpret receiver feedback
 void * feedbackThread(void * v_ptr){
 	struct broadcastfeedbackinfo * bfi_ptr = (struct broadcastfeedbackinfo*) v_ptr;
