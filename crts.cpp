@@ -1475,18 +1475,11 @@ void * feedbackThread(void * v_ptr){
 	struct broadcastfeedbackinfo * bfi_ptr = (struct broadcastfeedbackinfo*) v_ptr;
 	struct message * m_ptr = bfi_ptr->m_ptr;
 	int client = bfi_ptr->client;
-	//printf("%d\n", client);
 	struct message msg;
 	msg.type = bfi_ptr->user;
-	//printf("%c\n", msg.type);
 	int clientlist[10];
 	clientlist[0] = 0;
 	int clientlistlength = 1;
-	//int totalcycles = 0;
-	//int index = 0;
-	//int fblistlength = 10;
-	//struct feedbackStruct fblist[fblistlength];
-	//int feedbacknum[fblistlength];
 	struct feedbackStruct basicfb;
 	int fbnum = 1;
 
@@ -1507,13 +1500,10 @@ void * feedbackThread(void * v_ptr){
 	
 	int primary = 0;
 	int secondary = 0;
-	//std::clock_t time = std::clock();
 	int loop = 1;
 	int h;
 	
 	while(loop){
-		//printf("%d\n", bfi_ptr->primaryon);
-		//printf("%d\n", *bfi_ptr->msgnumber);
 		//When a new message is received
 		if(m_ptr->msgreceived == 1){
 			//If the message is from a primary receiver
@@ -1604,21 +1594,25 @@ void * feedbackThread(void * v_ptr){
 				//Receiver saying that it received a primary transmission
 				if(m_ptr->purpose == 'P'){
 					bfi_ptr->primaryon = 1;
-					//fblist[index] = feedbackadder(fblist[index], msg.feed);
-					//time = std::clock();
-					//printf("Secondary receiver received primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
+					primary++;
+				}
+
+				//Energy detector detects the primary user
+				if(m_ptr->purpose == 'D'){
+					bfi_ptr->primaryon = 1;
+					primary++;
+				}
+
+				//Energy detector detects that the spectrum is free
+				if(m_ptr->purpose == 'd'){
+					bfi_ptr->primaryon = 0;
 					primary++;
 				}
 				//receiver saying it received secondary transmission
 				if(m_ptr->purpose == 'S'){
-					//time = std::clock();
-					
-					//printf("Secondary receiver received secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					secondary++;
 				}
 				if(m_ptr->purpose == 'u'){
-					//time = std::clock();
-					//printf("Primary receiver received secondary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					msg.purpose = 'u';
 					msg.number = *bfi_ptr->msgnumber;
 					write(client, (const void *)&msg, sizeof(msg));
@@ -1626,7 +1620,6 @@ void * feedbackThread(void * v_ptr){
 				}
 				//Feedback from secondary transmission
 				if(m_ptr->purpose == 'F'){
-					//printf("Secondary info\n");
 					secondary++;
 					//Checks if the message's client is in the client list
 					//If it isn't then the transmitter hasn't received feedback from that node for that
@@ -1649,7 +1642,6 @@ void * feedbackThread(void * v_ptr){
 						clientlistlength++;
 						}
 					else{
-						//printf("%d\n", client);
 						basicfb.header_valid /= fbnum;
 						basicfb.payload_valid /= fbnum;
 					   	basicfb.payload_len /= fbnum;
@@ -1663,7 +1655,6 @@ void * feedbackThread(void * v_ptr){
 						msg.feed = basicfb;
 						msg.purpose = 'f';
 						msg.number = *bfi_ptr->msgnumber;
-						//printf("%d\n", msg.number);
 						write(client, (const void *)&msg, sizeof(msg));
 						(*bfi_ptr->msgnumber)++;
 						basicfb.header_valid = 0;
@@ -1685,9 +1676,7 @@ void * feedbackThread(void * v_ptr){
 				}
 				//Receiver giving feedback from primary transmission
 				if(m_ptr->purpose == 'f'){
-					//time = std::clock();
 					bfi_ptr->primaryon = 1;
-					//printf("Received feedback from secondary receiver with primary transmission at time %f seconds\n", ((float)time/CLOCKS_PER_SEC));
 					primary++;
 				}
 			}
@@ -4482,7 +4471,114 @@ if(dsa==1 && usingUSRPs && !isController){
 				}
 			}
 		}
-	
+
+	if(secondary == 1 && dsaCBs.detectiontype == 't' && !receiver){
+		struct broadcastfeedbackinfo bfi;
+		mess.type = 'S';
+		dsaCBs.usrptype = 'S';
+		mess.msgreceived = 1;
+		verbose = 0;
+		if(broadcasting==1){
+		bfi.primaryon = 0;
+		bfi.user = 'S';
+		bfi.client = dsaCBs.client;
+		bfi.m_ptr = &msg;
+		bfi.msgnumber = &secondarymsgnumber;
+		pthread_create( &receiverfeedbackThread, NULL, feedbackThread, (void*) &bfi);
+		}
+		printf("secondary\n");
+
+		//The secondary user has a payload of all zeroes
+		for(int h = 0; h<8; h++){
+			header[h] = 0;
+		};
+		for(int h = 0; h<suce.payloadLen; h++){
+			payload[h] = 0;
+		};
+		std::clock_t start;
+		//std::clock_t current;
+		unsigned char * p = NULL;   // default subcarrier allocation
+		if (verbose) 
+		printf("Using ofdmtxrx\n");
+		printf("%d %d %d\n", suce.numSubcarriers, suce.CPLen, suce.taperLen);
+
+		//Sets up transceiver object
+		ofdmtxrx txcvr(suce.numSubcarriers, suce.CPLen, suce.taperLen, p, dsaCallback, (void*) &dsaCBs);
+		txcvr.set_tx_freq(suce.frequency);
+		txcvr.set_tx_rate(suce.bandwidth);
+		txcvr.set_tx_gain_soft(suce.txgain_dB);
+		txcvr.set_tx_gain_uhd(suce.uhd_txgain_dB);
+    	txcvr.set_rx_freq(frequency);
+   		txcvr.set_rx_rate(suce.bandwidth);
+    	txcvr.set_rx_gain_uhd(uhd_rxgain);
+		txcvr.start_rx();
+		float time = 0;	
+		start = std::clock();
+		while(true)
+			{
+			int on = 1;
+			time = 0;
+			start = std::clock();
+			printf("SU transmitting\n");
+			mess.number = secondarymsgnumber;
+			mess.purpose = 't';
+			write(dsaCBs.client, (const void*)&mess, sizeof(mess));
+			secondarymsgnumber++;
+			int z;
+			//If it does not sense the primary user then the secondary user will transmit
+			while(bfi.primaryon==0)
+				{
+				for(z=0; z<uninterruptedframes; z++){
+					modulation_scheme ms = convertModScheme(suce.modScheme, &suce.bitsPerSym);
+					fec_scheme fec0 = convertFECScheme(suce.innerFEC, verbose);
+					fec_scheme fec1 = convertFECScheme(suce.outerFEC, verbose);
+					usleep(1);
+					txcvr.assemble_frame(header, payload, suce.payloadLen, ms, fec0, fec1);
+					int isLastSymbol = 0;
+					while(!isLastSymbol)
+						{
+						usleep(1);
+						isLastSymbol = txcvr.write_symbol();
+						if(usescenario)
+						enactScenarioBaseband(txcvr.fgbuffer, suce, sc);
+						txcvr.transmit_symbol();
+						}
+			   		txcvr.end_transmit_frame();
+					usleep(100);
+					if(adapt==1)
+					postTxTasks(&suce, &msg.feed, verbose);
+				}
+			}
+			time = 0;
+			start = std::clock();
+			std::clock_t current;
+			printf("SU sensing\n");
+
+			//Once the primary user is detected the secondary user stops transmitting
+			//and switches to sensing in a new while loop
+			mess.number = secondarymsgnumber;
+			mess.purpose = 'r';
+			write(dsaCBs.client, (const void*)&mess, sizeof(mess));
+			secondarymsgnumber++;
+			while(bfi.primaryon==1)
+				{
+				time = 0;
+				/*bfi.primaryon = 0;
+				start = std::clock();
+				std::clock_t current;
+
+				//The while loop sets primaryon to 0 in the beginning. If the loop
+				//finishes without a new primary transmission switching it to 1 then
+				//the secondary user will assume it has stopped and resume transmitting
+				//This while loop below will run for secondaryscantime seconds
+				while(secondaryscantime > time)
+					{
+					current = std::clock();
+					time = (current-start)/CLOCKS_PER_SEC;
+					}*/			
+				}
+			}
+		}
 
 	//If the secondary transmitter is using energy detection it will call the fftscan function to check for
 	//spectrum holes
@@ -4659,6 +4755,10 @@ if(dsa==1 && usingUSRPs && !isController){
 		uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
 		struct message emsg;
 		emsg.type = 's';
+
+		//The energy detector sends 2 kinds of messages
+		//'D' = Primary user detected
+		//'d' = Primary user not detected
 		emsg.purpose = 'f';
 		emsg.number = 1;
 		int cantransmit = 0;
@@ -4685,12 +4785,16 @@ if(dsa==1 && usingUSRPs && !isController){
 				else{
 					primaryoncounter++;
 				}
-			}
-		
-			if(primaryoffcounter < primaryoncounter){				
+			}		
+			if(primaryoffcounter < primaryoncounter){
+				emsg.purpose = 'D';				
 				write(dsaCBs.client, &emsg, sizeof(emsg));
 				emsg.number++;
-	
+			}
+			if(primaryoffcounter > primaryoncounter){
+				emsg.purpose = 'd';				
+				write(dsaCBs.client, &emsg, sizeof(emsg));
+				emsg.number++;
 			}
 		}
 	}	
