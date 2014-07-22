@@ -2468,7 +2468,7 @@ for(int i=0; i<4; i++)	fb.iteration += _header[i+2]<<(8*(3-i));
 		mess.number = dsaCBs_ptr->number;
 		mess.client = dsaCBs_ptr->client;
 		++dsaCBs_ptr->number;
-		printf("%c %c %d\n", mess.type, mess.purpose, mess.number);
+		//printf("%c %c %d\n", mess.type, mess.purpose, mess.number);
 		write(dsaCBs_ptr->client, (void*)&mess, sizeof(mess));
 	}
 
@@ -4531,7 +4531,7 @@ if(dsa==1 && usingUSRPs && !isController){
 			mess.number = secondarymsgnumber;
 			mess.purpose = 't';
 			write(dsaCBs.client, (const void*)&mess, sizeof(mess));
-			printf("%c %c %d\n", mess.purpose, mess.type, mess.number);
+			//printf("%c %c %d\n", mess.purpose, mess.type, mess.number);
 			secondarymsgnumber++;
 			int z;
 			//If it does not sense the primary user then the secondary user will transmit
@@ -4568,7 +4568,7 @@ if(dsa==1 && usingUSRPs && !isController){
 			mess.number = secondarymsgnumber;
 			mess.purpose = 'r';
 			write(dsaCBs.client, (const void*)&mess, sizeof(mess));
-			printf("%c %c %d\n", mess.purpose, mess.type, mess.number);
+			//printf("%c %c %d\n", mess.purpose, mess.type, mess.number);
 			secondarymsgnumber++;
 			while(bfi.primaryon==1)
 				{
@@ -4806,7 +4806,7 @@ if(dsa==1 && usingUSRPs && !isController){
 				write(dsaCBs.client, &emsg, sizeof(emsg));
 				emsg.number++;
 			}
-			printf("%c %d %d %d\n", emsg.purpose, emsg.number, primaryoffcounter, primaryoncounter);
+			//printf("%c %d %d %d\n", emsg.purpose, emsg.number, primaryoffcounter, primaryoncounter);
 		}
 	}	
 	//Primary receiver. Does nothing but use dsaCallback function to send feedback
@@ -5271,7 +5271,7 @@ if(dsa && isController){
 				}
 			}
 			if(msg.type == 'S'){
-				printf("Secondary %d %d\n", msg.number, latestsecondary);
+				//printf("Secondary %d %d\n", msg.number, latestsecondary);
 				if(latestsecondary<msg.number){
 
 					//The secondary user has started transmitting
