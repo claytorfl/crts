@@ -4584,9 +4584,9 @@ if(dsa==1 && usingUSRPs && !isController){
 					current = std::clock();
 					time = (current-start)/CLOCKS_PER_SEC;
 					}*/			
-				}
 			}
 		}
+	}
 
 	//If the secondary transmitter is using energy detection it will call the fftscan function to check for
 	//spectrum holes
