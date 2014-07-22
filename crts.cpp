@@ -264,6 +264,7 @@ struct broadcastfeedbackinfo{
 	char user;
 	int primaryon;
 	char killsign;
+	int energydetected;
 };
 
 //Struct for passing variables to fftscan function
@@ -1602,14 +1603,14 @@ void * feedbackThread(void * v_ptr){
 
 				//Energy detector detects the primary user
 				if(m_ptr->purpose == 'D'){
-					bfi_ptr->primaryon = 1;
+					bfi_ptr->energydetected = 1;
 					primary++;
 				}
 
 				//Energy detector detects that the spectrum is free
 				if(m_ptr->purpose == 'd'){//bfi_ptr->killsign){
 					//if(bfi_ptr->killsign = 'd')
-					bfi_ptr->primaryon = 0;
+					bfi_ptr->energydetected = 0;
 					primary++;
 				}
 				//receiver saying it received secondary transmission
@@ -4547,7 +4548,7 @@ if(dsa==1 && usingUSRPs && !isController){
 			secondarymsgnumber++;
 			int z;
 			//If it does not sense the primary user then the secondary user will transmit
-			while(bfi.primaryon==0)
+			while(bfi.energydetected==0)
 				{
 				for(z=0; z<uninterruptedframes; z++){
 					modulation_scheme ms = convertModScheme(suce.modScheme, &suce.bitsPerSym);
@@ -4582,7 +4583,7 @@ if(dsa==1 && usingUSRPs && !isController){
 			write(dsaCBs.client, (const void*)&mess, sizeof(mess));
 			//printf("%c %c %d\n", mess.purpose, mess.type, mess.number);
 			secondarymsgnumber++;
-			while(bfi.primaryon==1)
+			while(bfi.energydetected==1)
 				{
 				time = 0;
 				/*bfi.primaryon = 0;
@@ -5242,7 +5243,7 @@ if(dsa && isController){
 							headertfb++;
 							headerpfb++;
 
-							if(secondary==1){
+							if(secondarysensing==1){
 								headerpcfb++;
 							}
 							else{
@@ -5267,7 +5268,7 @@ if(dsa && isController){
 						pfb++;
 						pfbbyte += msg.feed.payloadByteErrors;
 						pfbbit += msg.feed.payloadBitErrors;
-						if(secondary==1){
+						if(secondarysensing==1){
 							primarycollisionfb = feedbackadder(primarycollisionfb, msg.feed);
 							pcfb++;
 							pcfbbyte += msg.feed.payloadByteErrors;
@@ -5423,7 +5424,7 @@ if(dsa && isController){
 	fprintf(dataFile, "\nSpectrum Usage: %%%f\n", 100*(spectrumused/spectrumtotal));
 	fprintf(dataFile, "Primary User Spectrum Usage: %%%f\n", 100*(spectrumusedprimary/spectrumtotal));
 	fprintf(dataFile, "Secondary User Spectrum Usage: %%%f\n", 100*(spectrumusedsecondary/spectrumtotal));
-	fprintf(dataFile, "Secondary User Free Spectrum Usage: %%%f\n", 100*(spectrumusedsecondary/spectrumunusedprimary));
+	fprintf(dataFile, "Secondary User Free Spectrum Usage: %%%f\n", 100*((spectrumusedsecondary-spectrumusedoverlap)/spectrumunusedprimary));
 	fprintf(dataFile, "Overlapped Spectrum Usage: %%%f\n", 100*(spectrumusedoverlap/spectrumtotal));
 	printf("\n%d unidentifiable headers\n\n", unknownheader);
 	fprintf(dataFile, "\n%d unidentifiable headers\n\n", unknownheader);
@@ -5638,13 +5639,17 @@ if(dsa && isController){
 
 	//A list of evacuation times and rendezvous times are written to the data file
 	fprintf(dataFile, "\n\nEvacuation Times\n\n");
+	printf("\n\nEvacuation Times\n\n");
 	int v;
 	for(v=0; v<evaccounter; v++){
 		fprintf(dataFile, "%f\n", evacuationtimelist[v]);
+		printf("%f\n", evacuationtimelist[v]);
 	}
 	fprintf(dataFile, "\n\nRendezvous Times\n\n");
+	printf("\n\nRendezvous Times\n\n");
 	for(v=0; v<rendcounter; v++){
 		fprintf(dataFile, "%f\n", rendezvoustimelist[v]);
+		printf("%f\n", rendezvoustimelist[v]);
 	}
 	return 1;
 }
