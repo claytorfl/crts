@@ -275,12 +275,14 @@ struct fftStruct {
 	int numbins;
 	char * antennae;
 	float noiseadder;
-	int numavrg;
 	int measuredbins;
 	int testnumber;
 	int debug;
 	float gain;
 	float noisemult;
+	int noisefloorrepeat;
+	int noisefloormeasuredbins;
+	int noisefloortestnumber;
 };
 
 struct scenarioSummaryInfo{
@@ -2667,7 +2669,7 @@ float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, s
     int y;
 	float totalpower = 0;
 	float maxpower;
-	for(y=0; y<fftinfo.repeat; ++y){    
+	for(y=0; y<fftinfo.noisefloorrepeat; ++y){    
 	//while((num_acc_samps < total_num_samps or total_num_samps == 0)){
         size_t num_rx_samps = rx_stream->recv(
             &buff.front(), buff.size(), md, 3.0
@@ -2676,18 +2678,14 @@ float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, s
 		int x;
         for (unsigned int i=0; i<out_buff.size();i++)
              out_buff_norm[i]=sqrt(pow(abs(out_buff[i]),2));
-		//printf("%f\n", out_buff_norm[0]);
-		if(y==0){
-			maxpower = out_buff_norm[0];
-		}
-		for(x=0; x<fftinfo.measuredbins; x++){
+		for(x=0; x<fftinfo.noisefloormeasuredbins; x++){
 			totalpower+=out_buff_norm[x];
 		}
 	} 
 	fftwf_destroy_plan(p);
 	if(fftinfo.debug==1){
-	printf("%f\n", (float)(totalpower/fftinfo.repeat + fftinfo.noiseadder));}
-	return ((totalpower/fftinfo.repeat) * fftinfo.noisemult) + fftinfo.noiseadder;
+	printf("%f\n", (float)(totalpower/fftinfo.noisefloorrepeat + fftinfo.noiseadder));}
+	return ((totalpower/fftinfo.noisefloorrepeat) * fftinfo.noisemult) + fftinfo.noiseadder;
 }
 
 
@@ -4012,10 +4010,22 @@ if(dsa==1 && usingUSRPs && !isController){
 		{
 		fftinfo.repeat = tmpI;
 		}
-		if (config_setting_lookup_int(setting, "numavrg", &tmpI))
+		if (config_setting_lookup_int(setting, "noisefloorrepeat", &tmpI))
+		{
+		fftinfo.noisefloorrepeat = tmpI;
+		}
+		if (config_setting_lookup_int(setting, "noisefloortestnumber", &tmpI))
+		{
+		fftinfo.noisefloortestnumber = tmpI;
+		}
+		if (config_setting_lookup_int(setting, "noisefloormeasuredbins", &tmpI))
+		{
+		fftinfo.noisefloormeasuredbins = tmpI;
+		}
+		/*if (config_setting_lookup_int(setting, "numavrg", &tmpI))
 		{
 		fftinfo.numavrg = tmpI;
-		}
+		}*/
 		if (config_setting_lookup_int(setting, "measuredbins", &tmpI))
 		{
 		fftinfo.measuredbins = tmpI;
