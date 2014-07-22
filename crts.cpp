@@ -5271,6 +5271,7 @@ if(dsa && isController){
 				}
 			}
 			if(msg.type == 'S'){
+				printf("Secondary %d %d\n", msg.number, latestsecondary);
 				if(latestsecondary<msg.number){
 
 					//The secondary user has started transmitting
