@@ -4531,6 +4531,7 @@ if(dsa==1 && usingUSRPs && !isController){
 			mess.number = secondarymsgnumber;
 			mess.purpose = 't';
 			write(dsaCBs.client, (const void*)&mess, sizeof(mess));
+			printf("%c %c %d\n", mess.purpose, mess.type, mess.number);
 			secondarymsgnumber++;
 			int z;
 			//If it does not sense the primary user then the secondary user will transmit
@@ -4567,6 +4568,7 @@ if(dsa==1 && usingUSRPs && !isController){
 			mess.number = secondarymsgnumber;
 			mess.purpose = 'r';
 			write(dsaCBs.client, (const void*)&mess, sizeof(mess));
+			printf("%c %c %d\n", mess.purpose, mess.type, mess.number);
 			secondarymsgnumber++;
 			while(bfi.primaryon==1)
 				{
