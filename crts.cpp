@@ -5406,7 +5406,7 @@ if(dsa && isController){
 	printf("\nSpectrum Usage: %%%f\n", 100*(spectrumused/spectrumtotal));
 	printf("Primary User Spectrum Usage: %%%f\n", 100*(spectrumusedprimary/spectrumtotal));
 	printf("Secondary User Spectrum Usage: %%%f\n", 100*(spectrumusedsecondary/spectrumtotal));
-	printf("Secondary User Free Spectrum Usage: %%%f\n", 100*(spectrumusedsecondary/spectrumunusedprimary));
+	printf("Secondary User Free Spectrum Usage: %%%f\n", 100*((spectrumusedsecondary-spectrumusedoverlap)/spectrumunusedprimary));
 	printf("Overlapped Spectrum Usage: %%%f\n", 100*(spectrumusedoverlap/spectrumtotal));
 	fprintf(dataFile, "\nSpectrum Usage: %%%f\n", 100*(spectrumused/spectrumtotal));
 	fprintf(dataFile, "Primary User Spectrum Usage: %%%f\n", 100*(spectrumusedprimary/spectrumtotal));
