@@ -2354,7 +2354,7 @@ int dsaCallback(unsigned char * _header,
 	//printf(";lkfdsaj;\n");
     struct dsaCBstruct * dsaCBs_ptr = (struct dsaCBstruct *) _userdata;
 //If the secondary transmitter is using energy detection then the callback is unnecessary and it is skipped
-if(dsaCBs_ptr->usrptype == 'S' and dsaCBs_ptr->detectiontype == 'e')
+if(dsaCBs_ptr->usrptype == 'S' and (dsaCBs_ptr->detectiontype == 'e' or dsaCBs_ptr->detectiontype == 't'))
 return 1;
     //int verbose = dsaCBs_ptr->verbose;
 msequence rx_ms = *dsaCBs_ptr->rx_ms_ptr;
