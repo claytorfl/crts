@@ -4804,7 +4804,7 @@ if(dsa==1 && usingUSRPs && !isController){
 				write(dsaCBs.client, &emsg, sizeof(emsg));
 				emsg.number++;
 			}
-			printf("%c %d %d %d\n", esmg.purpose, emsg.number, primaryoffcounter, primaryoncounter);
+			printf("%c %d %d %d\n", emsg.purpose, emsg.number, primaryoffcounter, primaryoncounter);
 		}
 	}	
 	//Primary receiver. Does nothing but use dsaCallback function to send feedback
