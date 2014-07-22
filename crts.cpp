@@ -1605,7 +1605,7 @@ void * feedbackThread(void * v_ptr){
 				}
 
 				//Energy detector detects that the spectrum is free
-				if(m_ptr->purpose == bfi_ptr->killsign){
+				if(m_ptr->purpose == 'd'){//bfi_ptr->killsign){
 					//if(bfi_ptr->killsign = 'd')
 					bfi_ptr->primaryon = 0;
 					primary++;
@@ -4488,7 +4488,7 @@ if(dsa==1 && usingUSRPs && !isController){
 		if(broadcasting==1){
 		bfi.primaryon = 0;
 		bfi.user = 'S';
-		bfi.killsign = killsign;
+		bfi.killsign = 'd';//killsign;
 		bfi.client = dsaCBs.client;
 		bfi.m_ptr = &msg;
 		bfi.msgnumber = &secondarymsgnumber;
