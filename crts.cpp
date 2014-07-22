@@ -2574,6 +2574,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
 		}
 	} 
 	fftwf_destroy_plan(p);
+	totalpower /= fftinfo.measuredbins;
 	totalpower = totalpower/fftinfo.repeat;
 	if(totalpower > noisefloor){
 		cantransmit = 0;
@@ -2683,6 +2684,7 @@ float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, s
 		}
 	} 
 	fftwf_destroy_plan(p);
+	totalpower /= fftinfo.noisefloormeasuredbins;
 	if(fftinfo.debug==1){
 	printf("%f\n", (float)(totalpower/fftinfo.noisefloorrepeat + fftinfo.noiseadder));}
 	return ((totalpower/fftinfo.noisefloorrepeat) * fftinfo.noisemult) + fftinfo.noiseadder;
