@@ -1445,6 +1445,7 @@ void * serveTCPDSAclient(void * _sc_ptr){
 			//Checks that the message received is a new messsage and that it has a proper type
 			if(read_buffer.number > number and (read_buffer.type == 'p' or read_buffer.type == 's' or read_buffer.type == 'P' or read_buffer.type == 'S')){
 				*m_ptr = read_buffer;
+				printf("%c %c %d\n", read_buffer.type, read_buffer.purpose, read_buffer.number);
 				m_ptr->msgreceived = 1;
 				number = read_buffer.number;
 			}
@@ -4423,7 +4424,7 @@ if(dsa==1 && usingUSRPs && !isController){
     	txcvr.set_rx_freq(frequency);
    		txcvr.set_rx_rate(suce.bandwidth);
     	txcvr.set_rx_gain_uhd(uhd_rxgain);
-		txcvr.start_rx();
+		//txcvr.start_rx();
 		float time = 0;	
 		start = std::clock();
 		while(true)
@@ -4532,7 +4533,7 @@ if(dsa==1 && usingUSRPs && !isController){
     	txcvr.set_rx_freq(frequency);
    		txcvr.set_rx_rate(suce.bandwidth);
     	txcvr.set_rx_gain_uhd(uhd_rxgain);
-		txcvr.start_rx();
+		//txcvr.start_rx();
 		float time = 0;	
 		start = std::clock();
 		while(true)
