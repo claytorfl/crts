@@ -1445,7 +1445,7 @@ void * serveTCPDSAclient(void * _sc_ptr){
 			//Checks that the message received is a new messsage and that it has a proper type
 			if(read_buffer.number > number and (read_buffer.type == 'p' or read_buffer.type == 's' or read_buffer.type == 'P' or read_buffer.type == 'S')){
 				*m_ptr = read_buffer;
-				printf("%c %c %d\n", read_buffer.type, read_buffer.purpose, read_buffer.number);
+				//printf("%c %c %d\n", read_buffer.type, read_buffer.purpose, read_buffer.number);
 				m_ptr->msgreceived = 1;
 				number = read_buffer.number;
 			}
@@ -4230,9 +4230,9 @@ if(dsa==1 && usingUSRPs && !isController){
 					enactScenarioBaseband(txcvr.fgbuffer, puce, sc);}
 					txcvr.transmit_symbol();
 					}
-				usleep(10);
+				usleep(100);
 		   		txcvr.end_transmit_frame();
-				usleep(10);
+				usleep(100);
 				//The radio adapts if it can
 				if(adapt==1)
 				postTxTasks(&puce, &msg.feed, verbose);
@@ -5254,7 +5254,7 @@ if(dsa && isController){
 						if(msg.feed.payload_valid==1){
 							payloadtfb++;
 							payloadpfb++;
-							if(secondary==1){
+							if(secondarysensing==1){
 								payloadpcfb++;
 							}
 							else{
