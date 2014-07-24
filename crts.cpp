@@ -120,18 +120,21 @@ struct CognitiveEngine {
 };
 
 struct Scenario {
-    int addAWGNBaseband; //Does the Scenario have noise?
+    int addAWGNBasebandTx; //Does the Scenario have noise?
+    int addAWGNBasebandRx; //Does the Scenario have noise?
     float noiseSNR;
     float noiseDPhi;
     
     int addInterference; // Does the Scenario have interference?
     
-    int addRicianFadingBaseband; // Does the Secenario have fading?
+    int addRicianFadingBasebandTx; // Does the Secenario have fading?
+    int addRicianFadingBasebandRx; // Does the Secenario have fading?
     float fadeK;
     float fadeFd;
     float fadeDPhi;
 
-	int addCWInterfererBaseband; // Does the Scenario have a CW interferer?
+	int addCWInterfererBasebandTx; // Does the Scenario have a CW interferer?
+	int addCWInterfererBasebandRx; // Does the Scenario have a CW interferer?
 	float cw_pow;
 	float cw_freq;
 };
@@ -256,6 +259,12 @@ struct serveClientStruct {
 	struct message * m_ptr;
 };
 
+struct enactScenarioBasebandRxStruct {
+    ofdmtxrx * txcvr_ptr;
+    struct CognitiveEngine * ce_ptr;
+    struct Scenario * sc_ptr;
+};
+
 //Struct passed to thread that interprets receiver feedback for broadcasting transmitters
 struct broadcastfeedbackinfo{
 	struct message * m_ptr;
@@ -263,7 +272,6 @@ struct broadcastfeedbackinfo{
 	int * msgnumber;
 	char user;
 	int primaryon;
-	char killsign;
 	int energydetected;
 };
 
@@ -364,18 +372,21 @@ struct CognitiveEngine CreateCognitiveEngine() {
 // Default parameter for Scenario
 struct Scenario CreateScenario() {
     struct Scenario sc = {};
-    sc.addAWGNBaseband = 0,
+    sc.addAWGNBasebandTx = 0,
+    sc.addAWGNBasebandRx = 0,
     sc.noiseSNR = 7.0f, // in dB
     sc.noiseDPhi = 0.001f,
 
     sc.addInterference = 0,
 
-    sc.addRicianFadingBaseband = 0,
+    sc.addRicianFadingBasebandTx = 0,
+    sc.addRicianFadingBasebandRx = 0,
     sc.fadeK = 30.0f,
     sc.fadeFd = 0.2f,
     sc.fadeDPhi = 0.001f;
 
-	sc.addCWInterfererBaseband = 0;
+	sc.addCWInterfererBasebandTx = 0;
+	sc.addCWInterfererBasebandRx = 0;
 	sc.cw_pow = 0;
 	sc.cw_freq = 0;
 
@@ -790,14 +801,19 @@ int readScConfigFile(struct Scenario * sc, char *current_scenario_file, int verb
     if (setting != NULL)
     {
         // Read the integer
-        if (config_setting_lookup_int(setting, "addAWGNBaseband", &tmpI))
+        if (config_setting_lookup_int(setting, "addAWGNBasebandTx", &tmpI))
         {
-            sc->addAWGNBaseband=tmpI;
-            if (verbose) printf("addAWGNBaseband: %d\n", tmpI);
+            sc->addAWGNBasebandTx=tmpI;
+            if (verbose) printf("addAWGNBasebandTx: %d\n", tmpI);
         }
         //else
         //    printf("No AddNoise setting in configuration file.\n");
-        
+        // Read the integer
+        if (config_setting_lookup_int(setting, "addAWGNBasebandRx", &tmpI))
+        {
+            sc->addAWGNBasebandRx=tmpI;
+            if (verbose) printf("addAWGNBasebandRx: %d\n", tmpI);
+        }
         // Read the double
         if (config_setting_lookup_float(setting, "noiseSNR", &tmpD))
         {
@@ -828,10 +844,15 @@ int readScConfigFile(struct Scenario * sc, char *current_scenario_file, int verb
         */
 
         // Read the integer
-        if (config_setting_lookup_int(setting, "addRicianFadingBaseband", &tmpI))
+        if (config_setting_lookup_int(setting, "addRicianFadingBasebandTx", &tmpI))
         {
-            sc->addRicianFadingBaseband=tmpI;
-            if (verbose) printf("addRicianFadingBaseband: %d\n", tmpI);
+            sc->addRicianFadingBasebandTx=tmpI;
+            if (verbose) printf("addRicianFadingBasebandTx: %d\n", tmpI);
+        }
+        if (config_setting_lookup_int(setting, "addRicianFadingBasebandRx", &tmpI))
+        {
+            sc->addRicianFadingBasebandRx=tmpI;
+            if (verbose) printf("addRicianFadingBasebandRx: %d\n", tmpI);
         }
         //else
         //    printf("No addRicianFadingBaseband setting in configuration file.\n");
@@ -862,10 +883,16 @@ int readScConfigFile(struct Scenario * sc, char *current_scenario_file, int verb
         }
 
 		// Read the integer
-		if (config_setting_lookup_int(setting, "addCWInterfererBaseband", &tmpI))
+		if (config_setting_lookup_int(setting, "addCWInterfererBasebandTx", &tmpI))
         {
-            sc->addCWInterfererBaseband=(float)tmpI;
-            if (verbose) printf("addCWIntefererBaseband: %i\n", tmpI);
+            sc->addCWInterfererBasebandTx=(float)tmpI;
+            if (verbose) printf("addCWIntefererBasebandTx: %d\n", tmpI);
+        }
+		// Read the integer
+		if (config_setting_lookup_int(setting, "addCWInterfererBasebandRx", &tmpI))
+        {
+            sc->addCWInterfererBasebandRx=(float)tmpI;
+            if (verbose) printf("addCWIntefererBasebandRx: %d\n", tmpI);
         }
 
 		// Read the double
@@ -891,13 +918,14 @@ int readScConfigFile(struct Scenario * sc, char *current_scenario_file, int verb
     return 1;
 } // End readScConfigFile()
 
+
 // Add AWGN
-void enactAWGNBaseband(std::complex<float> * transmit_buffer, struct CognitiveEngine ce, struct Scenario sc)
+void enactAWGNBaseband(std::complex<float> * transmit_buffer, unsigned int buffer_len, struct CognitiveEngine ce, struct Scenario sc)
 {
     //options
     float dphi  = sc.noiseDPhi;                              // carrier frequency offset
     float SNRdB = sc.noiseSNR;                               // signal-to-noise ratio [dB]
-    unsigned int symbol_len = ce.numSubcarriers + ce.CPLen;  // defining symbol length
+    //unsigned int symbol_len = ce.numSubcarriers + ce.CPLen;  // defining symbol length
     
     //printf("In enactAWGNBaseband: SNRdB=%f\n", SNRdB);
 
@@ -909,7 +937,8 @@ void enactAWGNBaseband(std::complex<float> * transmit_buffer, struct CognitiveEn
     unsigned int i;
 
     // noise mixing
-    for (i=0; i<symbol_len; i++) {
+    //for (i=0; i<symbol_len; i++) {
+    for (i=0; i<buffer_len; i++) {
         transmit_buffer[i] = std::exp(tmp*phi) * transmit_buffer[i]; // apply carrier offset
         //transmit_buffer[i] *= cexpf(_Complex_I*phi); // apply carrier offset
         phi += dphi;                                 // update carrier phase
@@ -917,28 +946,31 @@ void enactAWGNBaseband(std::complex<float> * transmit_buffer, struct CognitiveEn
     }
 } // End enactAWGNBaseband()
 
-void enactCWInterfererBaseband(std::complex<float> * transmit_buffer, struct CognitiveEngine ce, struct Scenario sc)
+void enactCWInterfererBaseband(std::complex<float> * transmit_buffer, unsigned int buffer_len, struct CognitiveEngine ce, struct Scenario sc)
 {
 	float fs = ce.bandwidth; // Sample rate of the transmit buffer
 	float k = pow(10.0, sc.cw_pow/20.0); // Coefficient to set the interferer power correctly
-	unsigned int symbol_len = ce.numSubcarriers + ce.CPLen;  // defining symbol length
+	//unsigned int symbol_len = ce.numSubcarriers + ce.CPLen;  // defining symbol length
 
 	//printf("Coefficient: %f\n", k);
 
-	for(unsigned int i=0; i<symbol_len; i++)
+	for(unsigned int i=0; i<buffer_len; i++)
 	{
 		transmit_buffer[i] += k*sin(6.283*sc.cw_freq*i/fs); // Add CW tone
 	}
 } // End enactCWInterfererBaseband()
 
 // Add Rice-K Fading
-void enactRicianFadingBaseband(std::complex<float> * transmit_buffer, struct CognitiveEngine ce, struct Scenario sc)
+void enactRicianFadingBaseband(std::complex<float> * transmit_buffer, unsigned int buffer_len, struct CognitiveEngine ce, struct Scenario sc)
 {
     // options
-    unsigned int symbol_len = ce.numSubcarriers + ce.CPLen; // defining symbol length
+    //unsigned int symbol_len = ce.numSubcarriers + ce.CPLen; // defining symbol length
+
     unsigned int h_len;                                     // doppler filter length
-    if (symbol_len > 94){
-        h_len = 0.0425*symbol_len;
+    //if (symbol_len > 94){
+    if (buffer_len > 94){
+        //h_len = 0.0425*symbol_len;
+        h_len = 0.0425*buffer_len;
     }
     else {
         h_len = 4;
@@ -960,7 +992,8 @@ void enactRicianFadingBaseband(std::complex<float> * transmit_buffer, struct Cog
     } else if (fd <= 0.0f || fd >= 0.5f) {
         fprintf(stderr, "error: Doppler frequency must be in (0,0.5)\n");
         exit(1);
-    } else if (symbol_len== 0) {
+    //} else if (symbol_len== 0) {
+    } else if (buffer_len== 0) {
         fprintf(stderr, "error: number of samples must be greater than zero\n");
         exit(1);
     }
@@ -968,7 +1001,8 @@ void enactRicianFadingBaseband(std::complex<float> * transmit_buffer, struct Cog
     unsigned int i;
 
     // allocate array for output samples
-    std::complex<float> * y = (std::complex<float> *) malloc(symbol_len*sizeof(std::complex<float>));
+    //std::complex<float> * y = (std::complex<float> *) malloc(symbol_len*sizeof(std::complex<float>));
+    std::complex<float> * y = (std::complex<float> *) malloc(buffer_len*sizeof(std::complex<float>));
     // generate Doppler filter coefficients
     float h[h_len];
     liquid_firdes_doppler(h_len, fd, K, theta, h);
@@ -992,7 +1026,8 @@ void enactRicianFadingBaseband(std::complex<float> * transmit_buffer, struct Cog
     float sig = sqrtf(0.5f*omega/(K+1.0));
         
     std::complex<float> tmp(0, 1);
-    for (i=0; i<symbol_len; i++) {
+    //for (i=0; i<symbol_len; i++) {
+    for (i=0; i<buffer_len; i++) {
         // generate complex Gauss random variable
         crandnf(&v);
 
@@ -1004,7 +1039,8 @@ void enactRicianFadingBaseband(std::complex<float> * transmit_buffer, struct Cog
         y[i] = tmp*( std::imag(x)*sig + s ) +
                           ( std::real(x)*sig     );
     }
-    for (i=0; i<symbol_len; i++) {
+    //for (i=0; i<symbol_len; i++) {
+    for (i=0; i<buffer_len; i++) {
         transmit_buffer[i] *= std::exp(tmp*phi);  // apply carrier offset
         phi += dphi;                                  // update carrier phase
         transmit_buffer[i] *= y[i];                   // apply Rice-K distribution
@@ -1017,30 +1053,79 @@ void enactRicianFadingBaseband(std::complex<float> * transmit_buffer, struct Cog
     free(y);
 } // End enactRicianFadingBaseband()
 
+//TODO: enable starting of this thread when a new scenario begins
+// This function runs in its own thread waiting to modify the samples every time
+// they are recieve by the ofdmtxrx object, but before they are sent to the
+// synchronizer. 
+void * enactScenarioBasebandRx( void * _arg)
+{
+    //printf("Scenario being added\n");
+    enactScenarioBasebandRxStruct * esbrs = (enactScenarioBasebandRxStruct *) _arg;
+    int count = 0;
+    pthread_mutex_lock(&esbrs->txcvr_ptr->rx_buffer_mutex);
+    //printf("In esbrs: esbrs ready\n");
+    //pthread_cond_signal(&(esbrs->txcvr_ptr->esbrs_ready));
+    while (true)
+    { 
+        //pthread_mutex_lock(esbrs->esbrs_ready_mutex_ptr);
+	//*esbrs->esbrs_ready_ptr = 1;
+	//pthread_mutex_unlock(esbrs->esbrs_ready_mutex_ptr);
+	
+        // Wait for txcvr rx_worker to signal samples are ready to be modified
+        //printf("In esbrs: waiting for buffer to be filled %i\n", count);
+	count++;
+	pthread_cond_wait(&esbrs->txcvr_ptr->rx_buffer_filled_cond, &esbrs->txcvr_ptr->rx_buffer_mutex);
+
+        // Add appropriate RF impairments for the scenario
+        if (esbrs->sc_ptr->addRicianFadingBasebandRx == 1)
+        {
+            enactRicianFadingBaseband(esbrs->txcvr_ptr->rx_buffer->data(), esbrs->txcvr_ptr->rx_buffer->size(), *esbrs->ce_ptr, *esbrs->sc_ptr);
+        }
+        if (esbrs->sc_ptr->addCWInterfererBasebandRx == 1)
+        {
+            // Interference function
+            enactCWInterfererBaseband(esbrs->txcvr_ptr->rx_buffer->data(), esbrs->txcvr_ptr->rx_buffer->size(), *esbrs->ce_ptr, *esbrs->sc_ptr);
+        }
+        if (esbrs->sc_ptr->addAWGNBasebandRx == 1)
+        {
+            enactAWGNBaseband(esbrs->txcvr_ptr->rx_buffer->data(), esbrs->txcvr_ptr->rx_buffer->size(), *esbrs->ce_ptr, *esbrs->sc_ptr);
+        }
+	
+        // signal to txcvr rx_worker that samples are ready to be sent to synchronizer
+        //printf("In esbrs: Buffer modified\n");
+	pthread_cond_signal(&(esbrs->txcvr_ptr->rx_buffer_modified_cond));
+        // unlock mutex
+        //pthread_mutex_unlock(&(esbrs->txcvr_ptr->rx_buffer_mutex));
+
+        //TODO implement killing of this thread when a scenario ends.
+    }
+    return NULL;
+} // End enactScenarioBasebandRx()
+
 // Enact Scenario
-void enactScenarioBaseband(std::complex<float> * transmit_buffer, struct CognitiveEngine ce, struct Scenario sc)
+void enactScenarioBasebandTx(std::complex<float> * transmit_buffer, unsigned int buffer_len, struct CognitiveEngine ce, struct Scenario sc)
 {
     // Add appropriate RF impairments for the scenario
-    if (sc.addRicianFadingBaseband == 1)
+    if (sc.addRicianFadingBasebandTx == 1)
     {
-        enactRicianFadingBaseband(transmit_buffer, ce, sc);
+        enactRicianFadingBaseband(transmit_buffer, buffer_len, ce, sc);
     }
-    if (sc.addCWInterfererBaseband == 1)
+    if (sc.addCWInterfererBasebandTx == 1)
     {
         //fprintf(stderr, "WARNING: There is currently no interference scenario functionality!\n");
         // Interference function
-        enactCWInterfererBaseband(transmit_buffer, ce, sc);
+        enactCWInterfererBaseband(transmit_buffer, buffer_len, ce, sc);
     }
-    if (sc.addAWGNBaseband == 1)
+    if (sc.addAWGNBasebandTx == 1)
     {
-        enactAWGNBaseband(transmit_buffer, ce, sc);
+        enactAWGNBaseband(transmit_buffer, buffer_len, ce, sc);
     }
-    if ( (sc.addAWGNBaseband == 0) && (sc.addCWInterfererBaseband == 0) && (sc.addRicianFadingBaseband == 0))
+    if ( (sc.addAWGNBasebandTx == 0) && (sc.addCWInterfererBasebandTx == 0) && (sc.addRicianFadingBasebandTx == 0))
     {
        	fprintf(stderr, "WARNING: Nothing Added by Scenario!\n");
-		//fprintf(stderr, "addCWInterfererBaseband: %i\n", sc.addCWInterfererBaseband);
+		//fprintf(stderr, "addCWInterfererBasebandTx: %i\n", sc.addCWInterfererBaseband);
     }
-} // End enactScenarioBaseband()
+} // End enactScenarioBasebandTx()
 
 void * call_uhd_siggen(void * param)
 {
@@ -1609,8 +1694,7 @@ void * feedbackThread(void * v_ptr){
 				}
 
 				//Energy detector detects that the spectrum is free
-				if(m_ptr->purpose == 'd'){//bfi_ptr->killsign){
-					//if(bfi_ptr->killsign = 'd')
+				if(m_ptr->purpose == 'd'){
 					bfi_ptr->energydetected = 0;
 					primary++;
 				}
@@ -1618,6 +1702,9 @@ void * feedbackThread(void * v_ptr){
 				if(m_ptr->purpose == 'S'){
 					secondary++;
 				}
+
+				//A frame with an unknown header was received
+				//That means it was so distorted it was unknown if it was primary or secondary
 				if(m_ptr->purpose == 'u'){
 					msg.purpose = 'u';
 					msg.number = *bfi_ptr->msgnumber;
@@ -2287,66 +2374,6 @@ void terminate(int sig){
 	exit(1);
 }
 
-
-//Struct that contains the variables for a node in an ad hoc broadcasting network
-//The node has a cognitive engine, a list of the neighbor nodes it broadcasts to, and a
-//list of the channel conditions for each of its neighbor nodes
-struct Node{
-	struct CognitiveEngine ce;
-	int numberOfNeighbors;
-	struct Node * neighborList[50];
-	struct Scenario scenarioList[50];
-	int done;
-	msequence input;
-	msequence output;
-	int number;
-};
-
-//Struct that contains variables for a ad hoc broadcasting network of nodes
-//Every node is contained in the nodeList and the transmitterList contains the nodes
-//that are currently transmitting
-struct Network{
-	struct Node nodeList[50];
-	struct Node * transmitterList[50];
-	struct Node * nextList[50];
-	char * adaption;
-	char * adaptype;
-	char * goal;
-	int source;
-	int transmitnumber;
-	int nextnumber;
-};
-
-//Struct that contains the variables for the primary user
-struct PU{
-	int bursttime;
-	int burstingtime;
-	int resttime;
-	int restingtime;
-	int on;
-	int transmitted;
-	int corrupted;
-	int change;
-	char state;
-	int time;
-};
-
-//Struct that contains the variables for the secondary user
-struct SU{
-	int bursttime;
-	int burstingtime;
-	int scantime;
-	int scanningtime;
-	int waittime;
-	int waitingtime;
-	int on;
-	int transmitted;
-	int corrupted;
-	int change;
-	char state;
-	int time;
-};
-
 int dsaCallback(unsigned char * _header,
                int _header_valid,
                unsigned char * _payload,
@@ -2360,8 +2387,7 @@ int dsaCallback(unsigned char * _header,
 //If the secondary transmitter is using energy detection then the callback is unnecessary and it is skipped
 if(dsaCBs_ptr->usrptype == 'S' and (dsaCBs_ptr->detectiontype == 'e' or dsaCBs_ptr->detectiontype == 't'))
 return 1;
-    //int verbose = dsaCBs_ptr->verbose;
-msequence rx_ms = *dsaCBs_ptr->rx_ms_ptr;
+
 //int primary;
 int ones = 0;
 int zeroes = 0;
@@ -2455,7 +2481,7 @@ for(int i=0; i<4; i++)	fb.iteration += _header[i+2]<<(8*(3-i));
 
     if (false)
     {
-        printf("In rxcallback():\n");
+        printf("In dsacallback():\n");
         printf("Header: %i %i %i %i %i %i %i %i\n", _header[0], _header[1],
             _header[2], _header[3], _header[4], _header[5], _header[6], _header[7]);
         feedbackStruct_print(&fb);
@@ -2484,35 +2510,30 @@ for(int i=0; i<4; i++)	fb.iteration += _header[i+2]<<(8*(3-i));
 
 int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float noisefloor, struct fftStruct fftinfo){
 	int cantransmit;
-	//int t;
     std::string args, file, ant, subdev, ref;
 	ref = "internal";
     size_t total_num_samps = 0;
     size_t num_bins = fftinfo.numbins;
-    //unsigned int Moving_Avg_size = 4;
-	//unsigned int navrg = fftinfo.numavrg;
     double rate = fftinfo.rate;
 	double freq = (double)ce.frequency;
-	//printf("%f\n", freq);
 	double gain = fftinfo.gain;
-	double bw = fftinfo.bandwidth;//ce.bandwidth;
-	double chbw = fftinfo.channelbandwidth;
+	double bw = fftinfo.bandwidth;
+	//double chbw = fftinfo.channelbandwidth;
     std::string addr, port, mode;
 	ant = fftinfo.antennae;
-	//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
+
 	usrp->set_clock_source(ref);
 	usrp->set_rx_rate(rate);
 	usrp->set_rx_freq(freq);
 	usrp->set_rx_gain(gain);
 	usrp->set_rx_bandwidth(bw);
 	usrp->set_rx_antenna(ant);
-	//printf("3\n");
+
     std::vector<std::string> sensor_names;
     sensor_names = usrp->get_rx_sensor_names(0);
     uhd::stream_args_t stream_args("fc32"); //complex floats
     uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
- 	//printf("4\n");
-    // rm// setup streaming ... 0 means continues
+
      uhd::stream_cmd_t stream_cmd((total_num_samps == 0)?
      uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS:
      uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE
@@ -2521,31 +2542,16 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
     stream_cmd.stream_now = true;
     stream_cmd.time_spec = uhd::time_spec_t();
     usrp->issue_stream_cmd(stream_cmd);
-	//size_t num_acc_samps = 0; //number of accumulated samples
-    //size_t  nAvrgCount = 0;
     uhd::rx_metadata_t md;
-    //printf("5\n");
     std::vector<std::complex<float> > buff(num_bins);
     std::vector<std::complex<float> > out_buff(num_bins);
     std::vector<float> out_buff_norm(num_bins);
-     
-    //std::vector<float> send_avmfft(num_bins-Moving_Avg_size);
      std::vector<float> send_avmfft(num_bins);
     // there is actually no need for the two below vectors since send_cmpfft equals the output of fft buff
     // and send_tmsmps equals to buff from USRP, I will leave it like this for clarity and in case we need
     // extra calculations before sending the buff
     std::vector<std::complex<float> > send_cmpfft(num_bins);
     std::vector<std::complex<float> > send_tmsmps;
-    //initializing sum of channels matrix
-    // calculating number of channels in chnsts mode
-    //unsigned int nChs,nSlize;
-    //nChs=static_cast <int> (std::floor((rate/2)/chbw));
-    //nSlize=static_cast <int> (std::floor((num_bins/2)/nChs));
-     
-    //printf("6\n");
-    //std::vector<float> vChCusum(nChs,0);
-    // create chnsts buffer to send this could be boolean vector also
-    //std::vector<unsigned short> send_chnsts(nChs,0);
      
     //initialize fft plan
     fftwf_complex *in = (fftwf_complex*)&buff.front();
@@ -2554,23 +2560,15 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
     p = fftwf_plan_dft_1d(num_bins, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
     int y;
 	float totalpower = 0;
-	float maxpower;
 	for(y=0; y<fftinfo.repeat; ++y){    
-	//while((num_acc_samps < total_num_samps or total_num_samps == 0)){
-        size_t num_rx_samps = rx_stream->recv(
+        /*size_t num_rx_samps = rx_stream->recv(
             &buff.front(), buff.size(), md, 3.0
-        );        
+        );*/        
         fftwf_execute(p);
 		int x;
         for (unsigned int i=0; i<out_buff.size();i++)
              out_buff_norm[i]=sqrt(pow(abs(out_buff[i]),2));
-		//printf("%f\n", out_buff_norm[0]);
-		if(y==0){
-			maxpower = out_buff_norm[0];
-		}
-		/*if(out_buff_norm[0] > maxpower){
-			maxpower = out_buff_norm[0];
-		}*/
+
 		for(x=0; x<fftinfo.measuredbins; x++){
 			totalpower+=out_buff_norm[x];
 		}
@@ -2586,8 +2584,6 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
 	}
 	if(fftinfo.debug==1){
 	printf("Cantransmit = %d Measured Power = %f Threshold = %f\n", cantransmit, totalpower, noisefloor);}
-	//printf("%d %f %f\n", cantransmit, centeraverage, noisefloor);
-
 	return cantransmit;
 }
 
@@ -2601,13 +2597,11 @@ float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, s
 	ref = "internal";
     size_t total_num_samps = 0;
     size_t num_bins = fftinfo.numbins;
-    //unsigned int Moving_Avg_size = 4;
-	//unsigned int navrg = fftinfo.numavrg;
     double rate = fftinfo.rate;
 	double freq = ce.frequency;
 	double gain = fftinfo.gain;
 	double bw = fftinfo.bandwidth;//ce.bandwidth;
-	double chbw = fftinfo.channelbandwidth;
+	//double chbw = fftinfo.channelbandwidth;
     std::string addr, port, mode;
 	ant = fftinfo.antennae;
 	
@@ -2671,12 +2665,11 @@ float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, s
     p = fftwf_plan_dft_1d(num_bins, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
     int y;
 	float totalpower = 0;
-	float maxpower;
 	for(y=0; y<fftinfo.noisefloorrepeat; ++y){    
 	//while((num_acc_samps < total_num_samps or total_num_samps == 0)){
-        size_t num_rx_samps = rx_stream->recv(
+        /*size_t num_rx_samps = rx_stream->recv(
             &buff.front(), buff.size(), md, 3.0
-        );        
+        );*/        
         fftwf_execute(p);
 		int x;
         for (unsigned int i=0; i<out_buff.size();i++)
@@ -2726,7 +2719,6 @@ int main(int argc, char ** argv){
     float bandwidth = 1.0e6;
     float frequency = 460.0e6;
     float uhd_rxgain = 20.0;
-	int networking = 0;
 	int dsa = 0;
 	int broadcasting = 0;
 	int secondary = 0;
@@ -2756,7 +2748,6 @@ int main(int argc, char ** argv){
         case 'M':   numSubcarriers = atoi(optarg);          break;
         case 'C':   CPLen = atoi(optarg);                   break;
         case 'T':   taperLen = atoi(optarg);                break;
-		case 'N':   networking = 1; normalcrts = 0; break;
 		case 'D':   dsa = 1; normalcrts = 0; break;
 		case 'B':	broadcasting = 1; normalcrts = 0; break;
 		case 'Q':   tester = 1; normalcrts = 0; break;
@@ -2786,6 +2777,7 @@ int main(int argc, char ** argv){
     }   
 
     pthread_t TCPServerThread;   // Pointer to thread ID
+	pthread_t enactScBbRxThread;   // Pointer to thread ID
     // Threading for using uhd_siggen (for when using USRPs)
     //pthread_t siggenThread;
     //int serverThreadReturn = 0;  // return value of creating TCPServer thread
@@ -2807,9 +2799,7 @@ int main(int argc, char ** argv){
     int isLastSymbol = 0;
     char scenario_list [30][60];
     char cogengine_list [30][60];
-    
-    //printf("variables declared.\n");
-	float floatnumber = 0.0;
+
     int NumCE=readCEMasterFile(cogengine_list, verbose);  
     int NumSc=readScMasterFile(scenario_list, verbose);  
     //printf ("\nCalled readScMasterFile function\n");
@@ -2957,26 +2947,34 @@ int main(int argc, char ** argv){
 
 	if(normalcrts){
 
-    for (i_CE=0; i_CE<NumCE; i_CE++)
+   for (i_CE=0; i_CE<NumCE; i_CE++)
     {
 
 		if (verbose) 
             printf("\nStarting Tests on Cognitive Engine %d\n", i_CE+1);
+            
+        if(isController){
+		    // Initialize current CE
+			ce = CreateCognitiveEngine();
+			readCEConfigFile(&ce,cogengine_list[i_CE], verbose);
+
+			// Send CE info to slave node(s)
+			write(client, (void*)&ce, sizeof(ce));
+		}
         
         // Run each CE through each scenario
         for (i_Sc= 0; i_Sc<NumSc; i_Sc++)
-        {
-
-            // Initialize current CE
-            ce = CreateCognitiveEngine();
+        {                	
+				
             if (isController)
-            {
-                readCEConfigFile(&ce,cogengine_list[i_CE], verbose);
-
-                if (verbose) printf("\n\nStarting Scenario %d\n", i_Sc+1);
+            {                   
+        		if (verbose) printf("\n\nStarting Scenario %d\n", i_Sc+1);
                 // Initialize current Scenario
                 sc = CreateScenario();
                 readScConfigFile(&sc,scenario_list[i_Sc], verbose);
+                
+                // Send Sc info to slave node(s)
+                write(client, (void*)&sc, sizeof(sc));
 
                 fprintf(dataFile, "Cognitive Engine %d\nScenario %d\n", i_CE+1, i_Sc+1);
                 //All metrics
@@ -3007,6 +3005,10 @@ int main(int argc, char ** argv){
             // Begin Testing Scenario
             DoneTransmitting = 0;
 
+            // Pointer to ofdmtxrx object for when using USRPs
+            // Needs to be outside if statement so object can be closed later.
+            //ofdmtxrx * txcvr_ptr;
+
             //while(!DoneTransmitting)
             //{
                 if (usingUSRPs) 
@@ -3015,75 +3017,164 @@ int main(int argc, char ** argv){
                     // create transceiver object
                     unsigned char * p = NULL;   // default subcarrier allocation
                     if (verbose) 
-                        printf("Using ofdmtxrx\n");
-                    ofdmtxrx txcvr(ce.numSubcarriers, ce.CPLen, ce.taperLen, p, rxCallback, (void*) &rxCBs);
+                        printf("Using ofdmtxrx\n");                    
+                    
+
+		    //pthread_mutex_t esbrs_ready_mutex;
+		    //int esbrs_ready = 0;
+		    ofdmtxrx *txcvr_ptr = new ofdmtxrx(ce.numSubcarriers, ce.CPLen, ce.taperLen, p, rxCallback, (void*) &rxCBs, true);                    
+                    //txcvr_ptr = &txcvr;
 
                     // Start the Scenario simulations from the scenario USRPs
                     //enactUSRPScenario(ce, sc, &uhd_siggen_pid);
 
+                    // Each instance of this while loop transmits one packet
                     while(!DoneTransmitting)
                     {
                         // set properties
-                        txcvr.set_tx_freq(ce.frequency);
-                        txcvr.set_tx_rate(ce.bandwidth);
-                        txcvr.set_tx_gain_soft(ce.txgain_dB);
-                        txcvr.set_tx_gain_uhd(ce.uhd_txgain_dB);
-                        //txcvr.set_tx_antenna("TX/RX");
+                        txcvr_ptr->set_tx_freq(ce.frequency);
+                        txcvr_ptr->set_tx_rate(ce.bandwidth);
+                        txcvr_ptr->set_tx_gain_soft(ce.txgain_dB);
+                        txcvr_ptr->set_tx_gain_uhd(ce.uhd_txgain_dB);
+                        //txcvr_ptr->set_tx_antenna("TX/RX");
 
                         if (!isController)
                         {
-                            txcvr.set_rx_freq(frequency);
-                            txcvr.set_rx_rate(bandwidth);
-                            txcvr.set_rx_gain_uhd(uhd_rxgain);
 
-                            if (verbose)
-                            {
-                                txcvr.debug_enable();
-                                printf("Set Rx freq to %f\n", frequency);
-                                printf("Set Rx rate to %f\n", bandwidth);
-                                printf("Set uhd Rx gain to %f\n", uhd_rxgain);
-                            }
+                            	txcvr_ptr->set_rx_freq(ce.frequency);
+                            	txcvr_ptr->set_rx_rate(ce.bandwidth);
+                            	txcvr_ptr->set_rx_gain_uhd(uhd_rxgain);
 
-                            int continue_running = 1;
-							int rflag;
-							char readbuffer;
-							txcvr.start_rx();
-                            while(continue_running)
-                            {
-								// Wait until server closes or there is an error, then exit
-								rflag = recv(socket_to_server, &readbuffer, sizeof(readbuffer), 0);
-								printf("Rx flag: %i\n", rflag);
-								if(rflag == 0 || rflag == -1){
-									close(socket_to_server);
-									msequence_destroy(rx_ms);
-									exit(1);
-								}
-                            }
+                            	if (verbose)
+                            	{
+                                	txcvr_ptr->debug_enable();
+                                	printf("Set Rx freq to %f\n", ce.frequency);
+                                	printf("Set Rx rate to %f\n", ce.bandwidth);
+                                	printf("Set uhd Rx gain to %f\n", uhd_rxgain);
+                            	}
+                            
+                            	// Structs for CE and Sc info
+                            	struct CognitiveEngine ce_controller;
+                            	struct Scenario sc_controller;
+							
+                            	int continue_running = 1;
+				int rflag;
+				char readbuffer[1000];
+							
+							
+                            	//TODO get first ce and sc over tcp connection.
+                            	// Start enactScenarioBasebandRx Thread
+                            	//struct enactScenarioBasebandRxStruct esbrs = {.txcvr = &txcvr, .ce = &ce, .sc = &sc};
+                            	// start enactScenarioBasebandRx thread
+                            	//pthread_create( &enactScBbRxThread, NULL, enactScenarioBasebandRx, (void*) &esbrs);
+                            
+                            	// Receive CE info
+                            	rflag = recv(socket_to_server, &readbuffer, sizeof(struct CognitiveEngine), 0);
+                            	if(rflag == 0 || rflag == -1){
+                            		printf("Error receiving CE info from the controller\n");
+					close(socket_to_server);
+					exit(1);
+				}
+			    	else ce_controller = *(struct CognitiveEngine*)readbuffer;
+							
+			    	// Receive Sc info
+			    	rflag = recv(socket_to_server, &readbuffer, sizeof(struct Scenario), 0);
+                            	if(rflag == 0 || rflag == -1){
+                            		printf("Error receiving Scenario info from the controller\n");
+					close(socket_to_server);
+					exit(1);
+     			    	}
+			    	else sc_controller = *(struct Scenario*)readbuffer;
+							
+			    	// Initialize members of esbrs struct sent to enactScenarioBasebandRx()
+			    	//struct enactScenarioBasebandRxStruct esbrs = {.txcvr_ptr = txcvr_ptr, .ce_ptr = &ce_controller, .sc_ptr = &sc_controller};
+			    	struct enactScenarioBasebandRxStruct esbrs;
+					esbrs.txcvr_ptr = txcvr_ptr;
+					esbrs.ce_ptr = &ce_controller;
+					esbrs.sc_ptr = &sc_controller;
+				
+			    	//pthread_mutex_init(&esbrs_ready_mutex, NULL);
+				pthread_mutex_lock(&txcvr_ptr->rx_buffer_mutex);			
+				pthread_create( &enactScBbRxThread, NULL, enactScenarioBasebandRx, (void*) &esbrs);
+							
+				// Wait until enactScenarioBasebandRx() has initialized
+				//pthread_mutex_lock(&txcvr_ptr->rx_buffer_mutex);
+				//while (!*esbrs.esbrs_ready_ptr) 
+				//{
+				//	pthread_mutex_unlock(esbrs.esbrs_ready_mutex_ptr);
+				//	pthread_mutex_lock(esbrs.esbrs_ready_mutex_ptr);
+				//}
+				//pthread_mutex_unlock(esbrs.esbrs_ready_mutex_ptr);
+				//pthread_cond_wait(&txcvr_ptr->esbrs_ready, &txcvr_ptr->rx_buffer_mutex);
+				pthread_mutex_unlock(&txcvr_ptr->rx_buffer_mutex);			
+				// Start liquid-usrp receiver
+				printf("Starting receiver\n");
+				txcvr_ptr->start_rx();
+							
+                            	while(continue_running)
+                            	{
+					// Wait until server provides more information, closes, or there is an error
+					rflag = recv(socket_to_server, &readbuffer, sizeof(struct Scenario)+sizeof(struct CognitiveEngine), 0);
+					if(rflag == 0 || rflag == -1){
+						printf("Socket closed or failed\n");
+						close(socket_to_server);
+						msequence_destroy(rx_ms);
+						exit(1);
+					}
+								
+				//TODO:
+                                // if new scenario:
+                                //{
+                                    // close enactScenarioBasebandRx Thread
+                                    // close current ofdmtxrx object
+                                    // update sc and ce
+                                    // open new ofdmtxrx object
+                                    // open new enactScenarioBasebandRx Thread
+                                //}
+                                	/*else if(rflag == sizeof(struct Scenario)){
+                                		if(verbose) printf("Rewriting Scenario Info");
+						pthread_cancel(enactScBbRxThread);
+						delete txcvr_ptr;
+						sc_controller = *(struct Scenario*)readbuffer;
+						ofdmtxrx *txcvr_ptr = new ofdmtxrx(ce.numSubcarriers, ce.CPLen, ce.taperLen, p, rxCallback, (void*) &rxCBs, true);
+						struct enactScenarioBasebandRxStruct esbrs = {.txcvr_ptr = txcvr_ptr, .ce_ptr = &ce_controller, .sc_ptr = &sc_controller};							
+						pthread_create( &enactScBbRxThread, NULL, enactScenarioBasebandRx, (void*) &esbrs);
+					}
+					else if(rflag == sizeof(struct CognitiveEngine)){
+						if(verbose) printf("Rewriting CE info");
+						pthread_cancel(enactScBbRxThread);
+						delete txcvr_ptr;
+						ce_controller = *(struct CognitiveEngine*)readbuffer;
+						ofdmtxrx *txcvr_ptr = new ofdmtxrx(ce.numSubcarriers, ce.CPLen, ce.taperLen, p, rxCallback, (void*) &rxCBs, true);
+						struct enactScenarioBasebandRxStruct esbrs = {.txcvr_ptr = txcvr_ptr, .ce_ptr = &ce_controller, .sc_ptr = &sc_controller};							
+						pthread_create( &enactScBbRxThread, NULL, enactScenarioBasebandRx, (void*) &esbrs);
+					}*/
+                                
+                            	}
                         }
 
                         if (verbose) {
-                            txcvr.debug_enable();
-                            printf("Set frequency to %f\n", ce.frequency);
-                            printf("Set bandwidth to %f\n", ce.bandwidth);
-                            printf("Set txgain_dB to %f\n", ce.txgain_dB);
-                            printf("Set uhd_txgain_dB to %f\n", ce.uhd_txgain_dB);
-                            printf("Set Tx antenna to %s\n", "TX/RX");
+                            	txcvr_ptr->debug_enable();
+                            	printf("Set frequency to %f\n", ce.frequency);
+                            	printf("Set bandwidth to %f\n", ce.bandwidth);
+                            	printf("Set txgain_dB to %f\n", ce.txgain_dB);
+                            	printf("Set uhd_txgain_dB to %f\n", ce.uhd_txgain_dB);
+                            	printf("Set Tx antenna to %s\n", "TX/RX");
                         }
 
                         int i = 0;
                         // Generate data
                         if (verbose) printf("\n\nGenerating data that will go in frame...\n");
-						header[0] = i_CE+1;
-						header[1] = i_Sc+1;
+				header[0] = i_CE+1;
+				header[1] = i_Sc+1;
                         for (i=0; i<4; i++)
-                            header[i+2] = (ce.frameNumber & (0xFF<<(8*(3-i))))>>(8*(3-i));
-						header[6] = 0;
-						header[7] = 0;
+                            	header[i+2] = (ce.frameNumber & (0xFF<<(8*(3-i))))>>(8*(3-i));
+				header[6] = 0;
+				header[7] = 0;
                         for (i=0; i<(signed int)ce.payloadLen; i++)
-                            payload[i] = (unsigned char)msequence_generate_symbol(tx_ms,8);
+                            	payload[i] = (unsigned char)msequence_generate_symbol(tx_ms,8);
 
                         // Include frame number in header information
-                        //* header_u = ce.frameNumber;
                         if (verbose) printf("Frame Num: %u\n", ce.frameNumber);
 
                         // Set Modulation Scheme
@@ -3101,47 +3192,47 @@ int main(int argc, char ** argv){
                         if (verbose) printf("Outer FEC: ");
                         fec_scheme fec1 = convertFECScheme(ce.outerFEC, verbose);
 
-                        //txcvr.transmit_packet(header, payload, ce.payloadLen, ms, fec0, fec1);
                         // Replace with txcvr methods that allow access to samples:
-                        txcvr.assemble_frame(header, payload, ce.payloadLen, ms, fec0, fec1);
+                        txcvr_ptr->assemble_frame(header, payload, ce.payloadLen, ms, fec0, fec1);
                         int isLastSymbol = 0;
                         while(!isLastSymbol)
                         {
-                            isLastSymbol = txcvr.write_symbol();
-                            enactScenarioBaseband(txcvr.fgbuffer, ce, sc);
-                            txcvr.transmit_symbol();
+                            	isLastSymbol = txcvr_ptr->write_symbol();
+                            	enactScenarioBasebandTx(txcvr_ptr->fgbuffer, txcvr_ptr->fgbuffer_len, ce, sc);
+                            	txcvr_ptr->transmit_symbol();
                         }
-                        txcvr.end_transmit_frame();
+                        txcvr_ptr->end_transmit_frame();
 
                         DoneTransmitting = postTxTasks(&ce, &fb, verbose);
                         // Record the feedback data received
                         //TODO: include fb.cfo
 
-						// Compute throughput and spectral efficiency
-						payload_symbols = (float)ce.payloadLen/(float)ce.bitsPerSym;
-						total_symbols = (float)ofdmflexframegen_getframelen(txcvr.fg);
-						throughput = (float)ce.bitsPerSym*ce.bandwidth*(payload_symbols/total_symbols);
+			// Compute throughput and spectral efficiency
+			payload_symbols = (float)ce.payloadLen/(float)ce.bitsPerSym;
+			total_symbols = (float)ofdmflexframegen_getframelen(txcvr_ptr->fg);
+			throughput = (float)ce.bitsPerSym*ce.bandwidth*(payload_symbols/total_symbols);
 
                         //All metrics
                         /*fprintf(dataFile, "%-10s %-10u %-14i %-15i %-10.2f %-10.2f %-8.2f %-19u %-12.2f %-16u %-12.2f %-20.2f %-19.2f\n", 
-							"crtsdata:", fb.frameNum, fb.header_valid, fb.payload_valid, fb.evm, fb.rssi, ce.PER, fb.payloadByteErrors,
-							ce.BERLastPacket, fb.payloadBitErrors, throughput, throughput/ce.bandwidth, ce.averagedGoalValue);*/
-						//Useful metrics
-						fprintf(dataFile, "%-10s %-10i %-10.2f %-10.2f %-8.2f %-12.2f %-12.2f %-20.2f %-19.2f\n", 
-							"crtsdata:", fb.iteration,  fb.evm, fb.rssi, ce.PER,
-							ce.BERLastPacket, throughput, throughput/ce.bandwidth, ce.averagedGoalValue);
+				"crtsdata:", fb.frameNum, fb.header_valid, fb.payload_valid, fb.evm, fb.rssi, ce.PER, fb.payloadByteErrors,
+				ce.BERLastPacket, fb.payloadBitErrors, throughput, throughput/ce.bandwidth, ce.averagedGoalValue);*/
+			//Useful metrics
+			fprintf(dataFile, "%-10s %-10i %-10.2f %-10.2f %-8.2f %-12.2f %-12.2f %-20.2f %-19.2f\n", 
+				"crtsdata:", fb.iteration,  fb.evm, fb.rssi, ce.PER,
+				ce.BERLastPacket, throughput, throughput/ce.bandwidth, ce.averagedGoalValue);
                         fflush(dataFile);
 
                         // Increment the frame counter
                         ce.frameNumber++;
-						ce.iteration++;
+			ce.iteration++;
 
                         // Update the clock
                         now = std::clock();
                         ce.runningTime = double(now-begin)/CLOCKS_PER_SEC;
 
-						updateScenarioSummary(&sc_sum, &fb, &ce, i_CE, i_Sc);
-                    } // End If while loop
+			updateScenarioSummary(&sc_sum, &fb, &ce, i_CE, i_Sc);
+                    } // End while not done transmitting loop
+                    // TODO: close ofdmtxrx object
                 }
                 else // If not using USRPs
                 {
@@ -3159,14 +3250,14 @@ int main(int argc, char ** argv){
                         header[0] = i_CE+1;
 						header[1] = i_Sc+1;
                         for (i=0; i<4; i++)
-                            header[i+2] = (ce.frameNumber & (0xFF<<(8*(3-i))))>>(8*(3-i));
-						header[6] = 0;
-						header[7] = 0;
+                            	header[i+2] = (ce.frameNumber & (0xFF<<(8*(3-i))))>>(8*(3-i));
+				header[6] = 0;
+				header[7] = 0;
                         for (i=0; i<(signed int)ce.payloadLen; i++)
                             payload[i] = (unsigned char)msequence_generate_symbol(tx_ms,8);
 
 						// Called just to update bits per symbol field
-						convertModScheme(ce.modScheme, &ce.bitsPerSym);
+			convertModScheme(ce.modScheme, &ce.bitsPerSym);
 
                         // Assemble frame
                         ofdmflexframegen_assemble(fg, header, payload, ce.payloadLen);
@@ -3179,40 +3270,39 @@ int main(int argc, char ** argv){
                         {
                             //isLastSymbol = txTransmitPacket(ce, &fg, frameSamples, metaData, txStream, usingUSRPs);
                             isLastSymbol = ofdmflexframegen_writesymbol(fg, frameSamples);
-                            enactScenarioBaseband(frameSamples, ce, sc);
+                            symbolLen = ce.numSubcarriers + ce.CPLen;
+                            //enactScenarioBasebandTx(frameSamples, symbolLen, ce, sc);
 							
                             // Rx Receives packet
-                            symbolLen = ce.numSubcarriers + ce.CPLen;
 							ofdmflexframesync_execute(fs, frameSamples, symbolLen);
-							
                         } // End Transmition For loop
-			
+						
                         DoneTransmitting = postTxTasks(&ce, &fb, verbose);
 
-						fflush(dataFile);
+			fflush(dataFile);
 
-						// Compute throughput and spectral efficiency
-						payload_symbols = (float)ce.payloadLen/(float)ce.bitsPerSym;
-						total_symbols = (float)ofdmflexframegen_getframelen(fg);
-						throughput = (float)ce.bitsPerSym*ce.bandwidth*(payload_symbols/total_symbols);
+			// Compute throughput and spectral efficiency
+			payload_symbols = (float)ce.payloadLen/(float)ce.bitsPerSym;
+			total_symbols = (float)ofdmflexframegen_getframelen(fg);
+			throughput = (float)ce.bitsPerSym*ce.bandwidth*(payload_symbols/total_symbols);
 
                         //All metrics
                         /*fprintf(dataFile, "%-10s %-10u %-14i %-15i %-10.2f %-10.2f %-8.2f %-19u %-12.2f %-16u %-12.2f %-20.2f %-19.2f\n", 
-							"crtsdata:", fb.frameNum, fb.header_valid, fb.payload_valid, fb.evm, fb.rssi, ce.PER, fb.payloadByteErrors,
-							ce.BERLastPacket, fb.payloadBitErrors, throughput, throughput/ce.bandwidth, ce.averagedGoalValue);*/
-						//Useful metrics
-						fprintf(dataFile, "%-10s %-10i %-10.2f %-10.2f %-8.2f %-12.2f %-12.2f %-20.2f %-19.2f\n", 
-							"crtsdata:", fb.iteration,  fb.evm, fb.rssi, ce.PER,
-							ce.BERLastPacket, throughput, throughput/ce.bandwidth, ce.averagedGoalValue);
+			"crtsdata:", fb.frameNum, fb.header_valid, fb.payload_valid, fb.evm, fb.rssi, ce.PER, fb.payloadByteErrors,
+			ce.BERLastPacket, fb.payloadBitErrors, throughput, throughput/ce.bandwidth, ce.averagedGoalValue);*/
+			//Useful metrics
+			fprintf(dataFile, "%-10s %-10i %-10.2f %-10.2f %-8.2f %-12.2f %-12.2f %-20.2f %-19.2f\n", 
+				"crtsdata:", fb.iteration,  fb.evm, fb.rssi, ce.PER,
+				ce.BERLastPacket, throughput, throughput/ce.bandwidth, ce.averagedGoalValue);
 
                         // Increment the frame counters and iteration counter
                         ce.frameNumber++;
-						ce.iteration++;
+			ce.iteration++;
                         // Update the clock
                         now = std::clock();
                         ce.runningTime = double(now-begin)/CLOCKS_PER_SEC;
 
-						updateScenarioSummary(&sc_sum, &fb, &ce, i_CE, i_Sc);
+			updateScenarioSummary(&sc_sum, &fb, &ce, i_CE, i_Sc);
                     } // End else While loop					
                 }
 
@@ -3221,7 +3311,7 @@ int main(int argc, char ** argv){
             clock_t end = clock();
             double time = (end-begin)/(double)CLOCKS_PER_SEC + ce.iteration*ce.delay_us/1.0e6;
             //fprintf(dataFile, "Elapsed Time: %f (s)", time);
-			fprintf(dataFile, "Begin: %li End: %li Clock/s: %li Time: %f", begin, end, CLOCKS_PER_SEC, time);
+		fprintf(dataFile, "Begin: %li End: %li Clock/s: %li Time: %f", begin, end, CLOCKS_PER_SEC, time);
             fflush(dataFile);
 
             // Reset the goal
@@ -3231,10 +3321,10 @@ int main(int argc, char ** argv){
             fprintf(dataFile, "\n\n");
             fflush(dataFile);
 
-			updateCognitiveEngineSummaryInfo(&ce_sum, &sc_sum, &ce, i_CE, i_Sc);
+		updateCognitiveEngineSummaryInfo(&ce_sum, &sc_sum, &ce, i_CE, i_Sc);
 
-			// Reset frame number
-			ce.frameNumber = 0;
+		// Reset frame number
+		ce.frameNumber = 0;
             
         } // End Scenario For loop
 
@@ -3262,653 +3352,6 @@ int main(int argc, char ** argv){
     return 0;
 }
 
-//Simple Broadcasting
-//Simulate broadcasting with one transmitting radio
-if(broadcasting == 1 && usingUSRPs == 0){
-
-printf("broadcasting\n");
-printf("%d\n", usingUSRPs);
-if(usingUSRPs && isController){
-	printf("Hi\n");
-
-}
-if(usingUSRPs && !isController){
-	printf("Hi\n");
-
-}
-//mainfb collects feedback from each receiver being broadcasted to and averages them together
-	struct feedbackStruct mainfb;
-	int fbnum = 0;
-
-    mainfb.header_valid = 0;
-    mainfb.payload_valid = 0;
-    mainfb.payload_len = 0;
-    mainfb.payloadByteErrors = 0;
-    mainfb.payloadBitErrors = 0;
-    mainfb.iteration = 0;
-    mainfb.evm = 0;
-    mainfb.rssi = 0;
-    mainfb.cfo = 0;
-
-
-	//configuration variables set up to read broadcast file to form broadcast structure
-	config_t cfg; // Returns all parameters in this structure
-    config_setting_t *setting;
-	//config_setting_t *iterator;
-    const char * str; // Stores the value of the String Parameters in Config file
-    int tmpI; // Stores the value of Integer Parameters from Config file
-    //double tmpD;
-	char * str2;
-    int numberOfRadios;
-	struct Scenario scList[50];
-	//struct CognitiveEngine ceList[50];
-	
-    ce.frameNumber = 1;
-    //fs = CreateFS(ce, sc, &rxCBs);
-    if (verbose)
-        printf("Reading %s\n", "master_broadcast_file.txt");
-
-    //Initialization
-    config_init(&cfg);
-
-    // Read the file. If there is an error, report it and exit.
-    if (!config_read_file(&cfg,"master_broadcast_file.txt"))
-    {
-        fprintf(stderr, "\n%s:%d - %s", config_error_file(&cfg), config_error_line(&cfg), config_error_text(&cfg));
-        config_destroy(&cfg);
-        exit(EX_NOINPUT);
-    };
-    // Read the parameter group
-    setting = config_lookup(&cfg, "params");
-    if (setting != NULL)
-    {
-        // Read the strings
-        if (config_setting_lookup_int(setting, "numberOfRadios", &tmpI))
-        {
-			numberOfRadios = tmpI;
-			printf("%d\n", tmpI);
-        };
-        if (config_setting_lookup_string(setting, "ce", &str))
-        {
-			str2 = (char *)str;
-			//for(int r = 0; r<numberOfRadios; ++r){
-				ce = CreateCognitiveEngine();
-				readCEConfigFile(&ce, str2, verbose);
-			//};
-        };
-		for(int r=0; r<numberOfRadios; ++r){
-			str = config_setting_get_string_elem(config_setting_get_member(setting, "scenarios"), r);
-			str2 = (char *)str;
-			scList[r] = CreateScenario();
-			readScConfigFile(&scList[r], str2, verbose);
-		};
-
-    };
-    config_destroy(&cfg);
-
-	int i;
-				//If USRPs are used one transceiver is initialized to transmit while all
-				//othesr just receive and give feedback
-                if (usingUSRPs) 
-                {
-                    //usrp = initializeUSRPs();    
-                    // create transceiver object
-                    unsigned char * p = NULL;   // default subcarrier allocation
-                    if (verbose) 
-                        printf("Using ofdmtxrx\n");
-						printf("%d %d %d\n", ce.numSubcarriers, ce.CPLen, ce.taperLen);
-                    ofdmtxrx txcvr(ce.numSubcarriers, ce.CPLen, ce.taperLen, p, rxCallback, (void*) &rxCBs);
-					
-                    // Start the Scenario simulations from the scenario USRPs
-                    //enactUSRPScenario(ce, sc, &uhd_siggen_pid);
-
-                    while(!DoneTransmitting)
-                    {
-                        // set properties
-                        txcvr.set_tx_freq(ce.frequency);
-                        txcvr.set_tx_rate(ce.bandwidth);
-                        txcvr.set_tx_gain_soft(ce.txgain_dB);
-                        txcvr.set_tx_gain_uhd(ce.uhd_txgain_dB);
-                        //txcvr.set_tx_antenna("TX/RX");
-
-                        if (!isController)
-                        {
-                            txcvr.set_rx_freq(frequency);
-                            txcvr.set_rx_rate(bandwidth);
-                            txcvr.set_rx_gain_uhd(uhd_rxgain);
-
-                            if (verbose)
-                            {
-                                txcvr.debug_enable();
-                                printf("Set Rx freq to %f\n", frequency);
-                                printf("Set Rx rate to %f\n", bandwidth);
-                                printf("Set uhd Rx gain to %f\n", uhd_rxgain);
-                            }
-
-                            int continue_running = 1;
-							int rflag;
-							char readbuffer;
-							txcvr.start_rx();
-                            while(continue_running)
-                            {
-								// Wait until server closes or there is an error, then exit
-								
-								rflag = recv(socket_to_server, &readbuffer, sizeof(readbuffer), 0);
-								printf("Rx flag: %i\n", rflag);
-								if(rflag == 0 || rflag == -1){
-									close(socket_to_server);
-									msequence_destroy(rx_ms);
-									exit(1);
-								}
-                            }
-                        }
-
-                        if (verbose) {
-                            txcvr.debug_enable();
-                            printf("Set frequency to %f\n", ce.frequency);
-                            printf("Set bandwidth to %f\n", ce.bandwidth);
-                            printf("Set txgain_dB to %f\n", ce.txgain_dB);
-                            printf("Set uhd_txgain_dB to %f\n", ce.uhd_txgain_dB);
-                            printf("Set Tx antenna to %s\n", "TX/RX");
-                        }
-
-                        int i = 0;
-                        // Generate data
-                        if (verbose) printf("\n\nGenerating data that will go in frame...\n");
-						header[0] = 1;
-						header[1] = 1;
-                        for (i=0; i<4; i++)
-                            header[i+2] = (ce.frameNumber & (0xFF<<(8*(3-i))))>>(8*(3-i));
-						header[6] = 0;
-						header[7] = 0;
-                        for (i=0; i<(signed int)ce.payloadLen; i++)
-                            payload[i] = (unsigned char)msequence_generate_symbol(tx_ms,8);
-
-                        // Include frame number in header information
-                        //* header_u = ce.frameNumber;
-                        if (verbose) printf("Frame Num: %u\n", ce.frameNumber);
-
-                        // Set Modulation Scheme
-                        if (verbose) printf("Modulation scheme: %s\n", ce.modScheme);
-                        modulation_scheme ms = convertModScheme(ce.modScheme, &ce.bitsPerSym);
-
-                        // Set Cyclic Redundency Check Scheme
-                        //crc_scheme check = convertCRCScheme(ce.crcScheme);
-
-                        // Set inner forward error correction scheme
-                        if (verbose) printf("Inner FEC: ");
-                        fec_scheme fec0 = convertFECScheme(ce.innerFEC, verbose);
-
-                        // Set outer forward error correction scheme
-                        if (verbose) printf("Outer FEC: ");
-                        fec_scheme fec1 = convertFECScheme(ce.outerFEC, verbose);
-
-                        //txcvr.transmit_packet(header, payload, ce.payloadLen, ms, fec0, fec1);
-                        // Replace with txcvr methods that allow access to samples:
-                        txcvr.assemble_frame(header, payload, ce.payloadLen, ms, fec0, fec1);
-                        int isLastSymbol = 0;
-                        while(!isLastSymbol)
-                        {
-							
-                            isLastSymbol = txcvr.write_symbol();
-                            //enactScenarioBaseband(txcvr.fgbuffer, ce, sc);
-                            txcvr.transmit_symbol();
-                        }
-                        txcvr.end_transmit_frame();
-
-                        DoneTransmitting = postTxTasks(&ce, &fb, verbose);
-                        // Record the feedback data received
-                        //TODO: include fb.cfo
-
-						// Compute throughput and spectral efficiency
-						payload_symbols = (float)ce.payloadLen/(float)ce.bitsPerSym;
-						total_symbols = (float)ofdmflexframegen_getframelen(txcvr.fg);
-						throughput = (float)ce.bitsPerSym*ce.bandwidth*(payload_symbols/total_symbols);
-
-                        //All metrics
-                        /*fprintf(dataFile, "%-10s %-10u %-14i %-15i %-10.2f %-10.2f %-8.2f %-19u %-12.2f %-16u %-12.2f %-20.2f %-19.2f\n", 
-							"crtsdata:", fb.frameNum, fb.header_valid, fb.payload_valid, fb.evm, fb.rssi, ce.PER, fb.payloadByteErrors,
-							ce.BERLastPacket, fb.payloadBitErrors, throughput, throughput/ce.bandwidth, ce.averagedGoalValue);*/
-						//Useful metrics
-						/*fprintf(dataFile, "%-10s %-10i %-10.2f %-10.2f %-8.2f %-12.2f %-12.2f %-20.2f %-19.2f\n", 
-							"crtsdata:", fb.iteration,  fb.evm, fb.rssi, ce.PER,
-							ce.BERLastPacket, throughput, throughput/ce.bandwidth, ce.averagedGoalValue);
-                        fflush(dataFile);
-
-                        // Increment the frame counter
-                        ce.frameNumber++;
-						ce.iteration++;
-
-                        // Update the clock
-                        now = std::clock();
-                        ce.runningTime = double(now-begin)/CLOCKS_PER_SEC;
-
-						updateScenarioSummary(&sc_sum, &fb, &ce, i_CE, i_Sc);*/
-                    } // End If while loop
-                }
-
-	if(!usingUSRPs){
-	std::clock_t begin = std::clock();
-	std::clock_t now;
-	for(int l = 0; l<1; ++l){
-		mainfb.header_valid = 0;
-		mainfb.payload_valid = 0;
-		mainfb.payload_len = 0;
-		mainfb.payloadByteErrors = 0;
-		mainfb.payloadBitErrors = 0;
-		mainfb.iteration = 0;
-		mainfb.evm = 0;
-		mainfb.rssi = 0;
-		mainfb.cfo = 0;
-		fbnum = 0;
-		printf("\nTransmission %d", l + 1);
-        if (verbose) printf("\n\nGenerating data that will go in frame...\n");
-        header[0] = 1;
-		header[1] = l+1;
-        for (i=0; i<4; i++)
-            header[i+2] = (ce.frameNumber & (0xFF<<(8*(3-i))))>>(8*(3-i));
-		header[6] = 0;
-		header[7] = 0;
-        for (i=0; i<(signed int)ce.payloadLen; i++)
-            payload[i] = (unsigned char)msequence_generate_symbol(tx_ms,8);
-		for(int r = 0; r<numberOfRadios; ++r){
-			sc = scList[r];
-			msequence_reset(tx_ms);
-			msequence_reset(rx_ms);
-			for(int y = 0; y<l; ++y){
-				msequence_advance(tx_ms);
-				msequence_advance(rx_ms);
-			};
-			printf("The source radio broadcasted to radio %d\n", r + 1);
-			fg = CreateFG(ce, sc, verbose);  // Create ofdmflexframegen object with given parameters
-		    if (verbose) ofdmflexframegen_print(fg);
-
-		    // Iterator
-		    //int i = 0;
-
-			// Called just to update bits per symbol field
-			convertModScheme(ce.modScheme, &ce.bitsPerSym);
-
-		    // Assemble frame
-		    ofdmflexframegen_assemble(fg, header, payload, ce.payloadLen);
-		    //printf("DoneTransmitting= %d\n", DoneTransmitting);
-		
-		    // i.e. Need to transmit each symbol in frame.
-		    isLastSymbol = 0;
-			fbnum = 0;
-		    while (!isLastSymbol) 
-		    {
-		        //isLastSymbol = txTransmitPacket(ce, &fg, frameSamples, metaData, txStream, usingUSRPs);
-		        isLastSymbol = ofdmflexframegen_writesymbol(fg, frameSamples);
-		        enactScenarioBaseband(frameSamples, ce, sc);
-			
-		        // Rx Receives packet
-		        symbolLen = ce.numSubcarriers + ce.CPLen;
-				ofdmflexframesync_execute(fs, frameSamples, symbolLen);
-			//mainfb collects feedback data before averaging it
-			mainfb.header_valid += fb.header_valid;
-			mainfb.payload_valid += fb.payload_valid;
-			mainfb.payload_len += fb.payload_len;
-			mainfb.payloadByteErrors += fb.payloadByteErrors;
-			mainfb.payloadBitErrors += fb.payloadBitErrors;
-			mainfb.iteration += fb.iteration;
-			mainfb.evm += fb.evm;
-			mainfb.rssi += fb.rssi;
-			mainfb.cfo += fb.cfo;
-			
-			//Accumulator to divide some feedback values by to average them
-			++fbnum;
-
-
-
-				
-			}
-			printf("%d\n", fbnum);
-			//mainfb.header_valid /= fbnum;
-			//mainfb.payload_valid /= fbnum;
-			mainfb.payload_len /= fbnum;
-			//mainfb.payloadByteErrors /= fbnum;
-			//mainfb.payloadBitErrors /= fbnum;
-			mainfb.iteration /= fbnum;
-			mainfb.evm /= fbnum;
-			mainfb.rssi /= fbnum;
-			mainfb.cfo /= fbnum;
-			//printf("\n\nmainfb\n\n");
-			//feedbackStruct_print(&mainfb);
-			}
-			
-			mainfb.header_valid /= numberOfRadios;
-			mainfb.payload_valid /= numberOfRadios;
-			mainfb.payload_len /= numberOfRadios;
-			mainfb.payloadByteErrors /= numberOfRadios;
-			mainfb.payloadBitErrors /= numberOfRadios;
-			mainfb.iteration /= numberOfRadios;
-			mainfb.evm /= numberOfRadios;
-			mainfb.rssi /= numberOfRadios;
-			mainfb.cfo /= numberOfRadios;
-			printf("\n\nmainfb\n\n");
-			feedbackStruct_print(&mainfb);
-			
-
-			//feedbackStruct_print(&mainfb);
-			DoneTransmitting = postTxTasks(&ce, &mainfb, verbose);
-
-			fflush(dataFile);
-
-			// Compute throughput and spectral efficiency
-			payload_symbols = (float)ce.payloadLen/(float)ce.bitsPerSym;
-			total_symbols = (float)ofdmflexframegen_getframelen(fg);
-			throughput = (float)ce.bitsPerSym*ce.bandwidth*(payload_symbols/total_symbols);
-
-            //All metrics
-            /*fprintf(dataFile, "%-10s %-10u %-14i %-15i %-10.2f %-10.2f %-8.2f %-19u %-12.2f %-16u %-12.2f %-20.2f %-19.2f\n", 
-				"crtsdata:", fb.frameNum, fb.header_valid, fb.payload_valid, fb.evm, fb.rssi, ce.PER, fb.payloadByteErrors,
-				ce.BERLastPacket, fb.payloadBitErrors, throughput, throughput/ce.bandwidth, ce.averagedGoalValue);*/
-			//Useful metrics
-			fprintf(dataFile, "%-10s %-10i %-10.2f %-10.2f %-8.2f %-12.2f %-12.2f %-20.2f %-19.2f\n", 
-				"crtsdata:", fb.iteration,  fb.evm, fb.rssi, ce.PER,
-				ce.BERLastPacket, throughput, throughput/ce.bandwidth, ce.averagedGoalValue);
-
-            // Increment the frame counters and iteration counter
-            ce.frameNumber++;
-			ce.iteration++;
-            // Update the clock
-            now = std::clock();
-            ce.runningTime = double(now-begin)/CLOCKS_PER_SEC;
-		}}
-
-	
-	
-
-
-
-	return 0;
-}
-//If networking and not using USRPs the master network file is read to make an ad hoc
-//network for simulation
-if(networking==1 && !usingUSRPs){
-
-	verbose = 1;
-    config_t cfg; // Returns all parameters in this structure
-    config_setting_t *setting;
-	config_setting_t *iterator;
-    const char * str; // Stores the value of the String Parameters in Config file
-    int tmpI; // Stores the value of Integer Parameters from Config file
-    //double tmpD;
-	char * str2;
-    int numberOfRadios;
-	char radioname[10];
-
-    if (verbose)
-        printf("Reading %s\n", "master_network_file.txt");
-
-    //Initialization
-    config_init(&cfg);
-
-    // Read the file. If there is an error, report it and exit.
-    if (!config_read_file(&cfg,"master_network_file.txt"))
-    {
-        fprintf(stderr, "\n%s:%d - %s", config_error_file(&cfg), config_error_line(&cfg), config_error_text(&cfg));
-        config_destroy(&cfg);
-        exit(EX_NOINPUT);
-    }
-	struct Network network;
-    // Read the parameter group
-    setting = config_lookup(&cfg, "params");
-    if (setting != NULL)
-    {
-        // Read the strings
-        if (config_setting_lookup_int(setting, "numberOfRadios", &tmpI))
-        {
-		numberOfRadios = tmpI;
-        }
-
-		//The radio doing the initial transmitting
-        if (config_setting_lookup_int(setting, "source", &tmpI))
-        {
-		network.source = tmpI;
-        }
-    }
-	
-	network.transmitnumber = 1;
-	//For each radio it reads its entry in the master file and makes a node struct with
-	//the proper ce and neighbors to transmit to
-    for(int i=0; i<numberOfRadios;++i){
-		sprintf(radioname, "radio%d", i+1);
-        printf("%s\n\n", radioname);
-		network.nodeList[i].done = 0;
-		network.nodeList[i].number = i;
-		setting = config_lookup(&cfg, radioname);
-		if (setting != NULL){
-			if (config_setting_lookup_string(setting, "ce", &str)){
-				network.nodeList[i].ce = CreateCognitiveEngine();
-				str2=(char *)str;
-				readCEConfigFile(&network.nodeList[i].ce, str2, verbose);
-                printf("\n");
-			};
-			if (config_setting_lookup_int(setting, "numberOfNeighbors", &tmpI)){
-				network.nodeList[i].numberOfNeighbors = tmpI;
-                printf("Number of Neighbors: %d\n\n", tmpI);
-			};
-			for(int j=0; j<network.nodeList[i].numberOfNeighbors; ++j){
-				tmpI = config_setting_get_int_elem(config_setting_get_member(setting, "neighbors"), j);
-				network.nodeList[i].neighborList[j] = &network.nodeList[tmpI-1];
-				str = config_setting_get_string_elem(config_setting_get_member(setting, "scenarios"), j);
-				str2 = (char *)str;
-				network.nodeList[i].scenarioList[j] = CreateScenario();
-				readScConfigFile(&network.nodeList[i].scenarioList[j], str2, verbose);
-                printf("\n");
-			};
-				
-		};
-	};
-
-	//The transmitter list contains all nodes that will transmit next. At first it will only
-	//contain the source node. Then it will contain all nodes that received the source's
-	//broadcast that will be transmitting to other nodes, etc
-	network.transmitterList[0] = &network.nodeList[network.source-1];
-    config_destroy(&cfg);
-
-	//Pointer to the currently transmitting node
-	struct Node * nodePtr;
-    while(network.transmitnumber>0){
-		//The number of nodes that will be transmitting in the next round
-		network.nextnumber = 0;
-		for (int m=0; m<network.transmitnumber; m++){
-
-		nodePtr = network.transmitterList[m];
-		//Each transmitting node broadcasts to each of its neighbors
-		//If the receiving node has neighbors it is added to the next list to show that it
-		//will transmit in the next round
-		for(int j=0; j<nodePtr->numberOfNeighbors; ++j){
-	    	nodePtr->ce.frameNumber = 1;
-
-			printf("\nNode %d broadcasting to Node %d\n\n", nodePtr->number + 1, nodePtr->neighborList[j]->number + 1);
-			//If the receiving node has neighbors it is put in the next list
-			if(nodePtr->neighborList[j]->numberOfNeighbors>0){
-				network.nextList[network.nextnumber] = nodePtr->neighborList[j];
-				network.nextnumber++;
-				}
-		    }
-			
-	    }
-		//All nodes in the next list are moved to the transmit list before the loop restarts
-		for(int g=0; g<network.nextnumber; ++g){
-			network.transmitterList[g] = &network.nodeList[network.nextList[g]->number];
-
-		};
-
-		network.transmitnumber = network.nextnumber;
-	}
-
-
-return 0;
-}
-
-//If DSA is used but USRPs are not used then a simple DSA simulation is done
-if(dsa==1 && !usingUSRPs){
-
-	//Initialize variables for DSA and configuratin file reading
-	struct PU pu;
-	struct SU su;
-	int wasted = 0;
-	pu.transmitted = 0;
-	su.transmitted = 0;
-	pu.corrupted = 0;
-	su.corrupted = 0;
-
-	//Initially the primary user is on and transmitting while the secondary user is off
-	//and scanning
-	pu.on = 1;
-	su.on = 0;
-	pu.state = 't';
-	su.state = 's';
-	pu.change = 0;
-	su.change = 0;
-	pu.burstingtime = pu.bursttime;
-	int totaltime = 100;
-	verbose = 1;
-    config_t cfg; // Returns all parameters in this structure
-    config_setting_t *setting;
-	config_setting_t *iterator;
-    const char * str; // Stores the value of the String Parameters in Config file
-    int tmpI; // Stores the value of Integer Parameters from Config file
-    double tmpD;
-	char * str2;
-
-    if (verbose)
-        printf("Reading %s\n", "master_dsa_file.txt");
-
-    //Initialization
-    config_init(&cfg);
-
-    // Read the file. If there is an error, report it and exit.
-    if (!config_read_file(&cfg,"master_dsa_file.txt"))
-    {
-        fprintf(stderr, "\n%s:%d - %s", config_error_file(&cfg), config_error_line(&cfg), config_error_text(&cfg));
-        config_destroy(&cfg);
-        exit(EX_NOINPUT);
-    }
-    // Read the parameter group
-    setting = config_lookup(&cfg, "params");
-    if (setting != NULL)
-    {
-        // Read the strings
-        if (config_setting_lookup_int(setting, "totalcycles", &tmpI))
-        {
-		totaltime = tmpI;
-        }
-    }
-    setting = config_lookup(&cfg, "PU");
-    if (setting != NULL)
-    {
-        // Read the strings
-        if (config_setting_lookup_int(setting, "bursttime", &tmpI))
-        {
-		pu.bursttime = tmpI;
-        }
-        if (config_setting_lookup_int(setting, "resttime", &tmpI))
-        {
-		pu.resttime = tmpI;
-        }
-    }
-    setting = config_lookup(&cfg, "SU");
-    if (setting != NULL)
-    {
-        // Read the strings
-        if (config_setting_lookup_int(setting, "bursttime", &tmpI))
-        {
-		su.bursttime = tmpI;
-        }
-        if (config_setting_lookup_int(setting, "scantime", &tmpI))
-        {
-		su.scantime = tmpI;
-        }
-        if (config_setting_lookup_int(setting, "waittime", &tmpI))
-        {
-		su.waittime = tmpI;
-        }
-    }
-	pu.burstingtime = pu.bursttime;
-	pu.time = pu.bursttime;
-	su.scanningtime = su.scantime;
-	su.time = su.scantime;
-	su.state = 's';
-	//For loop iterates for the number of time units determined by the master dsa file
-	for(int i = 0; i<totaltime; ++i){
-
-		//If pu.time==0 then it is time for it to change its state
-		//If it is on then it will turn off for its rest time
-		//If it is off then it will transmit a burst for burst time
-		if(pu.time == 0){
-			if(pu.on == 1){
-				pu.on = 0;
-				pu.time = pu.resttime;
-			}
-			else{
-				pu.on = 1;
-				pu.time = pu.bursttime;
-			}
-		}
-		//If the secondary user's time is at 0 then it must change its state
-		//If it is scanning then it will start waiting
-		//If it is done waiting then it will transmit
-		//If it is done transmitting then it will scan
-		while(su.time <= 0){
-			if(su.state == 's' && su.time <= 0){
-				su.state = 'w';
-				su.time = su.waittime;
-			}
-			if(su.state == 'w' && su.time <= 0){
-				su.state = 't';
-				su.on = 1;
-				su.time = su.bursttime;
-			}
-			if(su.state == 't' && su.time <= 0){
-				su.state = 's';
-				su.on = 0;
-				su.time = su.scantime;
-			}
-		}
-
-		//Prints out a message based on who is transmitting
-		if(su.on==1 && pu.on==1){
-			printf("Collison!!!\n");
-			++pu.corrupted;
-			++su.corrupted;
-		};
-		if(su.on==1 && pu.on==0){
-			printf("The secondary user transmitted\n");
-			++su.transmitted;
-		};
-		if(su.on==0 && pu.on==1){
-			printf("The primary user transmitted\n");
-			++pu.transmitted;
-
-			//If the primary user transmits while the secondary user scans then the 
-			//secondary user's scan time will reset
-			if(su.state == 's'){
-				su.time = su.scantime;
-			}
-		}
-		if(su.on==0 && pu.on==0){
-			printf("No one transmitted\n");
-			++wasted;
-		}
-
-		//Decrement the time before the loop reiterates
-		--pu.time;
-		--su.time;
-	}
-
-	//After the loop has finished the number of successful and corrupted transmissions
-	//are displayed
-	printf("The primary user sent %d transmissions successfully\n", pu.transmitted);
-	printf("The secondary user sent %d transmissions successfully\n", su.transmitted);
-	printf("%d transmissions were corrupted\n", pu.corrupted);
-	return 0;
-}
-
 //If DSA is used with USRPs and not a receiver either a primary transmitter is made or a
 //secondary transmitter with sensing capabilities
 if(dsa==1 && usingUSRPs && !isController){
@@ -3926,31 +3369,26 @@ if(dsa==1 && usingUSRPs && !isController){
 	int secondarymsgnumber = 1;
 	double primarybursttime;
 	double primaryresttime;
-	double secondarybursttime;
+
+	//Total number of primary user cycles
+	int totaltime = 10;
 	double secondaryscantime;
 	int primaryburstrandom;
 	int primaryrestrandom;
 	int uninterruptedframes = 1;
 	int adapt = 0;
 	int usescenario = 0;
-	char killsign = 'z';
 	
 	struct CognitiveEngine puce;
 	struct CognitiveEngine suce;
 	struct Scenario sc = CreateScenario();
-	int totaltime = 100;
 	verbose = 1;
 	config_t cfg; // Returns all parameters in this structure
 	config_setting_t *setting;
-	config_setting_t *iterator;
 	const char * str; // Stores the value of the String Parameters in Config file
 	int tmpI; // Stores the value of Integer Parameters from Config file
 	double tmpD;
-	double tmpd;
 	char * str2;
-	//struct serveClientStruct * sc_ptr = (struct serveClientStruct*) _sc_ptr;
-	int cl = dsaCBs.client;
-
 
 	if (verbose)
 		printf("Reading %s\n", "master_dsa_file.txt");
@@ -3974,20 +3412,10 @@ if(dsa==1 && usingUSRPs && !isController){
 		{
 		totaltime = tmpI;
 		}
-		if (config_setting_lookup_string(setting, "dsatype", &str))
-		{
-		str2 = (char *)str;
-		dsaCBs.dsatype = str[0];
-		}
 		if (config_setting_lookup_string(setting, "detectiontype", &str))
 		{
 		str2 = (char *)str;
 		dsaCBs.detectiontype = str[0];
-		}
-		if (config_setting_lookup_string(setting, "detectiontype", &str))
-		{
-		str2 = (char *)str;
-		killsign = *str2;
 		}
 	}
 	setting = config_lookup(&cfg, "fft");
@@ -4109,11 +3537,6 @@ if(dsa==1 && usingUSRPs && !isController){
 	setting = config_lookup(&cfg, "SU");
 	if (setting != NULL && (secondary == 1 or energy==1))
 	{
-		// Read the strings
-		if (config_setting_lookup_float(setting, "bursttime", &tmpD))
-		{
-		secondarybursttime = tmpD;
-		}
 		if (config_setting_lookup_float(setting, "scantime", &tmpD))
 		{
 		secondaryscantime = tmpD;
@@ -4161,7 +3584,6 @@ if(dsa==1 && usingUSRPs && !isController){
 		mess.type = 'P';
 		dsaCBs.usrptype = 'P';
 		verbose = 0;
-		//float a;
 		printf("primary\n");
 		int h;
 
@@ -4169,7 +3591,7 @@ if(dsa==1 && usingUSRPs && !isController){
 		for(h = 0; h<8; h++){
 			header[h] = 1;
 		};
-		for(h = 0; h<puce.payloadLen; h++){
+		for(h = 0; h<(int)puce.payloadLen; h++){
 			payload[h] = 111;
 		};
 
@@ -4200,7 +3622,6 @@ if(dsa==1 && usingUSRPs && !isController){
 		//int on = 1;
 		std::clock_t time = 0;
 		start = std::clock();
-		//srand(std::clock());
 		double primarybasebursttime = primarybursttime;
 		double primarybaseresttime = primaryresttime;
 		for(int o = 0; o<totaltime; ++o){;
@@ -4219,15 +3640,13 @@ if(dsa==1 && usingUSRPs && !isController){
 			while(primarybursttime/timedivisor > time){
 				current = std::clock();
 				time = ((float)(current-start))/CLOCKS_PER_SEC;
-				/*for (h=0; h<(signed int)ce.payloadLen; h++)
-				    payload[h] = (unsigned char)msequence_generate_symbol(tx_ms,8);*/
 				txcvr.assemble_frame(header, payload, puce.payloadLen, ms, fec0, fec1);
 				int isLastSymbol = 0;
 				while(!isLastSymbol)
 					{
 					isLastSymbol = txcvr.write_symbol();
 					if(usescenario){
-					enactScenarioBaseband(txcvr.fgbuffer, puce, sc);}
+					enactScenarioBasebandTx(txcvr.fgbuffer, txcvr.fgbuffer_len, puce, sc);}
 					txcvr.transmit_symbol();
 					}
 				usleep(100);
@@ -4279,7 +3698,7 @@ if(dsa==1 && usingUSRPs && !isController){
 		for(int h = 0; h<8; h++){
 			header[h] = 0;
 		};
-		for(int h = 0; h<suce.payloadLen; h++){
+		for(unsigned int h = 0; h<suce.payloadLen; h++){
 			payload[h] = 0;
 		};
 		std::clock_t start;
@@ -4303,7 +3722,6 @@ if(dsa==1 && usingUSRPs && !isController){
 		start = std::clock();
 		while(true)
 			{
-			int on = 1;
 			time = 0;
 			start = std::clock();
 			printf("SU transmitting\n");
@@ -4327,7 +3745,7 @@ if(dsa==1 && usingUSRPs && !isController){
 						usleep(1);
 						isLastSymbol = txcvr.write_symbol();
 						if(usescenario)
-						enactScenarioBaseband(txcvr.fgbuffer, suce, sc);
+						enactScenarioBasebandTx(txcvr.fgbuffer, txcvr.fgbuffer_len, suce, sc);
 						txcvr.transmit_symbol();
 						}
 			   		txcvr.end_transmit_frame();
@@ -4357,7 +3775,6 @@ if(dsa==1 && usingUSRPs && !isController){
 				}
 			time = 0;
 			start = std::clock();
-			std::clock_t current;
 			printf("SU sensing\n");
 
 			//Once the primary user is detected the secondary user stops transmitting
@@ -4405,7 +3822,7 @@ if(dsa==1 && usingUSRPs && !isController){
 		for(int h = 0; h<8; h++){
 			header[h] = 0;
 		};
-		for(int h = 0; h<suce.payloadLen; h++){
+		for(unsigned int h = 0; h<suce.payloadLen; h++){
 			payload[h] = 0;
 		};
 		std::clock_t start;
@@ -4429,7 +3846,6 @@ if(dsa==1 && usingUSRPs && !isController){
 		start = std::clock();
 		while(true)
 			{
-			int on = 1;
 			time = 0;
 			start = std::clock();
 			printf("SU transmitting\n");
@@ -4453,7 +3869,7 @@ if(dsa==1 && usingUSRPs && !isController){
 						usleep(1);
 						isLastSymbol = txcvr.write_symbol();
 						if(usescenario)
-						enactScenarioBaseband(txcvr.fgbuffer, suce, sc);
+						enactScenarioBasebandTx(txcvr.fgbuffer, txcvr.fgbuffer_len, suce, sc);
 						txcvr.transmit_symbol();
 						}
 			   		txcvr.end_transmit_frame();
@@ -4464,7 +3880,7 @@ if(dsa==1 && usingUSRPs && !isController){
 			}
 			time = 0;
 			start = std::clock();
-			std::clock_t current;
+			//std::clock_t current;
 			printf("SU sensing\n");
 
 			//Once the primary user is detected the secondary user stops transmitting
@@ -4502,7 +3918,6 @@ if(dsa==1 && usingUSRPs && !isController){
 		if(broadcasting==1){
 		bfi.primaryon = 0;
 		bfi.user = 'S';
-		bfi.killsign = 'd';//killsign;
 		bfi.client = dsaCBs.client;
 		bfi.m_ptr = &msg;
 		bfi.msgnumber = &secondarymsgnumber;
@@ -4511,13 +3926,12 @@ if(dsa==1 && usingUSRPs && !isController){
 		printf("secondary\n");
 
 		//The secondary user has a payload of all zeroes
-		for(int h = 0; h<8; h++){
+		for(unsigned int h = 0; h<8; h++){
 			header[h] = 0;
 		};
-		for(int h = 0; h<suce.payloadLen; h++){
+		for(unsigned int h = 0; h<suce.payloadLen; h++){
 			payload[h] = 0;
 		};
-		std::clock_t start;
 		//std::clock_t current;
 		unsigned char * p = NULL;   // default subcarrier allocation
 		if (verbose) 
@@ -4534,13 +3948,8 @@ if(dsa==1 && usingUSRPs && !isController){
    		txcvr.set_rx_rate(suce.bandwidth);
     	txcvr.set_rx_gain_uhd(uhd_rxgain);
 		//txcvr.start_rx();
-		float time = 0;	
-		start = std::clock();
 		while(true)
 			{
-			int on = 1;
-			time = 0;
-			start = std::clock();
 			printf("SU transmitting\n");
 			mess.number = secondarymsgnumber;
 			mess.purpose = 't';
@@ -4563,7 +3972,7 @@ if(dsa==1 && usingUSRPs && !isController){
 						usleep(1);
 						isLastSymbol = txcvr.write_symbol();
 						if(usescenario)
-						enactScenarioBaseband(txcvr.fgbuffer, suce, sc);
+						enactScenarioBasebandTx(txcvr.fgbuffer, txcvr.fgbuffer_len, suce, sc);
 						txcvr.transmit_symbol();
 						}
 			   		txcvr.end_transmit_frame();
@@ -4572,9 +3981,6 @@ if(dsa==1 && usingUSRPs && !isController){
 					postTxTasks(&suce, &msg.feed, verbose);
 				}
 			}
-			time = 0;
-			start = std::clock();
-			std::clock_t current;
 			printf("SU sensing\n");
 
 			//Once the primary user is detected the secondary user stops transmitting
@@ -4586,7 +3992,7 @@ if(dsa==1 && usingUSRPs && !isController){
 			secondarymsgnumber++;
 			while(bfi.energydetected==1)
 				{
-				time = 0;
+				z=0;
 				/*bfi.primaryon = 0;
 				start = std::clock();
 				std::clock_t current;
@@ -4609,7 +4015,6 @@ if(dsa==1 && usingUSRPs && !isController){
 	if(secondary == 1 && dsaCBs.detectiontype == 'e' && !receiver){
 		struct broadcastfeedbackinfo bfi;
 		std::string args = "internal";
-		int e;
 		//Creates usrp pointer that will be passed to fftscan function
 		uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
 
@@ -4633,11 +4038,9 @@ if(dsa==1 && usingUSRPs && !isController){
 		for(int h = 0; h<8; h++){
 			header[h] = 0;
 		};
-		for(int h = 0; h<suce.payloadLen; h++){
+		for(int h = 0; (unsigned int)h<suce.payloadLen; h++){
 			payload[h] = 0;
 		};
-		std::clock_t start;
-		std::clock_t current;
 		unsigned char * p = NULL;   // default subcarrier allocation
 		if (verbose) 
 		printf("Using ofdmtxrx\n");
@@ -4659,10 +4062,8 @@ if(dsa==1 && usingUSRPs && !isController){
 		printf("\nNoise floor found! Press any key to start secondary user");
 		getchar();	
 		cantransmit = 1;
-		start = std::clock();
 		while(true)
 			{
-			start = std::clock();
 			printf("SU transmitting\n");
 			mess.number = secondarymsgnumber;
 			mess.purpose = 't';
@@ -4686,7 +4087,7 @@ if(dsa==1 && usingUSRPs && !isController){
 						usleep(1);;
 						isLastSymbol = txcvr.write_symbol();
 						if(usescenario)
-						enactScenarioBaseband(txcvr.fgbuffer, suce, sc);
+						enactScenarioBasebandTx(txcvr.fgbuffer, txcvr.fgbuffer_len, suce, sc);
 						txcvr.transmit_symbol();
 					}
 
@@ -4695,9 +4096,6 @@ if(dsa==1 && usingUSRPs && !isController){
 					if(adapt==1)
 					postTxTasks(&puce, &msg.feed, verbose);
 				}
-				start = std::clock();
-
-
 				cantransmit = 0;
 				primaryoncounter = 0;
 				primaryoffcounter = 0;
@@ -4789,8 +4187,6 @@ if(dsa==1 && usingUSRPs && !isController){
 		int primaryoncounter = 0;
 		int primaryoffcounter = 0;
 		float noisefloor;
-		std::clock_t start;
-		std::clock_t current;
 		printf("\nMake sure the secondary transmitter is transmitting before finding the noise floor\n");
 		printf("This insures that detection of the SU's energy won't cause a false detection\n");
 		noisefloor = noise_floor(suce, usrp, fftinfo);
@@ -4825,17 +4221,11 @@ if(dsa==1 && usingUSRPs && !isController){
 	}	
 	//Primary receiver. Does nothing but use dsaCallback function to send feedback
 	if(receiver == 1 && primary == 1){
-		struct message mess;
-		mess.type = 'p';
 		dsaCBs.usrptype = 'p';
-		ce = CreateCognitiveEngine();
-		readCEConfigFile(&ce, "ce1.txt", verbose);
 		printf("receiver\n");
-		int u;
 		unsigned char * p = NULL;   // default subcarrier allocation
 		if (verbose) 
-		printf("Using ofdmtxrx\n");
-		//uhd_rxgain = 31;
+		printf("Using ofdmtxrx\n");;
 		//Basic transceiver setup
 		printf("%d %d %d\n", puce.numSubcarriers, puce.CPLen, puce.taperLen);
 		ofdmtxrx txcvr(puce.numSubcarriers, puce.CPLen, puce.taperLen, p, dsaCallback, (void*) &dsaCBs);
@@ -4851,18 +4241,25 @@ if(dsa==1 && usingUSRPs && !isController){
 		//The receiver sits in this infinite while loop and does nothing but wait to receive
 		//liquid frames that it will interpret with dsaCallback
 		while(true){
-			u=1;
+			verbose=0;
 		}
 		return 0;
 
 	}
-
+	//Secondary Receiver. It does nothing but wait to receive liquid frames and call dsacallback
+	//But when the the detection type in the master_dsa_file.txt is set to 'r'
+	//that means the receivers do the sensing
+	//The secondary receivers won't change their behavior, whenever they detect a primary frame
+	//they will always send a TCP message to the secondary transmitter
+	//but if the detection type is 'r' then the secondary transmitter will transmit and rest based on a variable
+	//that changes whenever a message is received from a secondary receiver saying the primary user was detected
+	//If the detection type is anything else then the secondary transmitter ignores this variable
+	//So these receivers can technically sense the spectrum, but only through their callback function
+	//For energy detection sensing the energy detector is used, because an energy detecting usrp object and
+	//and liquid transceiver usrp object cannot both have their receivers on or overflows and problems will happen
 	if(receiver == 1 && secondary == 1){
-		struct message mess;
-		mess.type = 's';
 		dsaCBs.usrptype = 's';
 		printf("receiver\n");
-		int u;
 		unsigned char * p = NULL;   // default subcarrier allocation
 		if (verbose) 
 		printf("Using ofdmtxrx\n");
@@ -4882,25 +4279,25 @@ if(dsa==1 && usingUSRPs && !isController){
 		//The receiver sits in this infinite while loop and does nothing but wait to receive
 		//liquid frames that it will interpret with dsaCallback
 		while(true){
-			u=1;
+			verbose=0;
 		}
 		return 0;
 
 	}
-
-
-
-
-
 }
 
 //If a receiver is being used but not DSA then a basic receiver is made. It does nothing
 //but wait to receive transmissions and execute the dsaCallback function
+//Currently doesn't serve a purpose
+//It could later be adjusted so a non DSA radio can go through tests while broadcasting to multiple receivers
+//with each receiver being initialized with this if statement
+//and all of the feedback being interpreted by a TCP message reading thread on the transmitter
+//Future work!!!
 if(receiver == 1 && dsa != 1){
 	ce = CreateCognitiveEngine();
-	readCEConfigFile(&ce, "ce1.txt", verbose);
+	const char* str = "ce1.txt";
+	readCEConfigFile(&ce, (char *)str, verbose);
 	printf("receiver\n");
-	int u;
 	unsigned char * p = NULL;   // default subcarrier allocation
 	if (verbose) 
 	printf("Using ofdmtxrx\n");
@@ -4920,7 +4317,7 @@ if(receiver == 1 && dsa != 1){
 	//The receiver sits in this infinite while loop and does nothing but wait to receive
 	//liquid frames that it will interpret with dsaCallback
 	while(true){
-		u=1;
+		verbose=0;
 	}
 	return 0;
 
@@ -4929,6 +4326,14 @@ if(receiver == 1 && dsa != 1){
 if(dsa && isController){
 
 	//Acccumulator variables used to find percentages for byte and bit errors
+	//There are 2 for each type of averaged feedback
+	//Average Total Frame Feedback
+	//Average Primary Frame Feedback
+	//Average Primary Safe Frame Feedback (the SU is off)
+	//Average Primary Collision Frame Feedback (the SU is on)
+	//Average Secondary Frame Feedback
+	//Average Secondary Safe Frame Feedback (the PU is off)
+	//Average Secondary Collision Frame Feedback (the PU is on)
 	float tfbbyte = 0.0;
 	float tfbbit = 0.0;
 	float pfbbyte = 0.0;
@@ -5543,11 +4948,12 @@ if(dsa && isController){
 	printf("Total Frame Valid Payload Percentage: %%%f\n", payloadtfb/tfb * 100);
 	printf("Total Frame Payload Byte Errors: %f\n", tfbbyte/tfb);
 	printf("Total Frame Payload Bit Errors: %f\n", tfbbit/tfb);
-	fprintf(dataFile, "Total Frame Payload Byte Errors: %f\n", tfbbyte/tfb);
-	fprintf(dataFile, "Total Frame Payload Bit Errors: %f\n", tfbbit/tfb);
+	fprintf(dataFile, "\n%d Total Frames\nAverage Total Frame Feedback\n\n", tfb);
 	fprintf(dataFile, "Total Frame Valid Header Percentage: %%%f\n", headertfb/tfb * 100);
 	fprintf(dataFile, "Total Frame Valid Payload Percentage: %%%f\n", payloadtfb/tfb * 100);
-	fprintf(dataFile, "\n%d Total Frames\nAverage Total Frame Feedback\n\n", tfb);
+	fprintf(dataFile, "Total Frame Payload Byte Errors: %f\n", tfbbyte/tfb);
+	fprintf(dataFile, "Total Frame Payload Bit Errors: %f\n", tfbbit/tfb);
+
 	fprintf(dataFile, "%-13s %-10i %-10.2f %-13.2f %-15.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
 		"totalframes:", totalfb.iteration,  totalfb.evm, totalfb.rssi, totalfb.payloadByteErrors,
 		totalfb.payloadBitErrors, 1, 1.0, 1.0);
@@ -5557,11 +4963,12 @@ if(dsa && isController){
 	printf("Primary Frame Valid Payload Percentage: %%%f\n", payloadpfb/pfb * 100);
 	printf("Primary Frame Payload Byte Errors: %f\n", pfbbyte/pfb);
 	printf("Primary Frame Payload Bit Errors: %f\n", pfbbit/pfb);
-	fprintf(dataFile, "Primary Frame Payload Byte Errors: %f\n", pfbbyte/pfb);
-	fprintf(dataFile, "Primary Frame Payload Bit Errors: %f\n", pfbbit/pfb);
+	fprintf(dataFile, "\n%d Primary Frames\nAverage Primary Frame Feedback\n\n", pfb);
 	fprintf(dataFile, "Primary Frame Valid Header Percentage: %%%f\n", headerpfb/pfb * 100);
 	fprintf(dataFile, "Primary Frame Valid Payload Percentage: %%%f\n", payloadpfb/pfb * 100);
-	fprintf(dataFile, "\n%d Primary Frames\nAverage Primary Frame Feedback\n\n", pfb);
+	fprintf(dataFile, "Primary Frame Payload Byte Errors: %f\n", pfbbyte/pfb);
+	fprintf(dataFile, "Primary Frame Payload Bit Errors: %f\n", pfbbit/pfb);
+
 	fprintf(dataFile, "%-13s %-10i %-10.2f %-13.2f %-15.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
 		"puframes:", primaryfb.iteration,  primaryfb.evm, primaryfb.rssi, primaryfb.payloadByteErrors,
 		primaryfb.payloadBitErrors, 1, 1.0, 1.0);
@@ -5599,13 +5006,14 @@ if(dsa && isController){
 	printf("\n%d Secondary Frames\nAverage Secondary Frame Feedback\n\n", sfb);
 	printf("Secondary Frame Valid Header Percentage: %%%f\n", headersfb/sfb * 100);
 	printf("Secondary Frame Valid Payload Percentage: %%%f\n", payloadsfb/sfb * 100);
+	fprintf(dataFile, "\n%d Secondary Frames\nAverage Secondary Frame Feedback\n\n", sfb);
 	fprintf(dataFile, "Secondary Frame Valid Header Percentage: %%%f\n", headersfb/sfb * 100);
 	fprintf(dataFile, "Secondary Frame Valid Payload Percentage: %%%f\n", payloadsfb/sfb * 100);
 	printf("Secondary Frame Payload Byte Errors: %f\n", sfbbyte/sfb);
 	printf("Secondary Frame Payload Bit Errors: %f\n", sfbbit/sfb);
 	fprintf(dataFile, "Secondary Frame Payload Byte Errors: %f\n", sfbbyte/sfb);
 	fprintf(dataFile, "Secondary Frame Payload Bit Errors: %f\n", sfbbit/sfb);
-	fprintf(dataFile, "\n%d Secondary Frames\nAverage Secondary Frame Feedback\n\n", sfb);
+
 	fprintf(dataFile, "%-13s %-10i %-10.2f %-13.2f %-15.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
 		"suframes:", secondaryfb.iteration,  secondaryfb.evm, secondaryfb.rssi, secondaryfb.payloadByteErrors,
 		secondaryfb.payloadBitErrors, 1, 1.0, 1.0);
@@ -5613,13 +5021,14 @@ if(dsa && isController){
 	printf("\n%d Safe Secondary Frames\nAverage Safe Secondary Frame Feedback\n\n", ssfb);
 	printf("Safe Secondary Frame Valid Header Percentage: %%%f\n", headerssfb/ssfb * 100);
 	printf("Safe Secondary Frame Valid Payload Percentage: %%%f\n", payloadssfb/ssfb * 100);
+	fprintf(dataFile, "\n%d Safe Secondary Frames\nAverage Secondary Frame Feedback\n\n", ssfb);
 	fprintf(dataFile, "Safe Secondary Frame Valid Header Percentage: %%%f\n", headerssfb/ssfb * 100);
 	fprintf(dataFile, "Safe Secondary Frame Valid Payload Percentage: %%%f\n", payloadssfb/ssfb * 100);
 	printf("Safe Secondary Frame Payload Byte Errors: %f\n", ssfbbyte/ssfb);
 	printf("Safe Secondary Frame Payload Bit Errors: %f\n", ssfbbit/ssfb);
 	fprintf(dataFile, "Safe Secondary Frame Payload Byte Errors: %f\n", ssfbbyte/ssfb);
 	fprintf(dataFile, "Safe Secondary Frame Payload Bit Errors: %f\n", ssfbbit/ssfb);
-	fprintf(dataFile, "\n%d Safe Secondary Frames\nAverage Secondary Frame Feedback\n\n", ssfb);
+
 	fprintf(dataFile, "%-13s %-10i %-10.2f %-13.2f %-15.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
 		"suframes:", secondarysafefb.iteration,  secondarysafefb.evm, secondarysafefb.rssi, secondarysafefb.payloadByteErrors,
 		secondarysafefb.payloadBitErrors, 1, 1.0, 1.0);
@@ -5627,13 +5036,14 @@ if(dsa && isController){
 	printf("\n%d Secondary Collision Frames\nAverage Secondary Collision Frame Feedback\n\n", scfb);
 	printf("Secondary Collision Frame Valid Header Percentage: %%%f\n", headerscfb/scfb * 100);
 	printf("Secondary Collision Frame Valid Payload Percentage: %%%f\n", payloadscfb/scfb * 100);
+	fprintf(dataFile, "\n%d Secondary Collision Frames\nAverage Secondary Collision Frame Feedback\n\n", scfb);
 	fprintf(dataFile, "Secondary Collision Frame Valid Header Percentage: %%%f\n", headerscfb/scfb * 100);
 	fprintf(dataFile, "Secondary Collision Frame Valid Payload Percentage: %%%f\n", payloadscfb/scfb * 100);
 	printf("Secondary Collision Frame Payload Byte Errors: %f\n", scfbbyte/scfb);
 	printf("Secondary Collision Frame Payload Bit Errors: %f\n", scfbbit/scfb);
 	fprintf(dataFile, "Secondary Collision Frame Payload Byte Errors: %f\n", scfbbyte/scfb);
 	fprintf(dataFile, "Secondary Collision Frame Payload Bit Errors: %f\n", scfbbit/scfb);
-	fprintf(dataFile, "\n%d Secondary Collision Frames\nAverage Secondary Collision Frame Feedback\n\n", scfb);
+
 	fprintf(dataFile,"%-13s %-10i %-10.2f %-13.2f %-15.2d %-12.2d %-12.2d %-20.2f %-19.2f\n", 
 		"suCframes:", secondarycollisionfb.iteration,  secondarycollisionfb.evm, secondarycollisionfb.rssi, secondarycollisionfb.payloadByteErrors,
 		secondarycollisionfb.payloadBitErrors, 1, 1.0, 1.0);
@@ -5673,9 +5083,11 @@ if(tester==1){
 if(noise==1){
 	verbose = 0;
 	struct CognitiveEngine ce = CreateCognitiveEngine();
-	readCEConfigFile(&ce, (char*) "ce1.txt", 0);
+	const char* cestring = "ce1.txt";
+	readCEConfigFile(&ce, (char *)cestring, 0);
 	struct Scenario sc = CreateScenario();
-	readScConfigFile(&sc, "sc1.txt", 0);
+	const char* scstring = "sc1.txt";
+	readScConfigFile(&sc, (char *)scstring, 0);
     unsigned char * p = NULL;   // default subcarrier allocation
     if (verbose) 
         printf("Using ofdmtxrx\n");
@@ -5717,7 +5129,7 @@ if(noise==1){
         while(!isLastSymbol)
         {
             isLastSymbol = txcvr.write_symbol();
-            enactScenarioBaseband(txcvr.fgbuffer, ce, sc);
+            enactScenarioBasebandTx(txcvr.fgbuffer, txcvr.fgbuffer_len, ce, sc);
             txcvr.transmit_symbol();
         }
         txcvr.end_transmit_frame();
