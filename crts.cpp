@@ -2561,7 +2561,7 @@ int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float n
     int y;
 	float totalpower = 0;
 	for(y=0; y<fftinfo.repeat; ++y){    
-        size_t num_rx_samps = rx_stream->recv(
+        rx_stream->recv(
             &buff.front(), buff.size(), md, 3.0
         );        
         fftwf_execute(p);
@@ -2667,7 +2667,7 @@ float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, s
 	float totalpower = 0;
 	for(y=0; y<fftinfo.noisefloorrepeat; ++y){    
 	//while((num_acc_samps < total_num_samps or total_num_samps == 0)){
-        size_t num_rx_samps = rx_stream->recv(
+        rx_stream->recv(
             &buff.front(), buff.size(), md, 3.0
         );        
         fftwf_execute(p);
