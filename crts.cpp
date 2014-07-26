@@ -2509,69 +2509,49 @@ for(int i=0; i<4; i++)	fb.iteration += _header[i+2]<<(8*(3-i));
 
 
 int fftscan(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, float noisefloor, struct fftStruct fftinfo){
-int cantransmit;
-//int t;
+	int cantransmit;
     std::string args, file, ant, subdev, ref;
-ref = "internal";
+	ref = "internal";
     size_t total_num_samps = 0;
     size_t num_bins = fftinfo.numbins;
-    //unsigned int Moving_Avg_size = 4;
-//unsigned int navrg = fftinfo.numavrg;
     double rate = fftinfo.rate;
-double freq = (double)ce.frequency;
-//printf("%f\n", freq);
-double gain = fftinfo.gain;
-double bw = fftinfo.bandwidth;//ce.bandwidth;
-double chbw = fftinfo.channelbandwidth;
+	double freq = (double)ce.frequency;
+	double gain = fftinfo.gain;
+	double bw = fftinfo.bandwidth;
+	//double chbw = fftinfo.channelbandwidth;
     std::string addr, port, mode;
-ant = fftinfo.antennae;
-//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
-usrp->set_clock_source(ref);
-usrp->set_rx_rate(rate);
-usrp->set_rx_freq(freq);
-usrp->set_rx_gain(gain);
-usrp->set_rx_bandwidth(bw);
-usrp->set_rx_antenna(ant);
-//printf("3\n");
+	ant = fftinfo.antennae;
+
+	usrp->set_clock_source(ref);
+	usrp->set_rx_rate(rate);
+	usrp->set_rx_freq(freq);
+	usrp->set_rx_gain(gain);
+	usrp->set_rx_bandwidth(bw);
+	usrp->set_rx_antenna(ant);
+
     std::vector<std::string> sensor_names;
     sensor_names = usrp->get_rx_sensor_names(0);
     uhd::stream_args_t stream_args("fc32"); //complex floats
     uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
-  //printf("4\n");
-    // rm// setup streaming ... 0 means continues
+
      uhd::stream_cmd_t stream_cmd((total_num_samps == 0)?
      uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS:
      uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE
     );
-    stream_cmd.num_samps = total_num_samps;// total_num_samps=0 means coninuous mode
+    stream_cmd.num_samps = total_num_samps;// total_num_samps=0 means coninuous mode 
     stream_cmd.stream_now = true;
     stream_cmd.time_spec = uhd::time_spec_t();
     usrp->issue_stream_cmd(stream_cmd);
-//size_t num_acc_samps = 0; //number of accumulated samples
-    //size_t nAvrgCount = 0;
     uhd::rx_metadata_t md;
-    //printf("5\n");
     std::vector<std::complex<float> > buff(num_bins);
     std::vector<std::complex<float> > out_buff(num_bins);
     std::vector<float> out_buff_norm(num_bins);
-     
-    //std::vector<float> send_avmfft(num_bins-Moving_Avg_size);
      std::vector<float> send_avmfft(num_bins);
     // there is actually no need for the two below vectors since send_cmpfft equals the output of fft buff
     // and send_tmsmps equals to buff from USRP, I will leave it like this for clarity and in case we need
     // extra calculations before sending the buff
     std::vector<std::complex<float> > send_cmpfft(num_bins);
     std::vector<std::complex<float> > send_tmsmps;
-    //initializing sum of channels matrix
-    // calculating number of channels in chnsts mode
-    //unsigned int nChs,nSlize;
-    //nChs=static_cast <int> (std::floor((rate/2)/chbw));
-    //nSlize=static_cast <int> (std::floor((num_bins/2)/nChs));
-     
-    //printf("6\n");
-    //std::vector<float> vChCusum(nChs,0);
-    // create chnsts buffer to send this could be boolean vector also
-    //std::vector<unsigned short> send_chnsts(nChs,0);
      
     //initialize fft plan
     fftwf_complex *in = (fftwf_complex*)&buff.front();
@@ -2579,42 +2559,32 @@ usrp->set_rx_antenna(ant);
     fftwf_plan p;
     p = fftwf_plan_dft_1d(num_bins, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
     int y;
-float totalpower = 0;
-float maxpower;
-for(y=0; y<fftinfo.repeat; ++y){
-//while((num_acc_samps < total_num_samps or total_num_samps == 0)){
+	float totalpower = 0;
+	for(y=0; y<fftinfo.repeat; ++y){    
         size_t num_rx_samps = rx_stream->recv(
             &buff.front(), buff.size(), md, 3.0
-        );
+        );        
         fftwf_execute(p);
-int x;
+		int x;
         for (unsigned int i=0; i<out_buff.size();i++)
              out_buff_norm[i]=sqrt(pow(abs(out_buff[i]),2));
-//printf("%f\n", out_buff_norm[0]);
-if(y==0){
-maxpower = out_buff_norm[0];
-}
-/*if(out_buff_norm[0] > maxpower){
-maxpower = out_buff_norm[0];
-}*/
-for(x=0; x<fftinfo.measuredbins; x++){
-totalpower+=out_buff_norm[x];
-}
-}
-fftwf_destroy_plan(p);
-totalpower /= fftinfo.measuredbins;
-totalpower = totalpower/fftinfo.repeat;
-if(totalpower > noisefloor){
-cantransmit = 0;
-}
-else{
-cantransmit = 1;
-}
-if(fftinfo.debug==1){
-printf("Cantransmit = %d Measured Power = %f Threshold = %f\n", cantransmit, totalpower, noisefloor);}
-//printf("%d %f %f\n", cantransmit, centeraverage, noisefloor);
 
-return cantransmit;
+		for(x=0; x<fftinfo.measuredbins; x++){
+			totalpower+=out_buff_norm[x];
+		}
+	} 
+	fftwf_destroy_plan(p);
+	totalpower /= fftinfo.measuredbins;
+	totalpower = totalpower/fftinfo.repeat;
+	if(totalpower > noisefloor){
+		cantransmit = 0;
+	}
+	else{
+		cantransmit = 1;
+	}
+	if(fftinfo.debug==1){
+	printf("Cantransmit = %d Measured Power = %f Threshold = %f\n", cantransmit, totalpower, noisefloor);}
+	return cantransmit;
 }
 
 
@@ -2622,50 +2592,48 @@ return cantransmit;
 float noise_floor(struct CognitiveEngine ce, uhd::usrp::multi_usrp::sptr usrp, struct fftStruct fftinfo){
 
 
-//int t;
+	//int t;
     std::string args, file, ant, subdev, ref;
-ref = "internal";
+	ref = "internal";
     size_t total_num_samps = 0;
     size_t num_bins = fftinfo.numbins;
-    //unsigned int Moving_Avg_size = 4;
-//unsigned int navrg = fftinfo.numavrg;
     double rate = fftinfo.rate;
-double freq = ce.frequency;
-double gain = fftinfo.gain;
-double bw = fftinfo.bandwidth;//ce.bandwidth;
-double chbw = fftinfo.channelbandwidth;
+	double freq = ce.frequency;
+	double gain = fftinfo.gain;
+	double bw = fftinfo.bandwidth;//ce.bandwidth;
+	//double chbw = fftinfo.channelbandwidth;
     std::string addr, port, mode;
-ant = fftinfo.antennae;
-
+	ant = fftinfo.antennae;
+	
     //printf("2\n");
     // This for "chnsts" mode, for test purposes we will use this threshold value and can be adjusted as required.
     // More work is needed to compute threshold based on USRP noise figure, gain and even center freq
     // because noise figure changes with freq
     //double thresh=0.00015;
-//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
-usrp->set_clock_source(ref);
-usrp->set_rx_rate(rate);
-usrp->set_rx_freq(freq);
-usrp->set_rx_gain(gain);
-usrp->set_rx_bandwidth(bw);
-usrp->set_rx_antenna(ant);
-//printf("3\n");
+	//uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
+	usrp->set_clock_source(ref);
+	usrp->set_rx_rate(rate);
+	usrp->set_rx_freq(freq);
+	usrp->set_rx_gain(gain);
+	usrp->set_rx_bandwidth(bw);
+	usrp->set_rx_antenna(ant);
+	//printf("3\n");
     std::vector<std::string> sensor_names;
     sensor_names = usrp->get_rx_sensor_names(0);
     uhd::stream_args_t stream_args("fc32"); //complex floats
     uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
-  //printf("4\n");
+ 	//printf("4\n");
     // rm// setup streaming ... 0 means continues
      uhd::stream_cmd_t stream_cmd((total_num_samps == 0)?
      uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS:
      uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE
     );
-    stream_cmd.num_samps = total_num_samps;// total_num_samps=0 means coninuous mode
+    stream_cmd.num_samps = total_num_samps;// total_num_samps=0 means coninuous mode 
     stream_cmd.stream_now = true;
     stream_cmd.time_spec = uhd::time_spec_t();
     usrp->issue_stream_cmd(stream_cmd);
-//size_t num_acc_samps = 0; //number of accumulated samples
-    //size_t nAvrgCount = 0;
+	//size_t num_acc_samps = 0; //number of accumulated samples
+    //size_t  nAvrgCount = 0;
     uhd::rx_metadata_t md;
 
     std::vector<std::complex<float> > buff(num_bins);
@@ -2696,29 +2664,26 @@ usrp->set_rx_antenna(ant);
     fftwf_plan p;
     p = fftwf_plan_dft_1d(num_bins, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
     int y;
-float totalpower = 0;
-float maxpower;
-for(y=0; y<fftinfo.noisefloorrepeat; ++y){
-//while((num_acc_samps < total_num_samps or total_num_samps == 0)){
+	float totalpower = 0;
+	for(y=0; y<fftinfo.noisefloorrepeat; ++y){    
+	//while((num_acc_samps < total_num_samps or total_num_samps == 0)){
         size_t num_rx_samps = rx_stream->recv(
             &buff.front(), buff.size(), md, 3.0
-        );
+        );        
         fftwf_execute(p);
-int x;
+		int x;
         for (unsigned int i=0; i<out_buff.size();i++)
              out_buff_norm[i]=sqrt(pow(abs(out_buff[i]),2));
-for(x=0; x<fftinfo.noisefloormeasuredbins; x++){
-totalpower+=out_buff_norm[x];
+		for(x=0; x<fftinfo.noisefloormeasuredbins; x++){
+			totalpower+=out_buff_norm[x];
+		}
+	} 
+	fftwf_destroy_plan(p);
+	totalpower /= fftinfo.noisefloormeasuredbins;
+	if(fftinfo.debug==1){
+	printf("%f\n", (float)(totalpower/fftinfo.noisefloorrepeat + fftinfo.noiseadder));}
+	return ((totalpower/fftinfo.noisefloorrepeat) * fftinfo.noisemult) + fftinfo.noiseadder;
 }
-}
-fftwf_destroy_plan(p);
-totalpower /= fftinfo.noisefloormeasuredbins;
-if(fftinfo.debug==1){
-printf("%f\n", (float)(totalpower/fftinfo.noisefloorrepeat + fftinfo.noiseadder));}
-return ((totalpower/fftinfo.noisefloorrepeat) * fftinfo.noisemult) + fftinfo.noiseadder;
-}
-
-
 
 
 
